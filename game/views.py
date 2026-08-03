@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST
 
 from game.api import get_lobby_state, invalidate_game_state_cache
 from game.forms import SignUpForm
-from game.game_engine import GameEngine, GameEngineError
+from game.game_engine import GameEngine, GameEngineError, close_stale_games
 from game.models import Game, GameCard
 from game.tcg_types import TCG_TYPES
 
@@ -118,6 +118,7 @@ def remove_bot_view(request, game_id, player_id):
 
 @login_required
 def game_detail(request, game_id):
+    close_stale_games()
     game = get_object_or_404(Game, pk=game_id)
     game_player = game.players.filter(user=request.user).first()
     if game_player is None:

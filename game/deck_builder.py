@@ -103,7 +103,7 @@ def allocate_balanced_copies(
 
     # Le catalogue de production est équilibré en amont (5 à 6 Pokémon par
     # type JCC). Deux exemplaires par espèce donnent 10 à 12 cartes de chacun
-    # des dix types officiels dans la pioche standard.
+    # des sept types retenus dans la pioche standard.
     uniform_size = len(ordered_cards) * ACTION_CARD_COPIES
     if target_size == uniform_size and max_normal_copies >= ACTION_CARD_COPIES:
         return {card.pk: ACTION_CARD_COPIES for card in ordered_cards}

@@ -1,10 +1,12 @@
 """Référentiel des types du Jeu de Cartes à Collectionner Pokémon.
 
-Les jeux vidéo distinguent 18 types, tandis que le JCC moderne en utilise dix.
-Une carte du catalogue possède donc un unique type JCC explicite, même lorsque
-le Pokémon a deux types dans les jeux vidéo. Les types source restent conservés
-sur :class:`PokemonCard` afin de pouvoir afficher les informations authentiques
-du Pokémon dans l'interface.
+Les jeux vidéo distinguent 18 types ; le JCC moderne en utilise dix, dont cette
+plateforme n'en retient que quatre pour simplifier le jeu (Plante, Feu, Eau et
+Électrique — Psy, Combat, Incolore, Obscurité, Métal et Dragon ne sont pas
+repris). Une carte du catalogue possède donc un unique type JCC explicite,
+même lorsque le Pokémon a deux types dans les jeux vidéo. Les types source
+restent conservés sur :class:`PokemonCard` afin de pouvoir afficher les
+informations authentiques du Pokémon dans l'interface.
 """
 
 from dataclasses import dataclass
@@ -35,38 +37,34 @@ TCG_TYPES = (
     TcgType("fire", "Feu", "Fire", True),
     TcgType("water", "Eau", "Water", True),
     TcgType("lightning", "Électrique", "Lightning", True),
-    TcgType("psychic", "Psy", "Psychic", True),
-    TcgType("fighting", "Combat", "Fighting", True),
-    TcgType("darkness", "Obscurité", "Darkness", True),
-    TcgType("metal", "Métal", "Metal", True),
-    TcgType("dragon", "Dragon", "Dragon", False),
-    TcgType("colorless", "Incolore", "Colorless", False),
 )
 
 TCG_TYPE_BY_SLUG = {tcg_type.slug: tcg_type for tcg_type in TCG_TYPES}
 TCG_TYPE_CHOICES = tuple((tcg_type.slug, tcg_type.name_fr) for tcg_type in TCG_TYPES)
 
-# Correspondance avec les 18 types des jeux vidéo/PokeAPI. Le type Fée n'est
-# plus imprimé dans le JCC moderne et rejoint Psy ; Poison rejoint Obscurité.
+# Correspondance avec les 18 types des jeux vidéo/PokeAPI, ramenée aux quatre
+# types JCC retenus par cette plateforme : Poison, Insecte et Normal/Vol
+# rejoignent Plante, Combat/Sol/Roche/Acier rejoignent Feu, Psy/Spectre/
+# Ténèbres/Fée/Dragon rejoignent Eau, Glace rejoint Eau également.
 POKEMON_TYPE_TO_TCG_TYPE = {
-    "normal": "colorless",
+    "normal": "grass",
     "fire": "fire",
     "water": "water",
     "electric": "lightning",
     "grass": "grass",
     "ice": "water",
-    "fighting": "fighting",
-    "poison": "darkness",
-    "ground": "fighting",
-    "flying": "colorless",
-    "psychic": "psychic",
+    "fighting": "fire",
+    "poison": "grass",
+    "ground": "fire",
+    "flying": "grass",
+    "psychic": "water",
     "bug": "grass",
-    "rock": "fighting",
-    "ghost": "psychic",
-    "dragon": "dragon",
-    "dark": "darkness",
-    "steel": "metal",
-    "fairy": "psychic",
+    "rock": "fire",
+    "ghost": "water",
+    "dragon": "water",
+    "dark": "water",
+    "steel": "fire",
+    "fairy": "water",
 }
 
 # Couleurs de présentation centralisées pour les consommateurs Python (export,
@@ -76,12 +74,6 @@ TCG_TYPE_COLORS = {
     "fire": "#EA5B45",
     "water": "#4C91D8",
     "lightning": "#F2C84B",
-    "psychic": "#A966B7",
-    "fighting": "#C97945",
-    "darkness": "#424B58",
-    "metal": "#8C9AA5",
-    "dragon": "#B59A3C",
-    "colorless": "#A7A9AC",
 }
 
 

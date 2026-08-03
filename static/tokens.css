@@ -1,17 +1,11 @@
 :root {
     color-scheme: dark;
 
-    /* Dix identités modernes du Jeu de Cartes à Collectionner Pokémon. */
+    /* Quatre identités modernes du Jeu de Cartes à Collectionner Pokémon. */
     --color-tcg-grass: #64b95b;
     --color-tcg-fire: #e75b3c;
     --color-tcg-water: #4f92cf;
     --color-tcg-lightning: #f2ce3e;
-    --color-tcg-psychic: #a861a8;
-    --color-tcg-fighting: #cf6b32;
-    --color-tcg-darkness: #4d4b55;
-    --color-tcg-metal: #9eaeb8;
-    --color-tcg-dragon: #c8a72d;
-    --color-tcg-colorless: #b9bcc3;
 
     /* Marque et surfaces */
     --color-bg: #050b14;

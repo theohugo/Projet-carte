@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass
 
 from django.db import transaction
@@ -79,17 +80,25 @@ def _next_sequence(game: GuessWhoGame) -> int:
 
 @transaction.atomic
 def create_game(user) -> GuessWhoGame:
-    """Crée une partie et fige les 24 premières cartes actives du catalogue.
+    """Crée une partie et tire au sort 24 cartes parmi tout le catalogue.
 
-    Le tri par numéro Pokédex puis clé primaire garantit le même roster
-    pour un catalogue donné, sans hasard ni appel réseau au lancement.
+    Qui est-ce ? est un jeu d'identification pure (silhouette, nom, sprite) :
+    contrairement à Poké-Uno, il ne dépend pas des types JCC ni du sous-
+    ensemble ``in_current_deck`` réservé à ce mode. Le plateau est donc tiré
+    au hasard à chaque partie, dans tout l'historique du catalogue, pour
+    varier les parties tout en restant strictement identique pour les deux
+    joueurs (une seule ligne de ``GuessWhoRosterCard`` par partie).
     """
 
-    pokemon_cards = list(
-        PokemonCard.objects.filter(in_current_deck=True).order_by("pokedex_id", "pk")[:ROSTER_SIZE]
-    )
-    if len(pokemon_cards) != ROSTER_SIZE:
-        raise GuessWhoRosterError(f"Le mode Qui est-ce ? nécessite {ROSTER_SIZE} Pokémon actifs.")
+    pokemon_card_ids = list(PokemonCard.objects.values_list("pk", flat=True))
+    if len(pokemon_card_ids) < ROSTER_SIZE:
+        raise GuessWhoRosterError(
+            f"Le mode Qui est-ce ? nécessite au moins {ROSTER_SIZE} Pokémon au catalogue."
+        )
+
+    selected_ids = random.sample(pokemon_card_ids, ROSTER_SIZE)
+    cards_by_id = PokemonCard.objects.in_bulk(selected_ids)
+    pokemon_cards = [cards_by_id[pk] for pk in selected_ids]
 
     game = GuessWhoGame.objects.create(created_by=user)
     GuessWhoPlayer.objects.create(game=game, user=user, turn_order=0)

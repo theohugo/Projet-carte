@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET, require_POST
 
 from game.bot_player import perform_bot_turn
-from game.game_engine import GameEngine, GameEngineError
+from game.game_engine import GameEngine, GameEngineError, close_stale_games
 from game.models import Game, GameCard
 
 STATE_CACHE_TIMEOUT = 2  # secondes — amortit le polling front sans jamais servir un état obsolète longtemps.
@@ -16,6 +16,7 @@ STATE_CACHE_TIMEOUT = 2  # secondes — amortit le polling front sans jamais ser
 
 def get_lobby_state(user):
     """Empreinte légère du lobby pour détecter les nouvelles parties sans F5."""
+    close_stale_games()
     return {
         "open_games": [
             {
@@ -58,6 +59,7 @@ def invalidate_game_state_cache(game):
 @login_required
 @require_GET
 def api_game_state(request, game_id):
+    close_stale_games()
     game = get_object_or_404(Game, pk=game_id)
     game_player = _get_game_player_or_403(game, request.user)
     if game_player is None:

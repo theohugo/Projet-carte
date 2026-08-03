@@ -374,11 +374,6 @@
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
 }
 
-.active-type[data-tcg-type="darkness"],
-.type-choice[data-tcg-type="darkness"] {
-    color: #fff;
-}
-
 .turn-indicator {
     display: inline-flex;
     align-items: center;

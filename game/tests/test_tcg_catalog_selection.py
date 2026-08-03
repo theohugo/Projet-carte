@@ -24,18 +24,12 @@ from game.tcg_types import (
 
 
 class TcgTypeCatalogTests(SimpleTestCase):
-    def test_exposes_the_ten_modern_card_types_in_display_order(self):
+    def test_exposes_the_four_modern_card_types_in_display_order(self):
         expected_slugs = (
             "grass",
             "fire",
             "water",
             "lightning",
-            "psychic",
-            "fighting",
-            "darkness",
-            "metal",
-            "dragon",
-            "colorless",
         )
 
         self.assertEqual(tuple(tcg_type.slug for tcg_type in TCG_TYPES), expected_slugs)
@@ -43,25 +37,25 @@ class TcgTypeCatalogTests(SimpleTestCase):
         self.assertEqual(tuple(slug for slug, _label in TCG_TYPE_CHOICES), expected_slugs)
         self.assertEqual(
             {tcg_type.slug for tcg_type in TCG_TYPES if not tcg_type.is_basic_energy},
-            {"dragon", "colorless"},
+            set(),
         )
 
     def test_maps_every_source_type_to_a_valid_tcg_type(self):
         self.assertEqual(set(POKEMON_TYPE_TO_TCG_TYPE), set(ALL_TYPE_SLUGS))
         self.assertLessEqual(set(POKEMON_TYPE_TO_TCG_TYPE.values()), set(TCG_TYPE_BY_SLUG))
         self.assertEqual(tcg_type_slug_for_source_type("electric"), "lightning")
-        self.assertEqual(tcg_type_slug_for_source_type(" fairy "), "psychic")
-        self.assertEqual(tcg_type_slug_for_source_type("poison"), "darkness")
+        self.assertEqual(tcg_type_slug_for_source_type(" fairy "), "water")
+        self.assertEqual(tcg_type_slug_for_source_type("poison"), "grass")
 
     def test_lookup_helpers_are_safe_for_unknown_or_non_string_values(self):
         self.assertEqual(get_tcg_type(" FIRE ").name_fr, "Feu")
         self.assertEqual(
-            get_tcg_type("dragon").as_dict(),
+            get_tcg_type("water").as_dict(),
             {
-                "slug": "dragon",
-                "name_fr": "Dragon",
-                "name_en": "Dragon",
-                "is_basic_energy": False,
+                "slug": "water",
+                "name_fr": "Eau",
+                "name_en": "Water",
+                "is_basic_energy": True,
             },
         )
         self.assertIsNone(get_tcg_type("unknown"))
@@ -72,50 +66,20 @@ class TcgTypeCatalogTests(SimpleTestCase):
 class CuratedTcgSelectionTests(SimpleTestCase):
     EXPECTED_EXTRA_IDS = {
         10,
-        16,
-        19,
         25,
-        35,
         46,
         54,
-        56,
         58,
-        63,
-        66,
-        74,
         81,
-        89,
-        92,
-        94,
-        95,
-        106,
-        122,
         123,
         131,
-        132,
-        133,
         135,
-        137,
-        143,
-        147,
-        148,
-        149,
         181,
-        197,
-        205,
-        208,
-        212,
-        215,
-        248,
-        303,
-        304,
-        445,
-        887,
     }
 
-    def test_selection_contains_exactly_the_requested_54_pokemon(self):
-        self.assertEqual(len(CURATED_POKEDEX_IDS), 54)
-        self.assertEqual(len(set(CURATED_POKEDEX_IDS)), 54)
+    def test_selection_contains_exactly_the_requested_22_pokemon(self):
+        self.assertEqual(len(CURATED_POKEDEX_IDS), 22)
+        self.assertEqual(len(set(CURATED_POKEDEX_IDS)), 22)
         self.assertEqual(set(EXTRA_IDS), self.EXPECTED_EXTRA_IDS)
         self.assertLessEqual(set(STARTER_IDS), set(CURATED_POKEDEX_IDS))
         self.assertLessEqual(set(LEGENDARY_IDS), set(CURATED_POKEDEX_IDS))
@@ -125,7 +89,7 @@ class CuratedTcgSelectionTests(SimpleTestCase):
         counts = Counter(TCG_TYPE_BY_POKEDEX_ID.values())
 
         self.assertEqual(dict(counts), TCG_TYPE_TARGETS)
-        self.assertEqual(sum(counts.values()), 54)
+        self.assertEqual(sum(counts.values()), 22)
         self.assertEqual(min(counts.values()), 5)
         self.assertEqual(max(counts.values()), 6)
 

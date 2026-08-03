@@ -430,12 +430,6 @@ a:focus-visible {
 .tcg-energy-icon[data-tcg-type="fire"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/fire.png"); }
 .tcg-energy-icon[data-tcg-type="water"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/water.png"); }
 .tcg-energy-icon[data-tcg-type="lightning"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/lightning.png"); }
-.tcg-energy-icon[data-tcg-type="psychic"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/psychic.png"); }
-.tcg-energy-icon[data-tcg-type="fighting"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/fighting.png"); }
-.tcg-energy-icon[data-tcg-type="darkness"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/darkness.png"); }
-.tcg-energy-icon[data-tcg-type="metal"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/metal.png"); }
-.tcg-energy-icon[data-tcg-type="dragon"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/dragon.png"); }
-.tcg-energy-icon[data-tcg-type="colorless"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/colorless.png"); }
 
 .card-unit-lock {
     position: absolute;
@@ -523,12 +517,6 @@ a:focus-visible {
 [data-tcg-type="fire"] { --type-accent: var(--color-tcg-fire); }
 [data-tcg-type="water"] { --type-accent: var(--color-tcg-water); }
 [data-tcg-type="lightning"] { --type-accent: var(--color-tcg-lightning); }
-[data-tcg-type="psychic"] { --type-accent: var(--color-tcg-psychic); }
-[data-tcg-type="fighting"] { --type-accent: var(--color-tcg-fighting); }
-[data-tcg-type="darkness"] { --type-accent: var(--color-tcg-darkness); }
-[data-tcg-type="metal"] { --type-accent: var(--color-tcg-metal); }
-[data-tcg-type="dragon"] { --type-accent: var(--color-tcg-dragon); }
-[data-tcg-type="colorless"] { --type-accent: var(--color-tcg-colorless); }
 
 .card-unit[data-tcg-type],
 .card-unit-type[data-tcg-type] {

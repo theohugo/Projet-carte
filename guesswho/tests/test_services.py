@@ -36,7 +36,7 @@ class GuessWhoServiceTests(TestCase):
         game = choose_target(game.id, self.guest, self.cards[1].id, game.turn_revision)
         return game
 
-    def test_creation_builds_a_stable_roster_and_registers_host(self):
+    def test_creation_draws_a_random_roster_registers_host(self):
         game = create_game(self.host)
 
         self.assertEqual(game.status, GuessWhoGame.Status.EN_ATTENTE)
@@ -44,16 +44,27 @@ class GuessWhoServiceTests(TestCase):
         self.assertEqual(game.players.get().user, self.host)
         self.assertEqual(game.players.get().turn_order, 0)
         self.assertEqual(game.roster_cards.count(), 24)
-        self.assertEqual(
-            list(game.roster_cards.values_list("pokemon_card__pokedex_id", flat=True)),
-            list(range(1, 25)),
-        )
+        roster_ids = set(game.roster_cards.values_list("pokemon_card_id", flat=True))
+        self.assertTrue(roster_ids.issubset({card.id for card in self.cards}))
+
+    def test_creation_does_not_always_draw_the_same_roster(self):
+        # Un vivier plus large que ROSTER_SIZE : sinon le tirage renvoie
+        # toujours le catalogue entier et ne peut jamais varier.
+        make_catalog(count=6, start=1000)
+
+        rosters = set()
+        for _ in range(20):
+            game = create_game(self.host)
+            rosters.add(frozenset(game.roster_cards.values_list("pokemon_card_id", flat=True)))
+            game.delete()
+
+        self.assertGreater(len(rosters), 1)
 
     def test_creation_is_rolled_back_when_catalog_is_too_small(self):
         self.cards[-2].delete()
         self.cards[-1].delete()
 
-        with self.assertRaisesMessage(GuessWhoRosterError, "24 Pokémon actifs"):
+        with self.assertRaisesMessage(GuessWhoRosterError, "au moins 24 Pokémon"):
             create_game(self.host)
 
         self.assertFalse(GuessWhoGame.objects.exists())
@@ -85,9 +96,11 @@ class GuessWhoServiceTests(TestCase):
 
     def test_target_must_belong_to_frozen_roster(self):
         game = self.make_joined_game()
+        # Créée après coup : ne peut jamais figurer dans le plateau, déjà figé.
+        outsider_card = make_catalog(count=1, start=1000)[0]
 
         with self.assertRaisesMessage(GuessWhoRosterError, "ne fait pas partie"):
-            choose_target(game.id, self.host, self.cards[24].id, game.turn_revision)
+            choose_target(game.id, self.host, outsider_card.id, game.turn_revision)
 
     def test_secret_target_is_locked_after_the_first_choice(self):
         game = self.make_joined_game()
@@ -272,6 +285,6 @@ class GuessWhoServiceTests(TestCase):
                 "history",
             },
         )
-        self.assertEqual(state["roster"][0]["tcg_type"], "colorless")
+        self.assertEqual(state["roster"][0]["tcg_type"], "grass")
         self.assertEqual(state["history"][0]["answer"], True)
         self.assertEqual(state["history"][0]["responder"]["username"], self.guest.username)

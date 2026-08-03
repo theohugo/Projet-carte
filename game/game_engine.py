@@ -8,8 +8,9 @@ HTTP.
 """
 
 import random
+from datetime import timedelta
 
-from django.db.models import F
+from django.db.models import F, Max
 from django.utils import timezone
 
 from game.deck_builder import build_balanced_card_pool
@@ -21,6 +22,8 @@ DECK_COPIES_PER_CARD = 2
 NORMAL_CARD_POINTS = 10
 LEGENDARY_CARD_POINTS = 25
 MIN_PLAYERS = 2
+WAITING_ROOM_TIMEOUT = timedelta(minutes=15)
+TURN_INACTIVITY_TIMEOUT = timedelta(minutes=5)
 DRAW_PENALTIES = {
     PokemonCard.Action.DRAW_TWO: 2,
     PokemonCard.Action.DRAW_FOUR: 4,
@@ -28,12 +31,12 @@ DRAW_PENALTIES = {
 BOT_NAMES = ("IA Porygon", "IA Motisma", "IA Lucario", "IA Mimiqui", "IA Métalosse")
 LEGACY_FAMILY_TO_TCG_TYPE = {
     "ecosystem": "grass",
-    "shadows": "psychic",
-    "forge": "metal",
-    "arcane": "psychic",
+    "shadows": "water",
+    "forge": "fire",
+    "arcane": "water",
     "tides": "water",
     "skyfire": "fire",
-    "instinct": "fighting",
+    "instinct": "fire",
     "storm": "lightning",
 }
 
@@ -65,6 +68,35 @@ class InvalidMoveError(GameEngineError):
 def card_point_value(pokemon_card: PokemonCard) -> int:
     """Valeur en points d'une carte, utilisée pour le score de fin de partie."""
     return LEGENDARY_CARD_POINTS if pokemon_card.is_legendary else NORMAL_CARD_POINTS
+
+
+def close_stale_games() -> None:
+    """Ferme les parties abandonnées : appelé à chaque accès au lobby ou à une
+    partie, sans tâche planifiée dédiée, pour rester dans le périmètre de
+    cette plateforme (pas de worker Celery/cron).
+
+    Deux critères indépendants : un salon d'attente jamais démarré au bout de
+    ``WAITING_ROOM_TIMEOUT``, ou une partie en cours sans le moindre coup
+    (carte jouée, pioche...) depuis ``TURN_INACTIVITY_TIMEOUT``.
+    """
+    now = timezone.now()
+
+    Game.objects.filter(
+        status=Game.Status.EN_ATTENTE,
+        created_at__lt=now - WAITING_ROOM_TIMEOUT,
+    ).update(status=Game.Status.TERMINEE, finished_at=now)
+
+    stale_active_games = (
+        Game.objects.filter(status=Game.Status.EN_COURS)
+        .annotate(last_activity_at=Max("move_logs__created_at"))
+        .filter(last_activity_at__lt=now - TURN_INACTIVITY_TIMEOUT)
+    )
+
+    for game in stale_active_games:
+        game.status = Game.Status.TERMINEE
+        game.finished_at = now
+        game.save(update_fields=["status", "finished_at"])
+        MoveLog.objects.create(game=game, move_type=MoveLog.MoveType.ABANDON)
 
 
 class GameEngine:

@@ -56,18 +56,18 @@ class BalancedDeckTests(TestCase):
         balanced_counts = count_cards_per_tcg_type(balanced_pool)
         copies_by_card = Counter(card.pk for card in balanced_pool)
 
-        self.assertEqual(len(cards), 54)
-        self.assertEqual(len(catalogue_counts), 10)
+        self.assertEqual(len(cards), 22)
+        self.assertEqual(len(catalogue_counts), 4)
         self.assertEqual(
             (min(catalogue_counts.values()), max(catalogue_counts.values())),
             (5, 6),
         )
-        self.assertEqual(len(balanced_counts), 10)
+        self.assertEqual(len(balanced_counts), 4)
         self.assertEqual(
             (min(balanced_counts.values()), max(balanced_counts.values())),
             (10, 12),
         )
-        self.assertEqual(len(balanced_pool), 108)
+        self.assertEqual(len(balanced_pool), 44)
         for card in cards:
             self.assertEqual(copies_by_card[card.pk], 2)
 

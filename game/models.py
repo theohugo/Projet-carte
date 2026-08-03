@@ -45,7 +45,7 @@ class PokemonCard(models.Model):
     sprite_url = models.URLField()
     is_legendary = models.BooleanField(default=False)
     action = models.CharField(max_length=10, choices=Action.choices, default=Action.NORMAL)
-    tcg_type = models.CharField(max_length=12, choices=TCG_TYPE_CHOICES, default="colorless")
+    tcg_type = models.CharField(max_length=12, choices=TCG_TYPE_CHOICES, default="grass")
     in_current_deck = models.BooleanField(
         default=True,
         help_text="Inclure cette espèce dans les nouvelles parties.",
@@ -182,6 +182,7 @@ class MoveLog(models.Model):
         PIOCHER = "PIOCHER", "Pioche"
         MELANGE_DEFAUSSE = "MELANGE_DEFAUSSE", "Mélange de la défausse"
         FIN_PARTIE = "FIN_PARTIE", "Fin de partie"
+        ABANDON = "ABANDON", "Partie fermée pour inactivité"
 
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="move_logs")
     player = models.ForeignKey(

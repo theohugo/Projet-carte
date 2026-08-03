@@ -213,30 +213,6 @@
       "tcg_type": "grass"
     },
     {
-      "pokedex_id": 16,
-      "slug": "pidgey",
-      "name_fr": "Roucool",
-      "name_en": "Pidgey",
-      "primary_type": "normal",
-      "secondary_type": "flying",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/16.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "colorless"
-    },
-    {
-      "pokedex_id": 19,
-      "slug": "rattata",
-      "name_fr": "Rattata",
-      "name_en": "Rattata",
-      "primary_type": "normal",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/19.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "colorless"
-    },
-    {
       "pokedex_id": 25,
       "slug": "pikachu",
       "name_fr": "Pikachu",
@@ -247,18 +223,6 @@
       "is_legendary": false,
       "action": "DRAW_TWO",
       "tcg_type": "lightning"
-    },
-    {
-      "pokedex_id": 35,
-      "slug": "clefairy",
-      "name_fr": "Mélofée",
-      "name_en": "Clefairy",
-      "primary_type": "fairy",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/35.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "psychic"
     },
     {
       "pokedex_id": 46,
@@ -285,18 +249,6 @@
       "tcg_type": "water"
     },
     {
-      "pokedex_id": 56,
-      "slug": "mankey",
-      "name_fr": "Férosinge",
-      "name_en": "Mankey",
-      "primary_type": "fighting",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/56.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "fighting"
-    },
-    {
       "pokedex_id": 58,
       "slug": "growlithe",
       "name_fr": "Caninos",
@@ -309,42 +261,6 @@
       "tcg_type": "fire"
     },
     {
-      "pokedex_id": 63,
-      "slug": "abra",
-      "name_fr": "Abra",
-      "name_en": "Abra",
-      "primary_type": "psychic",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/63.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "psychic"
-    },
-    {
-      "pokedex_id": 66,
-      "slug": "machop",
-      "name_fr": "Machoc",
-      "name_en": "Machop",
-      "primary_type": "fighting",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/66.png",
-      "is_legendary": false,
-      "action": "DRAW_TWO",
-      "tcg_type": "fighting"
-    },
-    {
-      "pokedex_id": 74,
-      "slug": "geodude",
-      "name_fr": "Racaillou",
-      "name_en": "Geodude",
-      "primary_type": "rock",
-      "secondary_type": "ground",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/74.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "fighting"
-    },
-    {
       "pokedex_id": 81,
       "slug": "magnemite",
       "name_fr": "Magnéti",
@@ -355,78 +271,6 @@
       "is_legendary": false,
       "action": "NORMAL",
       "tcg_type": "lightning"
-    },
-    {
-      "pokedex_id": 89,
-      "slug": "muk",
-      "name_fr": "Grotadmorv",
-      "name_en": "Muk",
-      "primary_type": "poison",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/89.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "darkness"
-    },
-    {
-      "pokedex_id": 92,
-      "slug": "gastly",
-      "name_fr": "Fantominus",
-      "name_en": "Gastly",
-      "primary_type": "ghost",
-      "secondary_type": "poison",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/92.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "darkness"
-    },
-    {
-      "pokedex_id": 94,
-      "slug": "gengar",
-      "name_fr": "Ectoplasma",
-      "name_en": "Gengar",
-      "primary_type": "ghost",
-      "secondary_type": "poison",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png",
-      "is_legendary": false,
-      "action": "DRAW_TWO",
-      "tcg_type": "psychic"
-    },
-    {
-      "pokedex_id": 95,
-      "slug": "onix",
-      "name_fr": "Onix",
-      "name_en": "Onix",
-      "primary_type": "rock",
-      "secondary_type": "ground",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/95.png",
-      "is_legendary": false,
-      "action": "SHIELD",
-      "tcg_type": "fighting"
-    },
-    {
-      "pokedex_id": 106,
-      "slug": "hitmonlee",
-      "name_fr": "Kicklee",
-      "name_en": "Hitmonlee",
-      "primary_type": "fighting",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/106.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "fighting"
-    },
-    {
-      "pokedex_id": 122,
-      "slug": "mr-mime",
-      "name_fr": "M. Mime",
-      "name_en": "Mr. Mime",
-      "primary_type": "psychic",
-      "secondary_type": "fairy",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/122.png",
-      "is_legendary": false,
-      "action": "REVERSE",
-      "tcg_type": "psychic"
     },
     {
       "pokedex_id": 123,
@@ -453,30 +297,6 @@
       "tcg_type": "water"
     },
     {
-      "pokedex_id": 132,
-      "slug": "ditto",
-      "name_fr": "Métamorph",
-      "name_en": "Ditto",
-      "primary_type": "normal",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/132.png",
-      "is_legendary": false,
-      "action": "REVERSE",
-      "tcg_type": "colorless"
-    },
-    {
-      "pokedex_id": 133,
-      "slug": "eevee",
-      "name_fr": "Évoli",
-      "name_en": "Eevee",
-      "primary_type": "normal",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "colorless"
-    },
-    {
       "pokedex_id": 135,
       "slug": "jolteon",
       "name_fr": "Voltali",
@@ -487,30 +307,6 @@
       "is_legendary": false,
       "action": "NORMAL",
       "tcg_type": "lightning"
-    },
-    {
-      "pokedex_id": 137,
-      "slug": "porygon",
-      "name_fr": "Porygon",
-      "name_en": "Porygon",
-      "primary_type": "normal",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/137.png",
-      "is_legendary": false,
-      "action": "REVERSE",
-      "tcg_type": "colorless"
-    },
-    {
-      "pokedex_id": 143,
-      "slug": "snorlax",
-      "name_fr": "Ronflex",
-      "name_en": "Snorlax",
-      "primary_type": "normal",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png",
-      "is_legendary": false,
-      "action": "SHIELD",
-      "tcg_type": "colorless"
     },
     {
       "pokedex_id": 144,
@@ -549,66 +345,6 @@
       "tcg_type": "fire"
     },
     {
-      "pokedex_id": 147,
-      "slug": "dratini",
-      "name_fr": "Minidraco",
-      "name_en": "Dratini",
-      "primary_type": "dragon",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/147.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "dragon"
-    },
-    {
-      "pokedex_id": 148,
-      "slug": "dragonair",
-      "name_fr": "Draco",
-      "name_en": "Dragonair",
-      "primary_type": "dragon",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/148.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "dragon"
-    },
-    {
-      "pokedex_id": 149,
-      "slug": "dragonite",
-      "name_fr": "Dracolosse",
-      "name_en": "Dragonite",
-      "primary_type": "dragon",
-      "secondary_type": "flying",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png",
-      "is_legendary": false,
-      "action": "DRAW_TWO",
-      "tcg_type": "dragon"
-    },
-    {
-      "pokedex_id": 150,
-      "slug": "mewtwo",
-      "name_fr": "Mewtwo",
-      "name_en": "Mewtwo",
-      "primary_type": "psychic",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png",
-      "is_legendary": true,
-      "action": "DRAW_FOUR",
-      "tcg_type": "psychic"
-    },
-    {
-      "pokedex_id": 151,
-      "slug": "mew",
-      "name_fr": "Mew",
-      "name_en": "Mew",
-      "primary_type": "psychic",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png",
-      "is_legendary": true,
-      "action": "DRAW_FOUR",
-      "tcg_type": "psychic"
-    },
-    {
       "pokedex_id": 181,
       "slug": "ampharos",
       "name_fr": "Pharamp",
@@ -619,126 +355,6 @@
       "is_legendary": false,
       "action": "NORMAL",
       "tcg_type": "lightning"
-    },
-    {
-      "pokedex_id": 197,
-      "slug": "umbreon",
-      "name_fr": "Noctali",
-      "name_en": "Umbreon",
-      "primary_type": "dark",
-      "secondary_type": null,
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/197.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "darkness"
-    },
-    {
-      "pokedex_id": 205,
-      "slug": "forretress",
-      "name_fr": "Foretress",
-      "name_en": "Forretress",
-      "primary_type": "bug",
-      "secondary_type": "steel",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/205.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "metal"
-    },
-    {
-      "pokedex_id": 208,
-      "slug": "steelix",
-      "name_fr": "Steelix",
-      "name_en": "Steelix",
-      "primary_type": "steel",
-      "secondary_type": "ground",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/208.png",
-      "is_legendary": false,
-      "action": "SHIELD",
-      "tcg_type": "metal"
-    },
-    {
-      "pokedex_id": 212,
-      "slug": "scizor",
-      "name_fr": "Cizayox",
-      "name_en": "Scizor",
-      "primary_type": "bug",
-      "secondary_type": "steel",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/212.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "metal"
-    },
-    {
-      "pokedex_id": 215,
-      "slug": "sneasel",
-      "name_fr": "Farfuret",
-      "name_en": "Sneasel",
-      "primary_type": "dark",
-      "secondary_type": "ice",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/215.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "darkness"
-    },
-    {
-      "pokedex_id": 248,
-      "slug": "tyranitar",
-      "name_fr": "Tyranocif",
-      "name_en": "Tyranitar",
-      "primary_type": "rock",
-      "secondary_type": "dark",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/248.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "darkness"
-    },
-    {
-      "pokedex_id": 303,
-      "slug": "mawile",
-      "name_fr": "Mysdibule",
-      "name_en": "Mawile",
-      "primary_type": "steel",
-      "secondary_type": "fairy",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/303.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "metal"
-    },
-    {
-      "pokedex_id": 304,
-      "slug": "aron",
-      "name_fr": "Galekid",
-      "name_en": "Aron",
-      "primary_type": "steel",
-      "secondary_type": "rock",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/304.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "metal"
-    },
-    {
-      "pokedex_id": 445,
-      "slug": "garchomp",
-      "name_fr": "Carchacrok",
-      "name_en": "Garchomp",
-      "primary_type": "dragon",
-      "secondary_type": "ground",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/445.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "dragon"
-    },
-    {
-      "pokedex_id": 887,
-      "slug": "dragapult",
-      "name_fr": "Lanssorien",
-      "name_en": "Dragapult",
-      "primary_type": "dragon",
-      "secondary_type": "ghost",
-      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/887.png",
-      "is_legendary": false,
-      "action": "NORMAL",
-      "tcg_type": "dragon"
     }
   ]
 }

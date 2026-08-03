@@ -37,38 +37,26 @@ EXPECTED_SOURCE_TYPE_SLUGS = {
 }
 
 EXPECTED_TCG_TYPE_SLUGS = {
-    "colorless",
-    "darkness",
-    "dragon",
-    "fighting",
     "fire",
     "grass",
     "lightning",
-    "metal",
-    "psychic",
     "water",
 }
 
 EXPECTED_CATALOGUE_COUNTS = {
-    "colorless": 6,
-    "darkness": 5,
-    "dragon": 5,
-    "fighting": 5,
     "fire": 5,
     "grass": 6,
     "lightning": 5,
-    "metal": 5,
-    "psychic": 6,
     "water": 6,
 }
 
 
 class TcgTypeDefinitionTests(SimpleTestCase):
-    def test_exactly_ten_tcg_types_have_unique_slugs(self):
+    def test_exactly_four_tcg_types_have_unique_slugs(self):
         slugs = [tcg_type.slug for tcg_type in TCG_TYPES]
 
-        self.assertEqual(len(TCG_TYPES), 10)
-        self.assertEqual(len(TCG_TYPE_BY_SLUG), 10)
+        self.assertEqual(len(TCG_TYPES), 4)
+        self.assertEqual(len(TCG_TYPE_BY_SLUG), 4)
         self.assertEqual(len(slugs), len(set(slugs)))
         self.assertEqual(set(slugs), EXPECTED_TCG_TYPE_SLUGS)
 
@@ -99,7 +87,7 @@ class TcgTypeFixtureTests(TestCase):
         two_copy_pool = [card for card in self.cards for _ in range(2)]
         deck_counts = count_cards_per_tcg_type(two_copy_pool)
 
-        self.assertEqual(len(self.cards), 54)
+        self.assertEqual(len(self.cards), 22)
         self.assertEqual(catalogue_counts, Counter(EXPECTED_CATALOGUE_COUNTS))
         self.assertEqual(
             (min(catalogue_counts.values()), max(catalogue_counts.values())),
@@ -122,7 +110,7 @@ class TcgTypeFixtureTests(TestCase):
             username="tcg-tester",
             password="pass12345",
         )
-        game = Game.objects.create(created_by=user, active_tcg_type="dragon")
+        game = Game.objects.create(created_by=user, active_tcg_type="water")
         engine = GameEngine(game)
         player = engine.add_player(user)
         expected_by_instance = {}
@@ -152,9 +140,9 @@ class TcgTypeFixtureTests(TestCase):
         serialized_player = next(entry for entry in state["players"] if entry["id"] == player.pk)
         serialized_cards = serialized_player["hand"]
 
-        self.assertEqual(len(serialized_cards), 54)
-        self.assertEqual(state["active_tcg_type"]["slug"], "dragon")
-        self.assertEqual(len(state["available_tcg_types"]), 10)
+        self.assertEqual(len(serialized_cards), 22)
+        self.assertEqual(state["active_tcg_type"]["slug"], "water")
+        self.assertEqual(len(state["available_tcg_types"]), 4)
         self.assertEqual(
             {entry["slug"] for entry in state["available_tcg_types"]},
             EXPECTED_TCG_TYPE_SLUGS,

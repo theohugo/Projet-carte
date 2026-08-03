@@ -260,7 +260,7 @@ class MoveValidationTests(GameEngineTestCase):
         self.assertEqual(self.game.active_tcg_type, "water")
         self.assertEqual(move.declared_tcg_type, "water")
 
-    def test_state_exposes_exactly_the_ten_tcg_choices_without_legacy_keys(self):
+    def test_state_exposes_exactly_the_four_tcg_choices_without_legacy_keys(self):
         legendary_instance = GameCard.objects.filter(
             game=self.game, pokemon_card=self.cards["zapdos"]
         ).first()
@@ -276,7 +276,7 @@ class MoveValidationTests(GameEngineTestCase):
             [entry["slug"] for entry in state["available_tcg_types"]],
             [tcg_type.slug for tcg_type in TCG_TYPES],
         )
-        self.assertEqual(len(state["available_tcg_types"]), 10)
+        self.assertEqual(len(state["available_tcg_types"]), 4)
         self.assertIsNone(state["active_tcg_type"])
         self.assertEqual(card_state["tcg_type"], "lightning")
         self.assertEqual(card_state["tcg_type_label"], "Électrique")
