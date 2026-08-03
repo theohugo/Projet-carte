@@ -627,7 +627,7 @@
             } else {
                 submitAction(
                     board.dataset.playUrl,
-                    { game_card_id: card.dataset.playCard, declared_tcg_type: null },
+                    { game_card_id: Number(card.dataset.playCard), declared_tcg_type: null },
                     { kind: "play", source: card },
                 );
             }
@@ -646,7 +646,7 @@
             closeLegendaryChoices({ restoreFocus: false });
             submitAction(
                 board.dataset.playUrl,
-                { game_card_id: gameCardId, declared_tcg_type: tcgType.dataset.declaredTcgType },
+                { game_card_id: Number(gameCardId), declared_tcg_type: tcgType.dataset.declaredTcgType },
                 { kind: "play", source },
             );
             return;
@@ -728,7 +728,7 @@
             const normalizedDistance = distance / denominator;
             card.style.setProperty("--fan-angle", `${(normalizedDistance * maximumAngle).toFixed(2)}deg`);
             card.style.setProperty("--fan-y", `${Math.min(20, Math.abs(distance) * 2.8 * widthPressure).toFixed(1)}px`);
-            card.style.zIndex = String(100 - Math.round(Math.abs(distance)));
+            card.style.zIndex = String(100 + index);
         });
     }
 
@@ -784,7 +784,7 @@
         });
     }
 
-    function scheduleBotTurn(delay = 850) {
+    function scheduleBotTurn(delay = 1500) {
         window.clearTimeout(botTurnTimer);
         if (reloadRequested || initialGameState.status !== "EN_COURS") return;
         const currentPlayer = initialGameState.players.find((player) => player.is_current_turn);
