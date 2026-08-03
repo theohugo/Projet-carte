@@ -24,6 +24,12 @@ SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-key-change-me")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
+# Derrière le reverse proxy, Django ne reçoit que du HTTP en clair : sans ces
+# deux réglages il se croit en http:// et rejette tout POST venu d'une origine
+# https:// (connexion, inscription, coups joués) avec une erreur CSRF.
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 # Application definition
 

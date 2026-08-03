@@ -1,9 +1,9 @@
 services:
   web:
     build: .
+    container_name: poketable
+    restart: unless-stopped
     env_file: .env
-    ports:
-      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -12,9 +12,23 @@ services:
     volumes:
       - static_data:/app/staticfiles
       - media_data:/app/media
+    # `default` reste explicite : dès qu'un service déclare ses réseaux, Compose
+    # ne l'ajoute plus automatiquement, et web perdrait l'accès à db et cache.
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.poketable.rule=Host(`poketable.theoxeu.com`)"
+      - "traefik.http.routers.poketable.entrypoints=websecure"
+      - "traefik.http.routers.poketable.tls=true"
+      - "traefik.http.routers.poketable.tls.certresolver=le"
+      - "traefik.http.services.poketable.loadbalancer.server.port=8000"
 
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     env_file: .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -28,6 +42,7 @@ services:
 
   cache:
     image: redis:7-alpine
+    restart: unless-stopped
     volumes:
       - redis_data:/data
     healthcheck:
@@ -41,3 +56,7 @@ volumes:
   static_data:
   media_data:
   redis_data:
+
+networks:
+  proxy:
+    external: true

@@ -1,7 +1,14 @@
 # Fusionné automatiquement par `docker compose` en plus de docker-compose.yml :
 # confort de développement (rechargement à chaud, pas de build de statiques figée).
+# La production passe par Traefik et ne charge jamais ce fichier : le pipeline de
+# déploiement appelle Compose avec un `-f` explicite, ce qui désactive la fusion
+# automatique de l'override.
 services:
   web:
+    # Publier le port n'a de sens qu'en local ; en production Traefik joint le
+    # conteneur par le réseau `proxy`.
+    ports:
+      - "8000:8000"
     volumes:
       - .:/app
       - /app/.venv
