@@ -25,9 +25,7 @@ class PokemonCard(models.Model):
     slug = models.SlugField(unique=True)
     name_fr = models.CharField(max_length=50)
     name_en = models.CharField(max_length=50)
-    primary_type = models.ForeignKey(
-        PokemonType, on_delete=models.PROTECT, related_name="primary_cards"
-    )
+    primary_type = models.ForeignKey(PokemonType, on_delete=models.PROTECT, related_name="primary_cards")
     secondary_type = models.ForeignKey(
         PokemonType,
         on_delete=models.PROTECT,
@@ -59,7 +57,9 @@ class Game(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.EN_ATTENTE)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="created_games")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="created_games"
+    )
     max_players = models.PositiveSmallIntegerField(default=6)
     direction = models.SmallIntegerField(default=1)
     current_turn_number = models.PositiveSmallIntegerField(default=0)
@@ -86,7 +86,9 @@ class GamePlayer(models.Model):
     """Un joueur inscrit à une partie : son ordre de tour et son score."""
 
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="players")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="game_participations")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="game_participations"
+    )
     turn_order = models.PositiveSmallIntegerField()
     score = models.PositiveIntegerField(default=0)
     has_called_uno = models.BooleanField(default=False)
@@ -139,7 +141,9 @@ class MoveLog(models.Model):
         FIN_PARTIE = "FIN_PARTIE", "Fin de partie"
 
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="move_logs")
-    player = models.ForeignKey(GamePlayer, on_delete=models.SET_NULL, related_name="moves", null=True, blank=True)
+    player = models.ForeignKey(
+        GamePlayer, on_delete=models.SET_NULL, related_name="moves", null=True, blank=True
+    )
     move_type = models.CharField(max_length=20, choices=MoveType.choices)
     game_card = models.ForeignKey(GameCard, on_delete=models.SET_NULL, null=True, blank=True)
     declared_type = models.ForeignKey(PokemonType, on_delete=models.SET_NULL, null=True, blank=True)

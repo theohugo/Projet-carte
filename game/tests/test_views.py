@@ -99,7 +99,7 @@ class GameStateApiSecurityTests(TestCase):
         self.client.force_login(self.p1_user)
         response = self.client.get(reverse("api_game_state", args=[self.game.id]))
         data = response.json()
-        mine = [p for p in data["players"] if p["username"] == self.p1_user.username][0]
+        mine = next(p for p in data["players"] if p["username"] == self.p1_user.username)
         self.assertIn("hand", mine)
         self.assertEqual(len(mine["hand"]), 1)
 

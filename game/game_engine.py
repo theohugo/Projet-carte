@@ -8,6 +8,7 @@ HTTP.
 """
 
 import random
+
 from django.utils import timezone
 
 from game.models import Game, GameCard, GamePlayer, MoveLog, PokemonCard, Profile
@@ -142,9 +143,9 @@ class GameEngine:
     def reshuffle_discard_into_draw(self):
         """Remélange la défausse (sauf la carte du dessus) dans la pioche."""
         top_discard = self.get_top_discard()
-        to_reshuffle = GameCard.objects.filter(
-            game=self.game, location=GameCard.Location.DEFAUSSE
-        ).exclude(pk=top_discard.pk if top_discard else None)
+        to_reshuffle = GameCard.objects.filter(game=self.game, location=GameCard.Location.DEFAUSSE).exclude(
+            pk=top_discard.pk if top_discard else None
+        )
 
         ids = list(to_reshuffle.values_list("pk", flat=True))
         random.shuffle(ids)
@@ -188,7 +189,9 @@ class GameEngine:
             return True, None
 
         effective_type_ids = (
-            {self.game.active_type_id} if self.game.active_type_id else {t.id for t in top_discard.pokemon_card.types}
+            {self.game.active_type_id}
+            if self.game.active_type_id
+            else {t.id for t in top_discard.pokemon_card.types}
         )
         card_type_ids = {t.id for t in pokemon_card.types}
         if effective_type_ids & card_type_ids:
@@ -226,7 +229,9 @@ class GameEngine:
             declared_type=declared_type,
         )
 
-        if not GameCard.objects.filter(game=self.game, location=GameCard.Location.MAIN, owner=player).exists():
+        if not GameCard.objects.filter(
+            game=self.game, location=GameCard.Location.MAIN, owner=player
+        ).exists():
             self.end_game(winner=player)
         else:
             self.advance_turn()
@@ -260,7 +265,9 @@ class GameEngine:
         for other in self.game.players.exclude(pk=winner.pk):
             points = sum(
                 card_point_value(gc.pokemon_card)
-                for gc in GameCard.objects.filter(game=self.game, location=GameCard.Location.MAIN, owner=other)
+                for gc in GameCard.objects.filter(
+                    game=self.game, location=GameCard.Location.MAIN, owner=other
+                )
             )
             other.score += points
             other.save(update_fields=["score"])

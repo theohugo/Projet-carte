@@ -24,24 +24,44 @@ def make_types():
 def make_cards(types):
     """4 cartes normales (une par type simple) + 1 légendaire double-type."""
     charmander = PokemonCard.objects.create(
-        pokedex_id=4, slug="charmander", name_fr="Salamèche", name_en="Charmander",
-        primary_type=types["fire"], sprite_url="https://example.com/4.png",
+        pokedex_id=4,
+        slug="charmander",
+        name_fr="Salamèche",
+        name_en="Charmander",
+        primary_type=types["fire"],
+        sprite_url="https://example.com/4.png",
     )
     squirtle = PokemonCard.objects.create(
-        pokedex_id=7, slug="squirtle", name_fr="Carapuce", name_en="Squirtle",
-        primary_type=types["water"], sprite_url="https://example.com/7.png",
+        pokedex_id=7,
+        slug="squirtle",
+        name_fr="Carapuce",
+        name_en="Squirtle",
+        primary_type=types["water"],
+        sprite_url="https://example.com/7.png",
     )
     bulbasaur = PokemonCard.objects.create(
-        pokedex_id=1, slug="bulbasaur", name_fr="Bulbizarre", name_en="Bulbasaur",
-        primary_type=types["grass"], sprite_url="https://example.com/1.png",
+        pokedex_id=1,
+        slug="bulbasaur",
+        name_fr="Bulbizarre",
+        name_en="Bulbasaur",
+        primary_type=types["grass"],
+        sprite_url="https://example.com/1.png",
     )
     charmander_evo = PokemonCard.objects.create(
-        pokedex_id=5, slug="charmeleon", name_fr="Reptincel", name_en="Charmeleon",
-        primary_type=types["fire"], sprite_url="https://example.com/5.png",
+        pokedex_id=5,
+        slug="charmeleon",
+        name_fr="Reptincel",
+        name_en="Charmeleon",
+        primary_type=types["fire"],
+        sprite_url="https://example.com/5.png",
     )
     zapdos = PokemonCard.objects.create(
-        pokedex_id=145, slug="zapdos", name_fr="Électhor", name_en="Zapdos",
-        primary_type=types["flying"], sprite_url="https://example.com/145.png",
+        pokedex_id=145,
+        slug="zapdos",
+        name_fr="Électhor",
+        name_en="Zapdos",
+        primary_type=types["flying"],
+        sprite_url="https://example.com/145.png",
         is_legendary=True,
     )
     return {

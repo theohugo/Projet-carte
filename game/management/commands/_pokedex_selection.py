@@ -59,7 +59,22 @@ EXTRA_IDS = [
 CURATED_POKEDEX_IDS = sorted(set(STARTER_IDS + LEGENDARY_IDS + EXTRA_IDS))
 
 ALL_TYPE_SLUGS = [
-    "normal", "fire", "water", "electric", "grass", "ice",
-    "fighting", "poison", "ground", "flying", "psychic", "bug",
-    "rock", "ghost", "dragon", "dark", "steel", "fairy",
+    "normal",
+    "fire",
+    "water",
+    "electric",
+    "grass",
+    "ice",
+    "fighting",
+    "poison",
+    "ground",
+    "flying",
+    "psychic",
+    "bug",
+    "rock",
+    "ghost",
+    "dragon",
+    "dark",
+    "steel",
+    "fairy",
 ]
