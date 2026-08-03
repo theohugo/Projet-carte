@@ -1,0 +1,79 @@
+/* Organismes — assemblages complets de molécules */
+
+.site-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-5);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.site-title {
+    font-weight: bold;
+    font-size: var(--font-size-lg);
+    text-decoration: none;
+    color: var(--color-text);
+    margin-right: auto;
+}
+
+.site-user {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.page-content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: var(--space-5);
+}
+
+/* Le tapis de jeu : plateau réactif regroupant adversaires, pioche/défausse et main du joueur */
+.game-table {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    background: radial-gradient(circle at top, #2f7a4f, #1d5c39);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    color: white;
+}
+
+.game-table .opponents-row {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.game-table .center-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-6);
+}
+
+.game-table .my-hand-row {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+}
+
+/* Tableau de scores */
+.score-board {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-4);
+}
+
+.score-board table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.score-board th, .score-board td {
+    text-align: left;
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+}

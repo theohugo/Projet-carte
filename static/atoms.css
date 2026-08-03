@@ -1,0 +1,180 @@
+/* Atomes — plus petits blocs UI réutilisables */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+}
+
+a {
+    color: var(--color-focus-ring);
+}
+
+h1, h2, h3 {
+    line-height: 1.2;
+}
+
+/* Bouton */
+.btn {
+    display: inline-block;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+}
+
+.btn-primary {
+    background: var(--color-focus-ring);
+    color: white;
+}
+
+.btn-secondary {
+    background: var(--color-turn-active);
+    color: white;
+}
+
+.btn-ghost {
+    background: transparent;
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Badge (statut, type déclaré...) */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-2);
+    border-radius: 999px;
+    font-size: var(--font-size-sm);
+    color: white;
+}
+
+/* Une carte individuelle (atome central du jeu) */
+.card-unit {
+    width: 110px;
+    height: 154px;
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    border: 3px solid var(--color-border);
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2);
+    cursor: pointer;
+    transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.card-unit:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-card-hover);
+}
+
+.card-unit.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.card-unit.is-disabled:hover {
+    transform: none;
+    box-shadow: var(--shadow-card);
+}
+
+.card-unit img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+}
+
+.card-unit-name {
+    font-size: var(--font-size-sm);
+    text-align: center;
+}
+
+.card-unit-back {
+    background: linear-gradient(135deg, var(--color-focus-ring), var(--color-turn-active));
+    border-color: transparent;
+}
+
+/* Types individuels : bordure + badge colorés par --color-type-* */
+[data-type="normal"] { border-color: var(--color-type-normal); }
+[data-type="fire"] { border-color: var(--color-type-fire); }
+[data-type="water"] { border-color: var(--color-type-water); }
+[data-type="electric"] { border-color: var(--color-type-electric); }
+[data-type="grass"] { border-color: var(--color-type-grass); }
+[data-type="ice"] { border-color: var(--color-type-ice); }
+[data-type="fighting"] { border-color: var(--color-type-fighting); }
+[data-type="poison"] { border-color: var(--color-type-poison); }
+[data-type="ground"] { border-color: var(--color-type-ground); }
+[data-type="flying"] { border-color: var(--color-type-flying); }
+[data-type="psychic"] { border-color: var(--color-type-psychic); }
+[data-type="bug"] { border-color: var(--color-type-bug); }
+[data-type="rock"] { border-color: var(--color-type-rock); }
+[data-type="ghost"] { border-color: var(--color-type-ghost); }
+[data-type="dragon"] { border-color: var(--color-type-dragon); }
+[data-type="dark"] { border-color: var(--color-type-dark); }
+[data-type="steel"] { border-color: var(--color-type-steel); }
+[data-type="fairy"] { border-color: var(--color-type-fairy); }
+
+.badge[data-type="normal"] { background: var(--color-type-normal); }
+.badge[data-type="fire"] { background: var(--color-type-fire); }
+.badge[data-type="water"] { background: var(--color-type-water); }
+.badge[data-type="electric"] { background: var(--color-type-electric); color: #3a3000; }
+.badge[data-type="grass"] { background: var(--color-type-grass); }
+.badge[data-type="ice"] { background: var(--color-type-ice); color: #093c3c; }
+.badge[data-type="fighting"] { background: var(--color-type-fighting); }
+.badge[data-type="poison"] { background: var(--color-type-poison); }
+.badge[data-type="ground"] { background: var(--color-type-ground); color: #4a3900; }
+.badge[data-type="flying"] { background: var(--color-type-flying); }
+.badge[data-type="psychic"] { background: var(--color-type-psychic); }
+.badge[data-type="bug"] { background: var(--color-type-bug); }
+.badge[data-type="rock"] { background: var(--color-type-rock); }
+.badge[data-type="ghost"] { background: var(--color-type-ghost); }
+.badge[data-type="dragon"] { background: var(--color-type-dragon); }
+.badge[data-type="dark"] { background: var(--color-type-dark); }
+.badge[data-type="steel"] { background: var(--color-type-steel); color: #24263a; }
+.badge[data-type="fairy"] { background: var(--color-type-fairy); color: #4a1030; }
+
+/* Formulaires */
+form p {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin: 0 0 var(--space-3) 0;
+}
+
+input, select {
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+}
+
+.inline-form {
+    display: inline-block;
+    margin: 0;
+}
