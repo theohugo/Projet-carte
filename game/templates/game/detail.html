@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Partie {{ game.id }} — Poké-Uno{% endblock %}
+{% block content %}
+<h1>Partie</h1>
+
+{% if game.status == "EN_ATTENTE" %}
+    <p>En attente de joueurs ({{ player_count }}/{{ game.max_players }}).</p>
+    {% if is_creator %}
+    <form method="post" action="{% url 'start_game' game_id=game.id %}" class="inline-form">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Démarrer la partie</button>
+    </form>
+    {% endif %}
+{% endif %}
+
+<div
+    id="game-app"
+    class="game-table"
+    data-game-id="{{ game.id }}"
+    data-state-url="{% url 'api_game_state' game_id=game.id %}"
+    data-play-url="{% url 'api_play_card' game_id=game.id %}"
+    data-draw-url="{% url 'api_draw_card' game_id=game.id %}"
+>
+    <p v-if="!loaded">Chargement de la partie…</p>
+</div>
+
+<script src="{% static 'vendor/vue.global.prod.js' %}"></script>
+<script src="{% static 'game/js/game-board.js' %}"></script>
+{% endblock %}

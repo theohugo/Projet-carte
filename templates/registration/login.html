@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Connexion — Poké-Uno{% endblock %}
+{% block content %}
+<div class="auth-card">
+    <h1>Connexion</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Se connecter</button>
+    </form>
+    <p><a href="{% url 'signup' %}">Pas encore de compte ? Créer un compte</a></p>
+</div>
+{% endblock %}

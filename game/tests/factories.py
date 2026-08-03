@@ -1,10 +1,16 @@
 """Petits ateliers de création d'objets de test (pas de fixture lourde)."""
 
+import itertools
+
 from django.contrib.auth import get_user_model
 
 from game.models import Game, PokemonCard, PokemonType
 
 User = get_user_model()
+
+# Compteur global : garantit des usernames uniques même si make_users() est
+# appelée plusieurs fois dans un même test (ex. pour ajouter un joueur de plus).
+_user_counter = itertools.count()
 
 
 def make_types():
@@ -48,7 +54,10 @@ def make_cards(types):
 
 
 def make_users(n=3):
-    return [User.objects.create_user(username=f"joueur{i}", password="pass12345") for i in range(n)]
+    return [
+        User.objects.create_user(username=f"joueur{next(_user_counter)}", password="pass12345")
+        for _ in range(n)
+    ]
 
 
 def make_game(creator):

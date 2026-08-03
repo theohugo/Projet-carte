@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Poké-Uno{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'atoms.css' %}">
+    <link rel="stylesheet" href="{% static 'molecules.css' %}">
+    <link rel="stylesheet" href="{% static 'organisms.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <a class="site-title" href="{% url 'lobby' %}">🃏 Poké-Uno</a>
+        {% if user.is_authenticated %}
+            <span class="site-user">Connecté·e en tant que {{ user.username }}</span>
+            <form action="{% url 'logout' %}" method="post" class="inline-form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost">Se déconnecter</button>
+            </form>
+        {% else %}
+            <a class="btn btn-ghost" href="{% url 'login' %}">Se connecter</a>
+            <a class="btn btn-primary" href="{% url 'signup' %}">Créer un compte</a>
+        {% endif %}
+    </header>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li class="message message-{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <main class="page-content">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

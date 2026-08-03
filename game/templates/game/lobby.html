@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Lobby — Poké-Uno{% endblock %}
+{% block content %}
+<h1>Lobby</h1>
+
+<form method="post" class="inline-form">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Créer une nouvelle partie</button>
+</form>
+
+<h2>Parties en attente de joueurs</h2>
+{% if open_games %}
+<ul class="game-list">
+    {% for g in open_games %}
+    <li class="game-list-item">
+        Partie de {{ g.created_by.username }} — {{ g.players.count }}/{{ g.max_players }} joueurs
+        <form method="post" action="{% url 'join_game' game_id=g.id %}" class="inline-form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary">Rejoindre</button>
+        </form>
+        <a class="btn btn-ghost" href="{% url 'game_detail' game_id=g.id %}">Voir</a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>Aucune partie en attente. Crée-en une !</p>
+{% endif %}
+
+<h2>Mes parties en cours / terminées</h2>
+{% if my_games %}
+<ul class="game-list">
+    {% for g in my_games %}
+    <li class="game-list-item">
+        Partie {{ g.id }} — {{ g.get_status_display }}
+        <a class="btn btn-ghost" href="{% url 'game_detail' game_id=g.id %}">Voir</a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>Aucune partie jouée pour le moment.</p>
+{% endif %}
+{% endblock %}
