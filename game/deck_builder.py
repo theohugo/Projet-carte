@@ -1,4 +1,4 @@
-"""Construction déterministe d'une pioche équilibrée par types Pokémon.
+"""Construction déterministe d'une pioche équilibrée par types du JCC Pokémon.
 
 Le catalogue actif est équilibré en amont. La pioche standard conserve deux
 exemplaires de chaque espèce ; le repli glouton couvre les tailles personnalisées.
@@ -10,7 +10,6 @@ from collections.abc import Iterable, Sequence
 from functools import partial
 
 from game.models import PokemonCard
-from game.type_families import family_slugs_for_card
 
 ACTION_CARD_COPIES = 2
 BASE_NORMAL_CARD_COPIES = 1
@@ -34,11 +33,11 @@ def count_cards_per_type(cards: Iterable[PokemonCard]) -> Counter[str]:
     return counts
 
 
-def count_cards_per_family(cards: Iterable[PokemonCard]) -> Counter[str]:
-    """Compte une carte une fois dans chacune de ses familles de jeu."""
+def count_cards_per_tcg_type(cards: Iterable[PokemonCard]) -> Counter[str]:
+    """Compte les cartes selon leur unique type imprimé dans notre JCC."""
     counts: Counter[str] = Counter()
     for card in cards:
-        counts.update(family_slugs_for_card(card))
+        counts.update([card.tcg_type])
     return counts
 
 
@@ -60,12 +59,12 @@ def _candidate_score(
     copy_counts: dict[int, int],
 ) -> tuple[int, int, int, int, int]:
     projected_counts = type_counts.copy()
-    card_types = card_type_slugs(card)
-    projected_counts.update(card_types)
+    card_tcg_type = card.tcg_type
+    projected_counts.update([card_tcg_type])
     spread, variance = _imbalance_score(projected_counts, all_types)
-    rare_types_covered = len(rarest_types.intersection(card_types))
+    covers_rarest_type = card_tcg_type in rarest_types
     return (
-        -rare_types_covered if prioritize_rarest else 0,
+        -int(covers_rarest_type) if prioritize_rarest else 0,
         spread,
         variance,
         copy_counts[card.pk],
@@ -102,9 +101,9 @@ def allocate_balanced_copies(
         for card in ordered_cards
     }
 
-    # Le catalogue de production est équilibré en amont (4 à 5 Pokémon par
-    # type). Deux exemplaires par espèce préservent exactement cette répartition
-    # et donnent 8 à 10 cartes de chacun des 18 types dans la pioche standard.
+    # Le catalogue de production est équilibré en amont (5 à 6 Pokémon par
+    # type JCC). Deux exemplaires par espèce donnent 10 à 12 cartes de chacun
+    # des dix types officiels dans la pioche standard.
     uniform_size = len(ordered_cards) * ACTION_CARD_COPIES
     if target_size == uniform_size and max_normal_copies >= ACTION_CARD_COPIES:
         return {card.pk: ACTION_CARD_COPIES for card in ordered_cards}
@@ -123,7 +122,7 @@ def allocate_balanced_copies(
     type_counts: Counter[str] = Counter()
     for card in ordered_cards:
         for _ in range(copy_counts[card.pk]):
-            type_counts.update(card_type_slugs(card))
+            type_counts.update([card.tcg_type])
     all_types = sorted(type_counts)
 
     while sum(copy_counts.values()) < target_size:
@@ -135,9 +134,7 @@ def allocate_balanced_copies(
 
         rarest_count = min(type_counts.values())
         rarest_types = {type_slug for type_slug, count in type_counts.items() if count == rarest_count}
-        rare_candidates = [
-            card for card in eligible_cards if rarest_types.intersection(card_type_slugs(card))
-        ]
+        rare_candidates = [card for card in eligible_cards if card.tcg_type in rarest_types]
         candidates = rare_candidates or eligible_cards
 
         selected_card = min(
@@ -152,7 +149,7 @@ def allocate_balanced_copies(
             ),
         )
         copy_counts[selected_card.pk] += 1
-        type_counts.update(card_type_slugs(selected_card))
+        type_counts.update([selected_card.tcg_type])
 
     return copy_counts
 

@@ -9,16 +9,12 @@ HTTP.
 
 import random
 
+from django.db.models import F
 from django.utils import timezone
 
 from game.deck_builder import build_balanced_card_pool
 from game.models import Game, GameCard, GamePlayer, MoveLog, PokemonCard, Profile
-from game.type_families import (
-    TYPE_FAMILIES,
-    family_slug_for_type,
-    family_slugs_for_card,
-    get_family,
-)
+from game.tcg_types import TCG_TYPES, get_tcg_type, tcg_type_slug_for_source_type
 
 HAND_SIZE = 7
 DECK_COPIES_PER_CARD = 2
@@ -30,6 +26,16 @@ DRAW_PENALTIES = {
     PokemonCard.Action.DRAW_FOUR: 4,
 }
 BOT_NAMES = ("IA Porygon", "IA Motisma", "IA Lucario", "IA Mimiqui", "IA Métalosse")
+LEGACY_FAMILY_TO_TCG_TYPE = {
+    "ecosystem": "grass",
+    "shadows": "psychic",
+    "forge": "metal",
+    "arcane": "psychic",
+    "tides": "water",
+    "skyfire": "fire",
+    "instinct": "fighting",
+    "storm": "lightning",
+}
 
 
 class GameEngineError(Exception):
@@ -167,16 +173,14 @@ class GameEngine:
         self.game.started_at = timezone.now()
         self.game.current_turn_number = 0
         self.game.turn_revision = 1
-        self.game.active_family = ""
-        self.game.active_type = None
+        self.game.active_tcg_type = ""
         self.game.save(
             update_fields=[
                 "status",
                 "started_at",
                 "current_turn_number",
                 "turn_revision",
-                "active_family",
-                "active_type",
+                "active_tcg_type",
                 "card_sequence_counter",
             ]
         )
@@ -253,25 +257,21 @@ class GameEngine:
         if top_discard is None:
             return True, None
 
-        effective_families = (
-            {self.game.active_family}
-            if self.game.active_family
-            else set(family_slugs_for_card(top_discard.pokemon_card))
-        )
-        card_families = set(family_slugs_for_card(pokemon_card))
-        if effective_families & card_families:
+        effective_tcg_type = self.game.active_tcg_type or top_discard.pokemon_card.tcg_type
+        if pokemon_card.tcg_type == effective_tcg_type:
             return True, None
         if pokemon_card.pokedex_id == top_discard.pokemon_card.pokedex_id:
             return True, None
 
-        return False, "Cette carte ne partage ni la famille ni l'espèce de la carte du dessus."
+        return False, "Cette carte ne partage ni le type JCC ni l'espèce de la carte du dessus."
 
     def play_card(
         self,
         player: GamePlayer,
         game_card: GameCard,
-        declared_family: str | None = None,
+        declared_tcg_type: str | None = None,
         declared_type=None,
+        declared_family: str | None = None,
     ) -> GameCard:
         ok, reason = self.is_move_valid(player, game_card)
         if not ok:
@@ -279,31 +279,37 @@ class GameEngine:
                 raise NotYourTurnError(reason)
             raise InvalidMoveError(reason)
 
-        if declared_family is None and declared_type is not None:
-            declared_family = family_slug_for_type(declared_type.slug)
+        if declared_tcg_type is None and declared_type is not None:
+            declared_tcg_type = tcg_type_slug_for_source_type(declared_type.slug)
+        if declared_tcg_type is None and declared_family:
+            declared_tcg_type = LEGACY_FAMILY_TO_TCG_TYPE.get(declared_family)
 
-        if self.requires_family_choice(game_card.pokemon_card):
-            if get_family(declared_family) is None:
-                raise InvalidMoveError("Cette carte impose de choisir la prochaine famille.")
-            self.game.active_family = declared_family
+        if self.requires_tcg_type_choice(game_card.pokemon_card):
+            selected_tcg_type = get_tcg_type(declared_tcg_type)
+            if selected_tcg_type is None:
+                raise InvalidMoveError("Cette carte impose de choisir le prochain type JCC.")
+            declared_tcg_type = selected_tcg_type.slug
+            self.game.active_tcg_type = selected_tcg_type.slug
         else:
-            declared_family = ""
-            self.game.active_family = ""
-        self.game.active_type = None
-
+            declared_tcg_type = ""
+            self.game.active_tcg_type = ""
         game_card.location = GameCard.Location.DEFAUSSE
         game_card.owner = None
         game_card.order_index = self.game.next_card_sequence()
         game_card.save(update_fields=["location", "owner", "order_index"])
-        self.game.save(update_fields=["active_family", "active_type", "card_sequence_counter"])
+        self.game.save(
+            update_fields=[
+                "active_tcg_type",
+                "card_sequence_counter",
+            ]
+        )
 
         MoveLog.objects.create(
             game=self.game,
             player=player,
             move_type=MoveLog.MoveType.JOUER_CARTE,
             game_card=game_card,
-            declared_type=declared_type,
-            declared_family=declared_family or "",
+            declared_tcg_type=declared_tcg_type or "",
         )
 
         self._apply_card_action(player, game_card.pokemon_card.action)
@@ -316,13 +322,18 @@ class GameEngine:
         return game_card
 
     @staticmethod
-    def requires_family_choice(pokemon_card: PokemonCard) -> bool:
+    def requires_tcg_type_choice(pokemon_card: PokemonCard) -> bool:
         return pokemon_card.is_legendary or pokemon_card.action == PokemonCard.Action.DRAW_FOUR
+
+    @staticmethod
+    def requires_family_choice(pokemon_card: PokemonCard) -> bool:
+        """Alias de compatibilité pour les intégrations de la version précédente."""
+        return GameEngine.requires_tcg_type_choice(pokemon_card)
 
     @staticmethod
     def _is_wild_card(pokemon_card: PokemonCard) -> bool:
         """Alias interne conservé pour les appels historiques."""
-        return GameEngine.requires_family_choice(pokemon_card)
+        return GameEngine.requires_tcg_type_choice(pokemon_card)
 
     def _apply_card_action(self, player: GamePlayer, action: str):
         """Applique l'effet puis place le curseur sur le prochain joueur.
@@ -396,22 +407,21 @@ class GameEngine:
         self.game.finished_at = timezone.now()
         self.game.save(update_fields=["status", "finished_at"])
 
-        for other in self.game.players.exclude(pk=winner.pk):
-            points = sum(
-                card_point_value(gc.pokemon_card)
-                for gc in GameCard.objects.filter(
-                    game=self.game, location=GameCard.Location.MAIN, owner=other
-                )
-            )
-            other.score += points
-            other.save(update_fields=["score"])
+        won_points = sum(
+            card_point_value(game_card.pokemon_card)
+            for game_card in GameCard.objects.select_related("pokemon_card")
+            .filter(game=self.game, location=GameCard.Location.MAIN)
+            .exclude(owner=winner)
+        )
+        winner.score += won_points
+        winner.save(update_fields=["score"])
 
         for game_player in self.game.players.filter(user__isnull=False):
             profile, _ = Profile.objects.get_or_create(user=game_player.user)
-            profile.total_games_played += 1
+            increments = {"total_games_played": F("total_games_played") + 1}
             if game_player.pk == winner.pk:
-                profile.total_games_won += 1
-            profile.save(update_fields=["total_games_played", "total_games_won"])
+                increments["total_games_won"] = F("total_games_won") + 1
+            Profile.objects.filter(pk=profile.pk).update(**increments)
 
         MoveLog.objects.create(game=self.game, player=winner, move_type=MoveLog.MoveType.FIN_PARTIE)
 
@@ -454,11 +464,10 @@ class GameEngine:
                 "name_fr": pc.name_fr,
                 "name_en": pc.name_en,
                 "sprite_url": pc.sprite_url,
-                "primary_type": pc.primary_type.slug,
-                "secondary_type": pc.secondary_type.slug if pc.secondary_type else None,
-                "families": list(family_slugs_for_card(pc)),
+                "tcg_type": pc.tcg_type,
+                "tcg_type_label": pc.get_tcg_type_display(),
                 "is_legendary": pc.is_legendary,
-                "requires_family_choice": self.requires_family_choice(pc),
+                "requires_tcg_type_choice": self.requires_tcg_type_choice(pc),
                 "action": pc.action,
                 "action_label": pc.get_action_display(),
             }
@@ -480,7 +489,7 @@ class GameEngine:
                 entry["hand_count"] = len(hand_cards_by_owner[gp.pk])
             players_payload.append(entry)
 
-        active_family = get_family(self.game.active_family)
+        active_tcg_type = get_tcg_type(self.game.active_tcg_type)
         return {
             "game_id": str(self.game.id),
             "status": self.game.status,
@@ -488,8 +497,8 @@ class GameEngine:
             "is_creator": self.game.created_by_id == for_player.user_id,
             "direction": self.game.direction,
             "turn_revision": self.game.turn_revision,
-            "active_family": active_family.as_dict() if active_family else None,
-            "available_families": [family.as_dict() for family in TYPE_FAMILIES],
+            "active_tcg_type": active_tcg_type.as_dict() if active_tcg_type else None,
+            "available_tcg_types": [tcg_type.as_dict() for tcg_type in TCG_TYPES],
             "top_discard": serialize_card(top_discard) if top_discard else None,
             "draw_pile_count": GameCard.objects.filter(
                 game=self.game, location=GameCard.Location.PIOCHE

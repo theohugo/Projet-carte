@@ -17,11 +17,19 @@ class PokemonCardAdmin(admin.ModelAdmin):
         "name_en",
         "primary_type",
         "secondary_type",
+        "tcg_type",
         "action",
         "is_legendary",
         "in_current_deck",
     )
-    list_filter = ("primary_type", "secondary_type", "action", "is_legendary", "in_current_deck")
+    list_filter = (
+        "tcg_type",
+        "primary_type",
+        "secondary_type",
+        "action",
+        "is_legendary",
+        "in_current_deck",
+    )
     search_fields = ("name_fr", "name_en", "slug")
 
 

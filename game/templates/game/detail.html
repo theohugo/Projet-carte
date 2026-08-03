@@ -7,7 +7,7 @@
 <div class="game-page">
     <header class="game-page-heading">
         <div>
-            <a class="back-link" href="{% url 'lobby' %}"><span aria-hidden="true">←</span> Retour au lobby</a>
+            <a class="back-link" href="{% url 'lobby' %}" data-reload-focus-key="game-back"><span aria-hidden="true">←</span> Retour au lobby</a>
             <p class="section-kicker">Salon de {{ game.created_by.username }}</p>
             <h1>Table de jeu <span class="status-badge" data-status="{{ game.status|lower }}">{{ game.get_status_display }}</span></h1>
         </div>
@@ -37,11 +37,11 @@
                 <h2>En attente de joueurs</h2>
                 <p class="waiting-room-description">Partage le lien de cette page. Le salon se mettra à jour dès qu’un joueur arrivera.</p>
                 <div class="waiting-actions">
-                    <button type="button" class="btn btn-secondary" data-copy-game-url><span data-copy-label>Copier le lien d’invitation</span></button>
+                    <button type="button" class="btn btn-secondary" data-copy-game-url data-reload-focus-key="copy-invitation"><span data-copy-label>Copier le lien d’invitation</span></button>
                     {% if is_creator and players|length < game.max_players %}
                     <form method="post" action="{% url 'add_bot' game_id=game.id %}">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-ghost"><span aria-hidden="true">＋</span> Ajouter une IA</button>
+                        <button type="submit" class="btn btn-ghost" data-reload-focus-key="add-bot"><span aria-hidden="true">＋</span> Ajouter une IA</button>
                     </form>
                     {% endif %}
                     <span class="waiting-room-count"><strong>{{ players|length }}</strong> joueur{{ players|length|pluralize }} connecté{{ players|length|pluralize }}</span>
@@ -58,7 +58,7 @@
                         {% if is_creator and player.is_bot %}
                         <form method="post" action="{% url 'remove_bot' game_id=game.id player_id=player.id %}" class="waiting-player-action">
                             {% csrf_token %}
-                            <button type="submit" class="btn-icon" aria-label="Retirer {{ player.display_name }}">×</button>
+                            <button type="submit" class="btn-icon" aria-label="Retirer {{ player.display_name }}" data-reload-focus-key="remove-bot-{{ player.id }}">×</button>
                         </form>
                         {% endif %}
                     </li>
@@ -73,7 +73,7 @@
                 {% if is_creator %}
                 <form method="post" action="{% url 'start_game' game_id=game.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary btn-large" {% if players|length < 2 %}disabled{% endif %}>Démarrer la partie</button>
+                    <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="start-game" {% if players|length < 2 %}disabled{% endif %}>Démarrer la partie</button>
                 </form>
                 <p class="waiting-room-help">{% if players|length < 2 %}Le démarrage sera disponible dès l’arrivée d’un deuxième joueur.{% else %}Tout le monde est prêt. Lance la partie quand tu veux.{% endif %}</p>
                 {% else %}
@@ -105,7 +105,7 @@
             <div class="pile-zone">
                 <p class="pile-label">Pioche</p>
                 <button type="button" class="deck-stack card-tilt {% if not game_state.is_my_turn %}is-disabled{% endif %}"
-                        data-tilt-card data-draw data-motion-deck {% if not game_state.is_my_turn %}disabled{% endif %}
+                        data-tilt-card data-draw data-motion-deck data-reload-focus-key="draw-pile" {% if not game_state.is_my_turn %}disabled{% endif %}
                         aria-label="Piocher une carte ({{ game_state.draw_pile_count }} restantes)">
                     <span class="deck-card deck-card--back"></span>
                     <span class="deck-card deck-card--middle"></span>
@@ -116,18 +116,15 @@
 
             <div class="table-meta">
                 <div class="direction-indicator" title="Sens de jeu actuel"><span aria-hidden="true">{% if game_state.direction == -1 %}↺{% else %}↻{% endif %}</span><small>{% if game_state.direction == -1 %}Sens inversé{% else %}Sens horaire{% endif %}</small></div>
-                <div class="table-rule" aria-hidden="true"><span>même famille</span><i></i><span>ou même Pokémon</span></div>
+                <div class="table-rule" aria-hidden="true"><span>même type JCC</span><i></i><span>ou même Pokémon</span></div>
             </div>
 
             <div class="pile-zone discard-pile">
                 <p class="pile-label">Carte en jeu</p>
                 {% if game_state.top_discard %}
                 <div class="card-tilt card-tilt--display" data-tilt-card data-motion-discard>
-                    <div class="card-unit card-unit--display {% if game_state.top_discard.action != 'NORMAL' %}has-action{% endif %}" data-type="{{ game_state.top_discard.primary_type }}" role="img" aria-label="{{ game_state.top_discard.name_fr }}, type {{ game_state.top_discard.primary_type }}{% if game_state.top_discard.action != 'NORMAL' %}, effet {{ game_state.top_discard.action_label }}{% endif %}">
-                        <span class="card-unit-type primary" data-type="{{ game_state.top_discard.primary_type }}" aria-label="Type {{ game_state.top_discard.primary_type }}"><span class="type-energy-icon" data-type="{{ game_state.top_discard.primary_type }}"></span></span>
-                        {% if game_state.top_discard.secondary_type %}
-                        <span class="card-unit-type secondary" data-type="{{ game_state.top_discard.secondary_type }}" aria-label="Type {{ game_state.top_discard.secondary_type }}"><span class="type-energy-icon" data-type="{{ game_state.top_discard.secondary_type }}"></span></span>
-                        {% endif %}
+                    <div class="card-unit card-unit--display {% if game_state.top_discard.action != 'NORMAL' %}has-action{% endif %}" data-tcg-type="{{ game_state.top_discard.tcg_type }}" role="img" aria-label="{{ game_state.top_discard.name_fr }}, type JCC {{ game_state.top_discard.tcg_type_label }}{% if game_state.top_discard.action != 'NORMAL' %}, effet {{ game_state.top_discard.action_label }}{% endif %}">
+                        <span class="card-unit-type primary" data-tcg-type="{{ game_state.top_discard.tcg_type }}" aria-label="Type JCC {{ game_state.top_discard.tcg_type_label }}"><span class="tcg-energy-icon" data-tcg-type="{{ game_state.top_discard.tcg_type }}"></span></span>
                         <span class="card-unit-number">#{{ game_state.top_discard.pokedex_id }}</span>
                         {% if game_state.top_discard.action != "NORMAL" %}<span class="card-action" data-action="{{ game_state.top_discard.action }}" aria-label="Effet {{ game_state.top_discard.action_label }}">{% if game_state.top_discard.action == "DRAW_TWO" %}+2{% elif game_state.top_discard.action == "DRAW_FOUR" %}+4{% elif game_state.top_discard.action == "REVERSE" %}↺{% elif game_state.top_discard.action == "SHIELD" %}<i class="shield-symbol" aria-hidden="true"></i>{% endif %}</span>{% endif %}
                         <img src="{{ game_state.top_discard.sprite_url }}" alt="" width="82" height="82" fetchpriority="high">
@@ -135,24 +132,24 @@
                     </div>
                 </div>
                 {% endif %}
-                {% if game_state.active_family %}<span class="active-type" data-family="{{ game_state.active_family.slug }}" data-type="{{ game_state.active_family.accent_type }}"><span class="type-energy-icon" data-type="{{ game_state.active_family.accent_type }}"></span>Famille imposée : {{ game_state.active_family.name_fr }}</span>{% endif %}
+                {% if game_state.active_tcg_type %}<span class="active-type" data-tcg-type="{{ game_state.active_tcg_type.slug }}"><span class="tcg-energy-icon" data-tcg-type="{{ game_state.active_tcg_type.slug }}"></span>Type imposé : {{ game_state.active_tcg_type.name_fr }}</span>{% endif %}
             </div>
             </section>
         </div>
 
         <section id="legendary-choices" class="legendary-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="legendary-title">
-            <p class="section-kicker">Famille à déclarer</p>
-            <h2 id="legendary-title">Choisis la prochaine famille</h2>
-            <p>Cette famille sera imposée au joueur suivant.</p>
+            <p class="section-kicker">Type JCC à déclarer</p>
+            <h2 id="legendary-title">Choisis le prochain type</h2>
+            <p>Ce véritable type du JCC sera imposé au joueur suivant.</p>
             <div class="type-choice-grid">
-                {% for family in declared_families %}
-                <button type="button" class="type-choice family-choice" data-family="{{ family.slug }}" data-type="{{ family.accent_type }}" data-declared-family="{{ family.slug }}">
-                    <span class="family-choice-icons" aria-hidden="true">{% for type_slug in family.type_slugs %}<span class="type-energy-icon" data-type="{{ type_slug }}"></span>{% endfor %}</span>
-                    <span>{{ family.name_fr }}</span>
+                {% for tcg_type in declared_tcg_types %}
+                <button type="button" class="type-choice tcg-type-choice" data-tcg-type="{{ tcg_type.slug }}" data-declared-tcg-type="{{ tcg_type.slug }}" data-reload-focus-key="tcg-choice-{{ tcg_type.slug }}">
+                    <span class="tcg-energy-icon" data-tcg-type="{{ tcg_type.slug }}" aria-hidden="true"></span>
+                    <span>{{ tcg_type.name_fr }}</span>
                 </button>
                 {% endfor %}
             </div>
-            <button type="button" class="btn btn-ghost" data-cancel-legendary>Annuler</button>
+            <button type="button" class="btn btn-ghost" data-cancel-legendary data-reload-focus-key="cancel-tcg-choice">Annuler</button>
         </section>
 
         <section class="my-hand-row" aria-labelledby="my-hand-title">
@@ -167,16 +164,16 @@
                 </p>
                 {% if my_player.has_protection %}<span class="protection-badge"><i aria-hidden="true"></i>Protection active</span>{% endif %}
             </div>
-            <div class="hand-scroll" data-motion-hand aria-label="Cartes de ta main">
+            <div class="hand-scroll" data-motion-hand role="group" aria-label="Cartes de ta main">
             <div class="player-hand" data-player-hand>
                 {% for card in my_player.hand %}
                 <div class="card-tilt {% if not card.is_playable %}is-disabled{% endif %}" data-tilt-card>
                     <button type="button" class="card-unit {% if not card.is_playable %}is-disabled{% endif %} {% if card.action != 'NORMAL' %}has-action{% endif %}"
-                            data-type="{{ card.primary_type }}" data-play-card="{{ card.id }}"
-                            data-requires-family-choice="{{ card.requires_family_choice|yesno:'true,false' }}"
+                            data-tcg-type="{{ card.tcg_type }}" data-play-card="{{ card.id }}"
+                            data-reload-focus-key="hand-card-{{ card.id }}"
+                            data-requires-tcg-type-choice="{{ card.requires_tcg_type_choice|yesno:'true,false' }}"
                             {% if not card.is_playable %}disabled{% endif %} aria-label="{{ card.name_fr }}{% if card.action != 'NORMAL' %}, effet {{ card.action_label }}{% endif %} — {% if card.is_playable %}jouer{% else %}non jouable{% endif %}">
-                        <span class="card-unit-type primary" data-type="{{ card.primary_type }}" aria-label="Type {{ card.primary_type }}"><span class="type-energy-icon" data-type="{{ card.primary_type }}"></span></span>
-                        {% if card.secondary_type %}<span class="card-unit-type secondary" data-type="{{ card.secondary_type }}" aria-label="Type {{ card.secondary_type }}"><span class="type-energy-icon" data-type="{{ card.secondary_type }}"></span></span>{% endif %}
+                        <span class="card-unit-type primary" data-tcg-type="{{ card.tcg_type }}" aria-label="Type JCC {{ card.tcg_type_label }}"><span class="tcg-energy-icon" data-tcg-type="{{ card.tcg_type }}"></span></span>
                         <span class="card-unit-number">#{{ card.pokedex_id }}</span>
                         {% if card.action != "NORMAL" %}<span class="card-action" data-action="{{ card.action }}" aria-label="Effet {{ card.action_label }}">{% if card.action == "DRAW_TWO" %}+2{% elif card.action == "DRAW_FOUR" %}+4{% elif card.action == "REVERSE" %}↺{% elif card.action == "SHIELD" %}<i class="shield-symbol" aria-hidden="true"></i>{% endif %}</span>{% endif %}
                         <img src="{{ card.sprite_url }}" alt="" width="82" height="82" loading="lazy">
@@ -199,12 +196,12 @@
                 <thead><tr><th>Joueur</th><th>Score</th></tr></thead>
                 <tbody>{% for player in game_state.players %}<tr><td>{{ player.username }}</td><td>{{ player.score }}</td></tr>{% endfor %}</tbody>
             </table>
-            <a class="btn btn-primary" href="{% url 'lobby' %}">Retourner au lobby</a>
+            <a class="btn btn-primary" href="{% url 'lobby' %}" data-reload-focus-key="results-back">Retourner au lobby</a>
         </section>
         {% endif %}
     </div>
 </div>
 
 {{ game_state|json_script:"game-initial-state" }}
-<script src="{% static 'game/js/game-board.js' %}?v=12"></script>
+<script src="{% static 'game/js/game-board.js' %}?v=14"></script>
 {% endblock %}

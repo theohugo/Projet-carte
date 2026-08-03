@@ -374,12 +374,8 @@
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
 }
 
-.active-type[data-type="ghost"],
-.active-type[data-type="dragon"],
-.active-type[data-type="dark"],
-.type-choice[data-type="ghost"],
-.type-choice[data-type="dragon"],
-.type-choice[data-type="dark"] {
+.active-type[data-tcg-type="darkness"],
+.type-choice[data-tcg-type="darkness"] {
     color: #fff;
 }
 
@@ -549,30 +545,21 @@
     transform: translateY(-2px);
 }
 
-.family-choice {
+.tcg-type-choice {
     min-height: 58px;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
     text-transform: none;
 }
 
-.family-choice-icons {
-    display: flex;
-    align-items: center;
-}
-
-.family-choice-icons .type-energy-icon {
-    width: 24px;
-    height: 24px;
+.tcg-type-choice .tcg-energy-icon {
+    width: 30px;
+    height: 30px;
     border: 2px solid rgba(255, 255, 255, 0.78);
     border-radius: 50%;
     background-color: var(--type-accent);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.24);
-}
-
-.family-choice-icons .type-energy-icon + .type-energy-icon {
-    margin-left: -5px;
 }
 
 .bot-label {

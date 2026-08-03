@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "game",
+    "guesswho",
 ]
 
 MIDDLEWARE = [
@@ -104,6 +105,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# Les tests créent de nombreux joueurs ; un hash rapide conserve le même
+# contrat d'authentification sans payer le coût du hasher de production.
+if "test" in sys.argv:
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
@@ -143,7 +149,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Auth redirects
 
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "lobby"
+LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
 
 

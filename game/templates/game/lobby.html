@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Lobby — Poké-Uno{% endblock %}
+{% block title %}Poké-Uno — PokéTable{% endblock %}
 {% block content %}
 <div id="lobby-app" class="lobby-page" data-state-url="{% url 'api_lobby_state' %}">
     <section class="lobby-hero">
         <div class="lobby-hero-copy">
-            <p class="section-kicker">Jeu multijoueur</p>
+            <p class="section-kicker">PokéTable · Poké-Uno</p>
             <h1>L’arène est<br><span>à toi.</span></h1>
-            <p class="lobby-intro">Associe les types, surprends tes adversaires et sois le premier à vider ta main.</p>
+            <p class="lobby-intro">Associe les véritables types du JCC, surprends tes adversaires et sois le premier à vider ta main.</p>
             <div class="lobby-hero-actions">
                 <form method="post">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary">Créer une partie</button>
+                    <button type="submit" class="btn btn-primary" data-reload-focus-key="create-game">Créer une partie</button>
                 </form>
                 <span class="live-label"><span class="lobby-status-dot" aria-hidden="true"></span>Salons actualisés en direct</span>
             </div>
         </div>
         <div class="hero-card-fan" aria-hidden="true">
-            <span class="hero-card hero-card--water"><i class="type-energy-icon" data-type="water"></i></span>
-            <span class="hero-card hero-card--fire"><i class="type-energy-icon" data-type="fire"></i></span>
-            <span class="hero-card hero-card--electric"><i class="type-energy-icon" data-type="electric"></i></span>
+            <span class="hero-card hero-card--water"><i class="tcg-energy-icon" data-tcg-type="water"></i></span>
+            <span class="hero-card hero-card--fire"><i class="tcg-energy-icon" data-tcg-type="fire"></i></span>
+            <span class="hero-card hero-card--electric"><i class="tcg-energy-icon" data-tcg-type="lightning"></i></span>
         </div>
     </section>
 
@@ -36,9 +36,8 @@
                     <div class="game-list-copy"><strong>Partie de {{ g.created_by.username }}</strong><span>{{ g.players.count }}/{{ g.max_players }} joueurs</span></div>
                     <form method="post" action="{% url 'join_game' game_id=g.id %}" class="inline-form">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-secondary">Rejoindre</button>
+                        <button type="submit" class="btn btn-secondary" data-reload-focus-key="join-game-{{ g.id }}">{% if g.created_by_id == user.id %}Ouvrir{% else %}Rejoindre{% endif %}</button>
                     </form>
-                    <a class="btn btn-ghost" href="{% url 'game_detail' game_id=g.id %}">Voir</a>
                 </li>
                 {% endfor %}
             </ul>
@@ -57,7 +56,7 @@
                 {% for g in my_games %}
                 <li class="game-list-item">
                     <div class="game-list-copy"><strong>Partie {{ forloop.counter }}</strong><span>{{ g.get_status_display }}</span></div>
-                    <a class="btn btn-ghost" href="{% url 'game_detail' game_id=g.id %}">Ouvrir</a>
+                    <a class="btn btn-ghost" href="{% url 'game_detail' game_id=g.id %}" data-reload-focus-key="open-game-{{ g.id }}">Ouvrir</a>
                 </li>
                 {% endfor %}
             </ul>
@@ -69,5 +68,5 @@
 </div>
 
 {{ lobby_state|json_script:"lobby-initial-state" }}
-<script src="{% static 'game/js/lobby.js' %}?v=6"></script>
+<script src="{% static 'game/js/lobby.js' %}?v=7"></script>
 {% endblock %}

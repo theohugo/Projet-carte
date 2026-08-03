@@ -111,16 +111,23 @@ def api_play_card(request, game_id):
 
     try:
         payload = json.loads(request.body or "{}")
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return JsonResponse({"error": "Requête invalide."}, status=400)
     if not isinstance(payload, dict):
         return JsonResponse({"error": "La requête doit être un objet JSON."}, status=400)
 
-    declared_family = payload.get("declared_family")
-    if declared_family is not None and not isinstance(declared_family, str):
-        return JsonResponse({"error": "Famille déclarée invalide."}, status=400)
+    declared_tcg_type = payload.get("declared_tcg_type")
+    legacy_declared_family = payload.get("declared_family")
+    if declared_tcg_type is not None and not isinstance(declared_tcg_type, str):
+        return JsonResponse({"error": "Type JCC déclaré invalide."}, status=400)
+    if legacy_declared_family is not None and not isinstance(legacy_declared_family, str):
+        return JsonResponse({"error": "Ancienne famille déclarée invalide."}, status=400)
 
-    game_card = GameCard.objects.filter(pk=payload.get("game_card_id"), game=game).first()
+    game_card_id = payload.get("game_card_id")
+    if isinstance(game_card_id, bool) or not isinstance(game_card_id, int) or game_card_id <= 0:
+        return JsonResponse({"error": "Identifiant de carte invalide."}, status=400)
+
+    game_card = GameCard.objects.filter(pk=game_card_id, game=game).first()
     if game_card is None:
         return JsonResponse({"error": "Carte introuvable."}, status=400)
 
@@ -129,7 +136,8 @@ def api_play_card(request, game_id):
         engine.play_card(
             game_player,
             game_card,
-            declared_family=declared_family,
+            declared_tcg_type=declared_tcg_type,
+            declared_family=legacy_declared_family,
         )
     except GameEngineError as exc:
         return JsonResponse({"error": str(exc)}, status=400)
@@ -150,8 +158,10 @@ def api_bot_turn(request, game_id):
 
     try:
         payload = json.loads(request.body or "{}")
-        expected_revision = int(payload["expected_turn_revision"])
-    except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "Révision de tour invalide."}, status=400)
+    expected_revision = payload.get("expected_turn_revision") if isinstance(payload, dict) else None
+    if isinstance(expected_revision, bool) or not isinstance(expected_revision, int) or expected_revision < 0:
         return JsonResponse({"error": "Révision de tour invalide."}, status=400)
 
     engine = GameEngine(game)

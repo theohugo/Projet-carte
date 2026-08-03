@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Qui est-ce ? Pokémon — PokéTable{% endblock %}
+{% block body_class %}guesswho-lobby-shell{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'guesswho/css/guesswho.css' %}?v=3">
+
+<div id="guesswho-lobby" class="gw-lobby" data-state-url="{% url 'guesswho:api_lobby_state' %}">
+    <section class="gw-lobby-hero" aria-labelledby="guesswho-title">
+        <div class="gw-lobby-copy">
+            <a class="gw-back-link" href="{% url 'home' %}"><span aria-hidden="true">←</span> Tous les jeux</a>
+            <p class="gw-eyebrow"><span class="gw-live-dot" aria-hidden="true"></span> PokéTable présente</p>
+            <h1 id="guesswho-title">Qui est-ce ?<br><span>Version Pokémon.</span></h1>
+            <p class="gw-lobby-lead">Pose les bonnes questions, rabats les mauvais candidats et démasque le Pokémon secret de ton adversaire.</p>
+            <div class="gw-lobby-actions">
+                <form method="post" action="{% url 'guesswho:create_game' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary gw-primary-action" data-reload-focus-key="create-game">
+                        <span class="gw-button-icon" aria-hidden="true">+</span>
+                        Créer une table
+                    </button>
+                </form>
+                <button type="button" class="btn btn-ghost" data-show-rules data-reload-focus-key="show-rules" aria-expanded="false" aria-controls="guesswho-rules">Comment jouer</button>
+            </div>
+            <ul class="gw-feature-list" aria-label="Caractéristiques du jeu">
+                <li><span aria-hidden="true">◇</span> 2 joueurs</li>
+                <li><span aria-hidden="true">◇</span> 24 candidats</li>
+                <li><span aria-hidden="true">◇</span> Questions en direct</li>
+            </ul>
+        </div>
+
+        <div class="gw-hero-board" aria-hidden="true">
+            <div class="gw-hero-glow"></div>
+            <div class="gw-hero-card gw-hero-card--back"><span class="gw-card-question">?</span></div>
+            <div class="gw-hero-card gw-hero-card--front" data-tcg-type="psychic">
+                <span class="gw-tcg-symbol" data-tcg-type="psychic"></span>
+                <span class="gw-hero-silhouette"></span>
+                <strong>Pokémon secret</strong>
+            </div>
+            <div class="gw-scan-line"></div>
+        </div>
+    </section>
+
+    <section id="guesswho-rules" class="gw-rules" hidden aria-labelledby="guesswho-rules-title">
+        <div>
+            <p class="gw-eyebrow">Règles express</p>
+            <h2 id="guesswho-rules-title">Trouve-le avant ton adversaire</h2>
+        </div>
+        <ol>
+            <li><strong>Choisis</strong><span>Sélectionne secrètement 1 Pokémon parmi les 24.</span></li>
+            <li><strong>Questionne</strong><span>Pose une question à laquelle on peut répondre par oui ou non.</span></li>
+            <li><strong>Élimine</strong><span>Rabats les candidats qui ne correspondent plus aux indices.</span></li>
+            <li><strong>Accuse</strong><span>Tente ta chance quand tu penses avoir trouvé la bonne réponse.</span></li>
+        </ol>
+    </section>
+
+    <div class="gw-lobby-columns">
+        <section class="gw-lobby-panel" aria-labelledby="open-tables-title">
+            <header class="gw-panel-heading">
+                <div>
+                    <p class="gw-eyebrow">Parties publiques</p>
+                    <h2 id="open-tables-title">Tables ouvertes</h2>
+                </div>
+                <span class="gw-count" aria-label="{{ open_games|length }} table{{ open_games|length|pluralize }}">{{ open_games|length }}</span>
+            </header>
+
+            {% if open_games %}
+            <ul class="gw-table-list">
+                {% for table in open_games %}
+                <li class="gw-table-row">
+                    <span class="gw-table-avatar" aria-hidden="true">{{ table.created_by.username|default:"?"|first|upper }}</span>
+                    <span class="gw-table-copy">
+                        <strong>Table de {{ table.created_by.username|default:"Dresseur" }}</strong>
+                        <small><span class="gw-open-dot" aria-hidden="true"></span> En attente d’un adversaire</small>
+                    </span>
+                    <form method="post" action="{% url 'guesswho:join_game' game_id=table.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-secondary" data-reload-focus-key="join-{{ table.id }}">{% if table.created_by_id == user.id %}Ouvrir{% else %}Rejoindre{% endif %}</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="gw-empty-state">
+                <span class="gw-empty-mark" aria-hidden="true">?</span>
+                <div><strong>Aucune table ouverte</strong><p>Crée la première partie et invite un adversaire.</p></div>
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="gw-lobby-panel" aria-labelledby="my-tables-title">
+            <header class="gw-panel-heading">
+                <div>
+                    <p class="gw-eyebrow">Ton espace</p>
+                    <h2 id="my-tables-title">Mes parties</h2>
+                </div>
+                <span class="gw-count" aria-label="{{ my_games|length }} partie{{ my_games|length|pluralize }}">{{ my_games|length }}</span>
+            </header>
+
+            {% if my_games %}
+            <ul class="gw-table-list">
+                {% for table in my_games %}
+                <li class="gw-table-row">
+                    <span class="gw-table-status" data-status="{{ table.status|lower }}" aria-hidden="true"></span>
+                    <span class="gw-table-copy">
+                        <strong>Partie {{ forloop.counter }}</strong>
+                        <small>{{ table.get_status_display }}</small>
+                    </span>
+                    <a class="btn btn-ghost" href="{% url 'guesswho:game_detail' game_id=table.id %}" data-reload-focus-key="open-{{ table.id }}">Ouvrir</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="gw-empty-state gw-empty-state--compact">
+                <span class="gw-empty-mark" aria-hidden="true">◇</span>
+                <div><strong>Ton historique est vide</strong><p>Tes prochaines parties apparaîtront ici.</p></div>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+
+{% if lobby_state %}{{ lobby_state|json_script:"guesswho-lobby-state" }}{% endif %}
+<script src="{% static 'guesswho/js/lobby.js' %}?v=3"></script>
+{% endblock %}

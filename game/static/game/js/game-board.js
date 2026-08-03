@@ -13,6 +13,11 @@
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const precisePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
     const stateUrl = board.dataset.stateUrl;
+    const reloadContextKey = `poke-uno:game-reload:${window.location.pathname}`;
+    const reloadScrollTargets = [
+        ["hand", "[data-motion-hand]"],
+        ["opponents", ".opponents-ring"],
+    ];
 
     let phase = "idle";
     let pollTimer = null;
@@ -22,6 +27,9 @@
     let pendingLegendaryCardElement = null;
     let resizeFrame = null;
     let botTurnTimer = null;
+    let handResizeObserver = null;
+    let typeChoiceBackgroundIsInert = false;
+    let typeChoiceInertTargets = [];
 
     function stateFingerprint(state) {
         return JSON.stringify(state, (key, value) => (key === "is_playable" ? undefined : value));
@@ -157,8 +165,99 @@
         pollController = null;
     }
 
-    function reloadOnce() {
+    function reloadFocusKey(element) {
+        if (!(element instanceof Element)) return null;
+        return element.closest("[data-reload-focus-key]")?.dataset.reloadFocusKey || null;
+    }
+
+    function saveReloadContext(preferredFocusElement = null) {
+        const activeElement = preferredFocusElement instanceof Element ? preferredFocusElement : document.activeElement;
+        const handCards = [...board.querySelectorAll("[data-player-hand] [data-play-card]")];
+        const focusedHandCard = activeElement?.closest?.("[data-play-card]") || pendingLegendaryCardElement;
+        const scrollTargets = {};
+
+        reloadScrollTargets.forEach(([key, selector]) => {
+            const element = board.querySelector(selector);
+            if (!element) return;
+            scrollTargets[key] = { left: element.scrollLeft, top: element.scrollTop };
+        });
+
+        const context = {
+            savedAt: Date.now(),
+            windowScroll: { left: window.scrollX, top: window.scrollY },
+            scrollTargets,
+            focusKey: reloadFocusKey(activeElement),
+            fallbackFocusKey: reloadFocusKey(pendingLegendaryCardElement),
+            handIndex: focusedHandCard ? handCards.indexOf(focusedHandCard) : -1,
+        };
+
+        try {
+            window.sessionStorage.setItem(reloadContextKey, JSON.stringify(context));
+        } catch (_) {
+            // Le stockage peut être désactivé : le rechargement reste fonctionnel.
+        }
+    }
+
+    function canRestoreFocus(element) {
+        return Boolean(
+            element instanceof HTMLElement &&
+                !element.matches(":disabled") &&
+                !element.closest("[hidden], [inert]") &&
+                element.getClientRects().length,
+        );
+    }
+
+    function restoreReloadContext() {
+        let context;
+        try {
+            const serializedContext = window.sessionStorage.getItem(reloadContextKey);
+            window.sessionStorage.removeItem(reloadContextKey);
+            if (!serializedContext) return;
+            context = JSON.parse(serializedContext);
+        } catch (_) {
+            return;
+        }
+
+        if (!context?.savedAt || Date.now() - context.savedAt > 15000) return;
+        const previousScrollRestoration = "scrollRestoration" in window.history ? window.history.scrollRestoration : null;
+        if (previousScrollRestoration !== null) window.history.scrollRestoration = "manual";
+
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                reloadScrollTargets.forEach(([key, selector]) => {
+                    const element = board.querySelector(selector);
+                    const savedScroll = context.scrollTargets?.[key];
+                    if (!element || !savedScroll) return;
+                    element.scrollLeft = savedScroll.left;
+                    element.scrollTop = savedScroll.top;
+                });
+
+                window.scrollTo(context.windowScroll?.left || 0, context.windowScroll?.top || 0);
+
+                const focusKeys = [context.focusKey, context.fallbackFocusKey].filter(Boolean);
+                let focusTarget = focusKeys
+                    .map((key) => document.querySelector(`[data-reload-focus-key="${CSS.escape(key)}"]`))
+                    .find(canRestoreFocus);
+
+                if (!focusTarget && context.handIndex >= 0) {
+                    const handCards = [...board.querySelectorAll("[data-player-hand] [data-play-card]")];
+                    const startIndex = Math.min(context.handIndex, handCards.length - 1);
+                    focusTarget = handCards
+                        .map((card, index) => ({ card, distance: Math.abs(index - startIndex) }))
+                        .sort((left, right) => left.distance - right.distance)
+                        .map(({ card }) => card)
+                        .find(canRestoreFocus);
+                }
+
+                focusTarget?.focus({ preventScroll: true });
+                if (previousScrollRestoration !== null) window.history.scrollRestoration = previousScrollRestoration;
+            });
+        });
+    }
+
+    function reloadOnce(preferredFocusElement = null) {
         if (reloadRequested) return;
+        saveReloadContext(preferredFocusElement);
         reloadRequested = true;
         phase = "reloading";
         cancelPoll();
@@ -280,23 +379,17 @@
     function buildMotionCardFace(card) {
         const face = document.createElement("div");
         face.className = `card-unit card-unit--display motion-card-reveal${card.action !== "NORMAL" ? " has-action" : ""}`;
-        face.dataset.type = card.primary_type;
+        face.dataset.tcgType = card.tcg_type;
         face.setAttribute("aria-hidden", "true");
 
-        function addTypeIcon(type, position) {
-            if (!type) return;
-            const badge = document.createElement("span");
-            badge.className = `card-unit-type ${position}`;
-            badge.dataset.type = type;
-            const icon = document.createElement("span");
-            icon.className = "type-energy-icon";
-            icon.dataset.type = type;
-            badge.appendChild(icon);
-            face.appendChild(badge);
-        }
-
-        addTypeIcon(card.primary_type, "primary");
-        addTypeIcon(card.secondary_type, "secondary");
+        const badge = document.createElement("span");
+        badge.className = "card-unit-type primary";
+        badge.dataset.tcgType = card.tcg_type;
+        const icon = document.createElement("span");
+        icon.className = "tcg-energy-icon";
+        icon.dataset.tcgType = card.tcg_type;
+        badge.appendChild(icon);
+        face.appendChild(badge);
 
         const number = document.createElement("span");
         number.className = "card-unit-number";
@@ -441,7 +534,7 @@
             // Le serveur a accepté le coup : une erreur visuelle ne doit jamais
             // rendre de nouveau interactif un plateau désormais obsolète.
         }
-        reloadOnce();
+        reloadOnce(context.source);
     }
 
     function schedulePoll(delay = 1500) {
@@ -479,9 +572,32 @@
     }
 
     function setTypeChoiceBackgroundInert(isInert) {
-        board.querySelectorAll(".arena-stage, .my-hand-row").forEach((element) => {
-            element.inert = isInert;
+        if (isInert) {
+            if (typeChoiceBackgroundIsInert) return;
+            const choices = document.getElementById("legendary-choices");
+            const targets = new Set([
+                document.querySelector(".skip-link"),
+                document.querySelector(".site-header"),
+                document.querySelector("body > .messages"),
+                document.querySelector(".game-page-heading"),
+                document.getElementById("game-announcer"),
+                ...[...board.children].filter((element) => element !== choices),
+            ]);
+            targets.delete(null);
+            typeChoiceInertTargets = [...targets].filter((element) => !element.inert);
+            targets.forEach((element) => {
+                element.inert = true;
+            });
+            typeChoiceBackgroundIsInert = true;
+            return;
+        }
+
+        if (!typeChoiceBackgroundIsInert) return;
+        typeChoiceInertTargets.forEach((element) => {
+            element.inert = false;
         });
+        typeChoiceInertTargets = [];
+        typeChoiceBackgroundIsInert = false;
     }
 
     function closeLegendaryChoices({ restoreFocus = true } = {}) {
@@ -499,19 +615,19 @@
         const choices = document.getElementById("legendary-choices");
         setTypeChoiceBackgroundInert(true);
         choices.hidden = false;
-        choices.querySelector("[data-declared-family]")?.focus();
+        choices.querySelector("[data-declared-tcg-type]")?.focus();
     }
 
     board.addEventListener("click", (event) => {
         const card = event.target.closest("[data-play-card]");
         if (card) {
             if (card.disabled) return;
-            if (card.dataset.requiresFamilyChoice === "true") {
+            if (card.dataset.requiresTcgTypeChoice === "true") {
                 openLegendaryChoices(card);
             } else {
                 submitAction(
                     board.dataset.playUrl,
-                    { game_card_id: card.dataset.playCard, declared_family: null },
+                    { game_card_id: card.dataset.playCard, declared_tcg_type: null },
                     { kind: "play", source: card },
                 );
             }
@@ -519,18 +635,18 @@
         }
 
         if (event.target.closest("[data-draw]")) {
-            submitAction(board.dataset.drawUrl, {}, { kind: "draw" });
+            submitAction(board.dataset.drawUrl, {}, { kind: "draw", source: event.target.closest("[data-draw]") });
             return;
         }
 
-        const family = event.target.closest("[data-declared-family]");
-        if (family && pendingLegendaryCardId) {
+        const tcgType = event.target.closest("[data-declared-tcg-type]");
+        if (tcgType && pendingLegendaryCardId) {
             const source = pendingLegendaryCardElement;
             const gameCardId = pendingLegendaryCardId;
             closeLegendaryChoices({ restoreFocus: false });
             submitAction(
                 board.dataset.playUrl,
-                { game_card_id: gameCardId, declared_family: family.dataset.declaredFamily },
+                { game_card_id: gameCardId, declared_tcg_type: tcgType.dataset.declaredTcgType },
                 { kind: "play", source },
             );
             return;
@@ -589,17 +705,29 @@
         if (!count) return;
 
         const compact = window.matchMedia("(max-width: 640px)").matches;
-        const overlap = compact ? (count <= 7 ? -20 : count <= 11 ? -34 : -46) : count <= 7 ? -24 : count <= 11 ? -38 : -54;
+        const viewport = hand.closest(".hand-scroll");
+        const handStyles = window.getComputedStyle(hand);
+        const cardWidth = cards[0].offsetWidth;
+        if (!cardWidth) return;
+        const horizontalPadding =
+            (Number.parseFloat(handStyles.paddingLeft) || 0) + (Number.parseFloat(handStyles.paddingRight) || 0);
+        const availableWidth = Math.max(cardWidth, (viewport?.clientWidth || window.innerWidth) - horizontalPadding);
+        const preferredStep = cardWidth * (compact ? 0.78 : 0.82);
+        const minimumStep = cardWidth * (compact ? 0.36 : 0.4);
+        const fittedStep = count > 1 ? (availableWidth - cardWidth) / (count - 1) : preferredStep;
+        const cardStep = Math.min(preferredStep, Math.max(minimumStep, fittedStep));
+        const overlap = Math.min(0, cardStep - cardWidth);
         const center = (count - 1) / 2;
         const denominator = Math.max(center, 1);
-        const maximumAngle = Math.min(12, 4 + count * 0.7);
-        hand.style.setProperty("--hand-overlap", `${overlap}px`);
+        const widthPressure = Math.max(0.7, Math.min(1, cardStep / preferredStep));
+        const maximumAngle = Math.min(12, 4 + count * 0.7) * widthPressure;
+        hand.style.setProperty("--hand-overlap", `${overlap.toFixed(2)}px`);
 
         cards.forEach((card, index) => {
             const distance = index - center;
             const normalizedDistance = distance / denominator;
             card.style.setProperty("--fan-angle", `${(normalizedDistance * maximumAngle).toFixed(2)}deg`);
-            card.style.setProperty("--fan-y", `${Math.min(20, Math.abs(distance) * 2.8).toFixed(1)}px`);
+            card.style.setProperty("--fan-y", `${Math.min(20, Math.abs(distance) * 2.8 * widthPressure).toFixed(1)}px`);
             card.style.zIndex = String(100 - Math.round(Math.abs(distance)));
         });
     }
@@ -679,6 +807,12 @@
 
     layoutPlayerHand();
     setupTiltCards();
+    restoreReloadContext();
+    const handViewport = board.querySelector("[data-motion-hand]");
+    if (handViewport && "ResizeObserver" in window) {
+        handResizeObserver = new ResizeObserver(scheduleHandLayout);
+        handResizeObserver.observe(handViewport);
+    }
     window.addEventListener("resize", scheduleHandLayout, { passive: true });
     schedulePoll();
     scheduleBotTurn();

@@ -3,11 +3,11 @@ import uuid
 from django.conf import settings
 from django.db import models
 
-from game.type_families import FAMILY_CHOICES
+from game.tcg_types import TCG_TYPE_CHOICES
 
 
 class PokemonType(models.Model):
-    """Un des 18 types Pokémon (joue le rôle de la "couleur" en Uno)."""
+    """Un des 18 types des jeux vidéo, conservé comme donnée source."""
 
     slug = models.SlugField(unique=True)
     name_fr = models.CharField(max_length=30)
@@ -45,6 +45,7 @@ class PokemonCard(models.Model):
     sprite_url = models.URLField()
     is_legendary = models.BooleanField(default=False)
     action = models.CharField(max_length=10, choices=Action.choices, default=Action.NORMAL)
+    tcg_type = models.CharField(max_length=12, choices=TCG_TYPE_CHOICES, default="colorless")
     in_current_deck = models.BooleanField(
         default=True,
         help_text="Inclure cette espèce dans les nouvelles parties.",
@@ -79,10 +80,12 @@ class Game(models.Model):
     current_turn_number = models.PositiveSmallIntegerField(default=0)
     turn_revision = models.PositiveBigIntegerField(default=0)
     card_sequence_counter = models.PositiveIntegerField(default=0)
-    active_type = models.ForeignKey(
-        PokemonType, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    active_tcg_type = models.CharField(
+        max_length=12,
+        choices=TCG_TYPE_CHOICES,
+        blank=True,
+        default="",
     )
-    active_family = models.CharField(max_length=16, choices=FAMILY_CHOICES, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -186,8 +189,12 @@ class MoveLog(models.Model):
     )
     move_type = models.CharField(max_length=20, choices=MoveType.choices)
     game_card = models.ForeignKey(GameCard, on_delete=models.SET_NULL, null=True, blank=True)
-    declared_type = models.ForeignKey(PokemonType, on_delete=models.SET_NULL, null=True, blank=True)
-    declared_family = models.CharField(max_length=16, choices=FAMILY_CHOICES, blank=True, default="")
+    declared_tcg_type = models.CharField(
+        max_length=12,
+        choices=TCG_TYPE_CHOICES,
+        blank=True,
+        default="",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

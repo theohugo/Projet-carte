@@ -5,32 +5,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#050b14">
-    <title>{% block title %}Poké-Uno{% endblock %}</title>
+    <title>{% block title %}PokéTable{% endblock %}</title>
     <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
-    <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
-    <link rel="stylesheet" href="{% static 'tokens.css' %}?v=5">
-    <link rel="stylesheet" href="{% static 'atoms.css' %}?v=8">
-    <link rel="stylesheet" href="{% static 'molecules.css' %}?v=9">
-    <link rel="stylesheet" href="{% static 'organisms.css' %}?v=9">
+    <link rel="preconnect" href="https://assets.pokemon.com" crossorigin>
+    <link rel="stylesheet" href="{% static 'tokens.css' %}?v=7">
+    <link rel="stylesheet" href="{% static 'atoms.css' %}?v=10">
+    <link rel="stylesheet" href="{% static 'molecules.css' %}?v=11">
+    <link rel="stylesheet" href="{% static 'organisms.css' %}?v=11">
 </head>
 <body class="{% block body_class %}{% endblock %}">
     <a class="skip-link" href="#main-content">Aller au contenu</a>
     <header class="site-header">
         <div class="site-header-inner">
-            <a class="site-title" href="{% url 'lobby' %}" aria-label="Poké-Uno — accueil">
+            <a class="site-title" href="{% url 'home' %}" aria-label="PokéTable — accueil" translate="no">
                 <span class="brand-mark" aria-hidden="true"><span></span></span>
-                <span class="brand-name">Poké<span>-Uno</span></span>
+                <span class="brand-name">Poké<span>Table</span></span>
             </a>
-            <nav class="site-actions" aria-label="Compte">
+            <nav class="site-actions" aria-label="Navigation principale">
                 {% if user.is_authenticated %}
+                    <span class="site-nav"><a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %}>Jeux</a><a href="{% url 'lobby' %}"{% if request.resolver_match.url_name == 'lobby' and request.resolver_match.namespace != 'guesswho' %} aria-current="page"{% endif %}>Poké-Uno</a><a href="{% url 'guesswho:lobby' %}"{% if request.resolver_match.namespace == 'guesswho' %} aria-current="page"{% endif %}>Qui est-ce ?</a></span>
                     <span class="site-user"><span class="user-avatar" aria-hidden="true">{{ user.username|first|upper }}</span><span class="site-user-copy"><small>Joueur connecté</small>{{ user.username }}</span></span>
                     <form action="{% url 'logout' %}" method="post" class="inline-form">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-ghost">Se déconnecter</button>
                     </form>
                 {% else %}
-                    <a class="btn btn-ghost" href="{% url 'login' %}">Se connecter</a>
-                    <a class="btn btn-primary" href="{% url 'signup' %}">Créer un compte</a>
+                    <a class="btn btn-ghost" href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Se connecter</a>
+                    <a class="btn btn-primary" href="{% url 'signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Créer un compte</a>
                 {% endif %}
             </nav>
         </div>

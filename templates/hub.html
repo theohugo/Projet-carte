@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}PokéTable — Choisis ton jeu{% endblock %}
+{% block body_class %}hub-body{% endblock %}
+{% block content %}
+<div class="hub-page">
+    <section class="hub-hero" aria-labelledby="hub-title">
+        <div>
+            <p class="section-kicker">Le salon de jeux Pokémon</p>
+            <h1 id="hub-title">À quoi joue-t-on<br><span>ce soir ?</span></h1>
+            <p>Crée une table, invite un ami et retrouve des jeux de société revisités dans un univers Pokémon vivant.</p>
+        </div>
+        <div class="hub-orbit" aria-hidden="true">
+            <span class="hub-orbit-core"><span class="brand-mark"><span></span></span></span>
+            <i class="tcg-energy-icon" data-tcg-type="grass"></i>
+            <i class="tcg-energy-icon" data-tcg-type="fire"></i>
+            <i class="tcg-energy-icon" data-tcg-type="water"></i>
+            <i class="tcg-energy-icon" data-tcg-type="lightning"></i>
+        </div>
+    </section>
+
+    <section class="game-mode-grid" aria-label="Jeux disponibles">
+        <article class="game-mode-card game-mode-card--uno">
+            <div class="game-mode-art" aria-hidden="true">
+                <span class="mode-playing-card"><i class="tcg-energy-icon" data-tcg-type="fire"></i><b>+4</b></span>
+                <span class="mode-playing-card"><i class="tcg-energy-icon" data-tcg-type="water"></i></span>
+                <span class="mode-playing-card"><i class="tcg-energy-icon" data-tcg-type="lightning"></i></span>
+            </div>
+            <div class="game-mode-copy">
+                <span class="game-mode-status"><i></i> Disponible</span>
+                <p class="section-kicker">2 à 6 joueurs · IA disponibles</p>
+                <h2>Poké-Uno</h2>
+                <p>Vide ta main avec les dix types officiels du JCC, les cartes pouvoir et des adversaires IA.</p>
+                <a class="btn btn-primary" href="{% url 'lobby' %}">Entrer dans l’arène</a>
+            </div>
+        </article>
+
+        <article class="game-mode-card game-mode-card--guess">
+            <div class="game-mode-art guess-mode-art" aria-hidden="true">
+                <span class="guess-silhouette">?</span>
+                <span class="guess-card-mini"></span><span class="guess-card-mini"></span><span class="guess-card-mini"></span>
+            </div>
+            <div class="game-mode-copy">
+                <span class="game-mode-status"><i></i> Nouveau</span>
+                <p class="section-kicker">2 joueurs · Déduction & chat</p>
+                <h2>Qui est-ce ? Pokémon</h2>
+                <p>Choisis une cible secrète, pose tes questions et rabats les cartes jusqu’à trouver le Pokémon adverse.</p>
+                <a class="btn btn-primary" href="{% url 'guesswho:lobby' %}">Lancer une enquête</a>
+            </div>
+        </article>
+    </section>
+</div>
+{% endblock %}

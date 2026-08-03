@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Table Qui est-ce ? — PokéTable{% endblock %}
+{% block html_class %}guesswho-document{% endblock %}
+{% block body_class %}guesswho-game-shell{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'guesswho/css/guesswho.css' %}?v=3">
+
+<div class="gw-game-page">
+    <header class="gw-game-header">
+        <div class="gw-game-heading">
+            <a class="gw-back-link" href="{% url 'guesswho:lobby' %}"><span aria-hidden="true">←</span> Quitter la table</a>
+            <span class="gw-heading-divider" aria-hidden="true"></span>
+            <div class="gw-game-title">
+                <p>Qui est-ce ? Pokémon</p>
+                <h1>Table <span translate="no">#{{ game.id|stringformat:"s"|slice:":6" }}</span></h1>
+            </div>
+        </div>
+        <div class="gw-game-meta">
+            <span class="gw-sync-state" data-sync-state><i aria-hidden="true"></i><span>Synchronisé</span></span>
+            <span class="gw-status-pill" data-game-status>Connexion…</span>
+        </div>
+    </header>
+
+    <div
+        id="guesswho-game"
+        class="gw-game"
+        data-state-url="{% url 'guesswho:api_state' game_id=game.id %}"
+        data-choose-url="{% url 'guesswho:api_choose_target' game_id=game.id %}"
+        data-ask-url="{% url 'guesswho:api_ask_question' game_id=game.id %}"
+        data-answer-url="{% url 'guesswho:api_answer_question' game_id=game.id %}"
+        data-guess-url="{% url 'guesswho:api_guess' game_id=game.id %}"
+        data-reset-url="{% url 'guesswho:api_reset_candidates' game_id=game.id %}"
+        data-toggle-url-template="{% url 'guesswho:api_toggle_candidate' game_id=game.id pokemon_card_id=0 %}"
+        aria-busy="false"
+    >
+        <form class="gw-csrf-source" aria-hidden="true">{% csrf_token %}</form>
+        <p class="gw-feedback" data-feedback role="alert" hidden></p>
+        <p class="visually-hidden" data-announcer aria-live="polite"></p>
+
+        <section class="gw-waiting-view" data-view="waiting" hidden aria-labelledby="waiting-title">
+            <div class="gw-waiting-orbit" aria-hidden="true">
+                <span class="gw-orbit-ring gw-orbit-ring--one"></span>
+                <span class="gw-orbit-ring gw-orbit-ring--two"></span>
+                <span class="gw-waiting-core"><strong data-player-count>1</strong><small>/ 2</small></span>
+                <span class="gw-radar-ping"></span>
+            </div>
+            <div class="gw-waiting-copy">
+                <p class="gw-eyebrow"><span class="gw-live-dot" aria-hidden="true"></span> Table ouverte</p>
+                <h2 id="waiting-title">En attente d’un adversaire</h2>
+                <p>Partage ce lien. La sélection secrète commencera automatiquement dès que le deuxième joueur arrivera.</p>
+                <div class="gw-invite-box">
+                    <span data-invite-url class="gw-invite-url"></span>
+                    <button type="button" class="btn btn-primary" data-copy-invite><span data-copy-label>Copier le lien</span></button>
+                </div>
+                <div class="gw-waiting-players" data-waiting-players></div>
+            </div>
+        </section>
+
+        <div class="gw-board-layout" data-view="board" hidden>
+            <section class="gw-board-panel" aria-labelledby="board-title">
+                <header class="gw-board-heading">
+                    <div>
+                        <p class="gw-eyebrow" data-board-eyebrow>Ton plateau</p>
+                        <h2 id="board-title" data-board-title tabindex="-1">24 suspects. 1 seul Pokémon.</h2>
+                    </div>
+                    <div class="gw-board-tools">
+                        <span class="gw-candidate-count" data-candidate-count>24 encore debout</span>
+                        <button type="button" class="gw-tool-button" data-reset-candidates aria-label="Relever tous les candidats" title="Relever tous les candidats">
+                            <span aria-hidden="true">↺</span>
+                        </button>
+                        <button type="button" class="btn btn-ghost gw-guess-toggle" data-guess-mode aria-pressed="false">
+                            <span aria-hidden="true">◇</span> Tenter un Pokémon
+                        </button>
+                    </div>
+                </header>
+
+                <div class="gw-board-help" data-board-help aria-live="polite">
+                    Clique sur une carte pour la rabattre après chaque indice.
+                </div>
+                <ul class="gw-roster" data-roster role="list" aria-label="Candidats Pokémon"></ul>
+            </section>
+
+            <aside class="gw-side-panel" aria-label="Questions et suivi de la partie">
+                <section class="gw-player-panel" aria-labelledby="players-title">
+                    <div class="gw-side-heading">
+                        <div><p class="gw-eyebrow">Face-à-face</p><h2 id="players-title">Dresseurs</h2></div>
+                        <span class="gw-turn-badge" data-turn-badge>Préparation</span>
+                    </div>
+                    <div class="gw-player-list" data-players></div>
+                </section>
+
+                <section class="gw-conversation" aria-labelledby="conversation-title">
+                    <header class="gw-side-heading gw-conversation-heading">
+                        <div><p class="gw-eyebrow">Carnet d’enquête</p><h2 id="conversation-title">Questions</h2></div>
+                        <span class="gw-history-count" data-history-count>0</span>
+                    </header>
+                    <ol
+                        class="gw-history"
+                        data-history
+                        role="log"
+                        aria-live="polite"
+                        aria-relevant="additions text"
+                        aria-labelledby="conversation-title"
+                    ></ol>
+                    <div class="gw-history-empty" data-history-empty>
+                        <span aria-hidden="true">?</span>
+                        <p><strong>Aucun indice pour le moment.</strong> La première question apparaîtra ici.</p>
+                    </div>
+                </section>
+
+                <section class="gw-action-panel" data-action-panel aria-labelledby="action-title">
+                    <h2 id="action-title" class="visually-hidden">Action de jeu</h2>
+                    <div class="gw-pending-question" data-pending-question hidden>
+                        <p class="gw-eyebrow">Question adverse</p>
+                        <blockquote data-pending-question-text></blockquote>
+                        <div class="gw-answer-actions" role="group" aria-label="Répondre à la question">
+                            <button type="button" class="btn gw-answer gw-answer--yes" data-answer="true"><span aria-hidden="true">✓</span> Oui</button>
+                            <button type="button" class="btn gw-answer gw-answer--no" data-answer="false"><span aria-hidden="true">×</span> Non</button>
+                        </div>
+                    </div>
+
+                    <form class="gw-question-form" data-question-form autocomplete="off">
+                        <label for="guesswho-question">Ta question</label>
+                        <div class="gw-question-control">
+                            <input
+                                id="guesswho-question"
+                                name="question"
+                                type="text"
+                                maxlength="500"
+                                placeholder="Ex. « Est-il de type Eau ? »…"
+                                autocomplete="off"
+                                required
+                            >
+                            <button type="submit" class="gw-send-button" aria-label="Envoyer la question">
+                                <span aria-hidden="true">↑</span>
+                            </button>
+                        </div>
+                        <p class="gw-action-hint" data-action-hint>Pose une question qui appelle « oui » ou « non ».</p>
+                    </form>
+                </section>
+            </aside>
+        </div>
+
+        <section class="gw-result-view" data-view="result" hidden aria-labelledby="result-title">
+            <div class="gw-result-halo" aria-hidden="true"></div>
+            <p class="gw-eyebrow">Partie terminée</p>
+            <span class="gw-result-trophy" aria-hidden="true">◇</span>
+            <h2 id="result-title" data-result-title tabindex="-1">Le mystère est résolu</h2>
+            <p data-result-copy></p>
+            <div class="gw-result-players" data-result-players></div>
+            <div class="gw-result-actions">
+                <form method="post" action="{% url 'guesswho:create_game' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Nouvelle partie</button>
+                </form>
+                <a class="btn btn-ghost" href="{% url 'guesswho:lobby' %}">Retour au salon</a>
+            </div>
+        </section>
+    </div>
+</div>
+
+<dialog class="gw-confirm-dialog" data-confirm-dialog aria-labelledby="confirm-title" aria-describedby="confirm-copy">
+    <form method="dialog" class="gw-dialog-card">
+        <button type="submit" class="gw-dialog-close" value="cancel" aria-label="Fermer la confirmation">×</button>
+        <div class="gw-dialog-visual" data-dialog-visual></div>
+        <p class="gw-eyebrow" data-dialog-eyebrow>Confirmation</p>
+        <h2 id="confirm-title" data-dialog-title>Confirmer ce Pokémon ?</h2>
+        <p id="confirm-copy" data-dialog-copy>Ce choix est définitif.</p>
+        <div class="gw-dialog-actions">
+            <button type="submit" class="btn btn-ghost" value="cancel">Annuler</button>
+            <button type="submit" class="btn btn-primary" value="confirm" data-dialog-confirm>Confirmer</button>
+        </div>
+    </form>
+</dialog>
+
+{{ game_state|json_script:"guesswho-initial-state" }}
+<script src="{% static 'guesswho/js/game.js' %}?v=3"></script>
+{% endblock %}

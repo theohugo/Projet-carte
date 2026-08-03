@@ -7,6 +7,7 @@
 html {
     min-width: 320px;
     background: var(--color-bg);
+    overflow-x: clip;
 }
 
 body {
@@ -42,8 +43,16 @@ button, input, select {
     font: inherit;
 }
 
-button {
+button,
+a {
     touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(117, 216, 255, 0.18);
+}
+
+h1,
+h2,
+h3 {
+    scroll-margin-top: 6rem;
 }
 
 [hidden] {
@@ -196,7 +205,7 @@ a:focus-visible {
     border: 1px solid var(--color-border-soft);
 }
 
-/* Logo Poké-Uno */
+/* Emblème PokéTable */
 .brand-mark {
     position: relative;
     display: inline-grid;
@@ -409,32 +418,24 @@ a:focus-visible {
     right: 7px;
 }
 
-.type-energy-icon {
+.tcg-energy-icon {
     display: block;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     background: center / contain no-repeat;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.42));
 }
 
-.type-energy-icon[data-type="normal"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/normal.svg"); }
-.type-energy-icon[data-type="fire"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/fire.svg"); }
-.type-energy-icon[data-type="water"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/water.svg"); }
-.type-energy-icon[data-type="electric"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/electric.svg"); }
-.type-energy-icon[data-type="grass"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/grass.svg"); }
-.type-energy-icon[data-type="ice"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/ice.svg"); }
-.type-energy-icon[data-type="fighting"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/fighting.svg"); }
-.type-energy-icon[data-type="poison"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/poison.svg"); }
-.type-energy-icon[data-type="ground"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/ground.svg"); }
-.type-energy-icon[data-type="flying"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/flying.svg"); }
-.type-energy-icon[data-type="psychic"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/psychic.svg"); }
-.type-energy-icon[data-type="bug"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/bug.svg"); }
-.type-energy-icon[data-type="rock"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/rock.svg"); }
-.type-energy-icon[data-type="ghost"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/ghost.svg"); }
-.type-energy-icon[data-type="dragon"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/dragon.svg"); }
-.type-energy-icon[data-type="dark"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/dark.svg"); }
-.type-energy-icon[data-type="steel"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/steel.svg"); }
-.type-energy-icon[data-type="fairy"] { background-image: url("https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/fairy.svg"); }
+.tcg-energy-icon[data-tcg-type="grass"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/grass.png"); }
+.tcg-energy-icon[data-tcg-type="fire"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/fire.png"); }
+.tcg-energy-icon[data-tcg-type="water"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/water.png"); }
+.tcg-energy-icon[data-tcg-type="lightning"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/lightning.png"); }
+.tcg-energy-icon[data-tcg-type="psychic"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/psychic.png"); }
+.tcg-energy-icon[data-tcg-type="fighting"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/fighting.png"); }
+.tcg-energy-icon[data-tcg-type="darkness"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/darkness.png"); }
+.tcg-energy-icon[data-tcg-type="metal"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/metal.png"); }
+.tcg-energy-icon[data-tcg-type="dragon"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/dragon.png"); }
+.tcg-energy-icon[data-tcg-type="colorless"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/colorless.png"); }
 
 .card-unit-lock {
     position: absolute;
@@ -518,40 +519,26 @@ a:focus-visible {
 }
 
 /* La couleur du type pilote le liseré et les composants associés. */
-[data-type="normal"] { --type-accent: var(--color-type-normal); }
-[data-type="fire"] { --type-accent: var(--color-type-fire); }
-[data-type="water"] { --type-accent: var(--color-type-water); }
-[data-type="electric"] { --type-accent: var(--color-type-electric); }
-[data-type="grass"] { --type-accent: var(--color-type-grass); }
-[data-type="ice"] { --type-accent: var(--color-type-ice); }
-[data-type="fighting"] { --type-accent: var(--color-type-fighting); }
-[data-type="poison"] { --type-accent: var(--color-type-poison); }
-[data-type="ground"] { --type-accent: var(--color-type-ground); }
-[data-type="flying"] { --type-accent: var(--color-type-flying); }
-[data-type="psychic"] { --type-accent: var(--color-type-psychic); }
-[data-type="bug"] { --type-accent: var(--color-type-bug); }
-[data-type="rock"] { --type-accent: var(--color-type-rock); }
-[data-type="ghost"] { --type-accent: var(--color-type-ghost); }
-[data-type="dragon"] { --type-accent: var(--color-type-dragon); }
-[data-type="dark"] { --type-accent: var(--color-type-dark); }
-[data-type="steel"] { --type-accent: var(--color-type-steel); }
-[data-type="fairy"] { --type-accent: var(--color-type-fairy); }
+[data-tcg-type="grass"] { --type-accent: var(--color-tcg-grass); }
+[data-tcg-type="fire"] { --type-accent: var(--color-tcg-fire); }
+[data-tcg-type="water"] { --type-accent: var(--color-tcg-water); }
+[data-tcg-type="lightning"] { --type-accent: var(--color-tcg-lightning); }
+[data-tcg-type="psychic"] { --type-accent: var(--color-tcg-psychic); }
+[data-tcg-type="fighting"] { --type-accent: var(--color-tcg-fighting); }
+[data-tcg-type="darkness"] { --type-accent: var(--color-tcg-darkness); }
+[data-tcg-type="metal"] { --type-accent: var(--color-tcg-metal); }
+[data-tcg-type="dragon"] { --type-accent: var(--color-tcg-dragon); }
+[data-tcg-type="colorless"] { --type-accent: var(--color-tcg-colorless); }
 
-.card-unit[data-type],
-.card-unit-type[data-type] {
+.card-unit[data-tcg-type],
+.card-unit-type[data-tcg-type] {
     border-color: var(--type-accent);
 }
 
-.card-unit-type[data-type],
-.type-choice[data-type],
-.active-type[data-type] {
+.card-unit-type[data-tcg-type],
+.type-choice[data-tcg-type],
+.active-type[data-tcg-type] {
     background-color: var(--type-accent);
-}
-
-.card-unit-type[data-type="ghost"],
-.card-unit-type[data-type="dragon"],
-.card-unit-type[data-type="dark"] {
-    border-color: rgba(255, 255, 255, 0.82);
 }
 
 .btn-icon {
@@ -589,7 +576,9 @@ label {
     font-weight: 750;
 }
 
-input, select {
+input,
+select,
+textarea {
     width: 100%;
     min-height: 46px;
     padding: 10px var(--space-3);
@@ -600,11 +589,15 @@ input, select {
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
-input:hover, select:hover {
+input:hover,
+select:hover,
+textarea:hover {
     border-color: #456485;
 }
 
-input:focus-visible, select:focus-visible {
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
     outline: 0;
     border-color: var(--color-focus-ring);
     background: rgba(4, 12, 23, 0.82);

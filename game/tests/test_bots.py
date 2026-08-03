@@ -108,7 +108,7 @@ class BotDecisionTests(BotGameTestCase):
         self.assertEqual(self.game.current_turn_number, self.human.turn_order)
         self.assertEqual(self.game.turn_revision, 2)
 
-    def test_wild_card_declares_the_most_common_remaining_family(self):
+    def test_wild_card_declares_the_most_common_remaining_tcg_type(self):
         self.set_running()
         self.put_card(self.cards["charmander"], location=GameCard.Location.DEFAUSSE)
         wild = self.put_card(self.cards["zapdos"], location=GameCard.Location.MAIN, owner=self.bot)
@@ -127,9 +127,9 @@ class BotDecisionTests(BotGameTestCase):
         )
         self.assertEqual(decision.kind, "play")
         self.assertEqual(decision.card_id, wild.id)
-        self.assertEqual(decision.declared_family, "ecosystem")
-        self.assertEqual(self.game.active_family, "ecosystem")
-        self.assertEqual(move.declared_family, "ecosystem")
+        self.assertEqual(decision.declared_tcg_type, "grass")
+        self.assertEqual(self.game.active_tcg_type, "grass")
+        self.assertEqual(move.declared_tcg_type, "grass")
 
     def test_bot_can_win_without_creating_a_profile(self):
         self.set_running()

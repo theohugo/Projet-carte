@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 from game.models import GameCard, PokemonCard
-from game.type_families import TYPE_FAMILIES, family_slugs_for_card
+from game.tcg_types import TCG_TYPES
 
 if TYPE_CHECKING:
     from game.game_engine import GameEngine
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class BotDecision:
     kind: Literal["play", "draw"]
     card_id: int | None = None
-    declared_family: str = ""
+    declared_tcg_type: str = ""
 
 
 ACTION_PRIORITY = {
@@ -28,15 +28,15 @@ ACTION_PRIORITY = {
 }
 
 
-def _best_declared_family(remaining_cards: list[GameCard]) -> str:
+def _best_declared_tcg_type(remaining_cards: list[GameCard]) -> str:
     counts: Counter[str] = Counter()
     for game_card in remaining_cards:
-        counts.update(family_slugs_for_card(game_card.pokemon_card))
+        counts.update([game_card.pokemon_card.tcg_type])
 
-    family_order = {family.slug: index for index, family in enumerate(TYPE_FAMILIES)}
+    type_order = {tcg_type.slug: index for index, tcg_type in enumerate(TCG_TYPES)}
     if not counts:
-        return TYPE_FAMILIES[0].slug
-    return min(counts, key=lambda slug: (-counts[slug], family_order[slug]))
+        return TCG_TYPES[0].slug
+    return min(counts, key=lambda slug: (-counts[slug], type_order[slug]))
 
 
 def choose_bot_move(engine: "GameEngine", bot: "GamePlayer") -> BotDecision:
@@ -56,18 +56,22 @@ def choose_bot_move(engine: "GameEngine", bot: "GamePlayer") -> BotDecision:
     selected = min(
         playable,
         key=lambda game_card: (
-            engine.requires_family_choice(game_card.pokemon_card),
+            engine.requires_tcg_type_choice(game_card.pokemon_card),
             ACTION_PRIORITY[game_card.pokemon_card.action],
             game_card.order_index,
             game_card.id,
         ),
     )
-    declared_family = ""
-    if engine.requires_family_choice(selected.pokemon_card):
-        declared_family = _best_declared_family(
+    declared_tcg_type = ""
+    if engine.requires_tcg_type_choice(selected.pokemon_card):
+        declared_tcg_type = _best_declared_tcg_type(
             [game_card for game_card in hand if game_card.pk != selected.pk]
         )
-    return BotDecision(kind="play", card_id=selected.id, declared_family=declared_family)
+    return BotDecision(
+        kind="play",
+        card_id=selected.id,
+        declared_tcg_type=declared_tcg_type,
+    )
 
 
 def perform_bot_turn(engine: "GameEngine") -> BotDecision:
@@ -80,5 +84,5 @@ def perform_bot_turn(engine: "GameEngine") -> BotDecision:
     game_card = GameCard.objects.select_related(
         "pokemon_card__primary_type", "pokemon_card__secondary_type"
     ).get(pk=decision.card_id, game=engine.game)
-    engine.play_card(bot, game_card, declared_family=decision.declared_family)
+    engine.play_card(bot, game_card, declared_tcg_type=decision.declared_tcg_type)
     return decision

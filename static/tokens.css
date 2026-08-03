@@ -1,25 +1,17 @@
 :root {
     color-scheme: dark;
 
-    /* Types Pokémon */
-    --color-type-normal: #b8b89a;
-    --color-type-fire: #ff7043;
-    --color-type-water: #5595ff;
-    --color-type-electric: #f5cc37;
-    --color-type-grass: #6fcf72;
-    --color-type-ice: #81d8d0;
-    --color-type-fighting: #d34b45;
-    --color-type-poison: #b665c2;
-    --color-type-ground: #dfbd63;
-    --color-type-flying: #a78bfa;
-    --color-type-psychic: #ff648e;
-    --color-type-bug: #a8bf3f;
-    --color-type-rock: #bba44d;
-    --color-type-ghost: #7563aa;
-    --color-type-dragon: #7657ff;
-    --color-type-dark: #625a58;
-    --color-type-steel: #aeb6ca;
-    --color-type-fairy: #f09ab6;
+    /* Dix identités modernes du Jeu de Cartes à Collectionner Pokémon. */
+    --color-tcg-grass: #64b95b;
+    --color-tcg-fire: #e75b3c;
+    --color-tcg-water: #4f92cf;
+    --color-tcg-lightning: #f2ce3e;
+    --color-tcg-psychic: #a861a8;
+    --color-tcg-fighting: #cf6b32;
+    --color-tcg-darkness: #4d4b55;
+    --color-tcg-metal: #9eaeb8;
+    --color-tcg-dragon: #c8a72d;
+    --color-tcg-colorless: #b9bcc3;
 
     /* Marque et surfaces */
     --color-bg: #050b14;

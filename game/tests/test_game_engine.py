@@ -12,6 +12,7 @@ from game.game_engine import (
     card_point_value,
 )
 from game.models import Game, GameCard, MoveLog, PokemonCard
+from game.tcg_types import TCG_TYPES
 from game.tests.factories import make_cards, make_game, make_types, make_users
 
 
@@ -142,10 +143,11 @@ class MoveValidationTests(GameEngineTestCase):
         ok, _ = self.engine.is_move_valid(self.current, foreign_card)
         self.assertFalse(ok)
 
-    def test_two_different_types_from_the_same_family_are_compatible(self):
+    def test_same_tcg_type_is_compatible_despite_different_source_types(self):
         flying_card = self.cards["zapdos"]
         flying_card.is_legendary = False
-        flying_card.save(update_fields=["is_legendary"])
+        flying_card.tcg_type = "fire"
+        flying_card.save(update_fields=["is_legendary", "tcg_type"])
         self._put_card(self.cards["charmander"], location=GameCard.Location.DEFAUSSE)
         candidate = self._put_card(
             flying_card,
@@ -157,10 +159,13 @@ class MoveValidationTests(GameEngineTestCase):
 
         self.assertTrue(ok, reason)
 
-    def test_cards_from_different_families_are_incompatible(self):
+    def test_same_source_type_does_not_match_when_tcg_types_differ(self):
+        candidate_card = self.cards["charmander_evo"]
+        candidate_card.tcg_type = "water"
+        candidate_card.save(update_fields=["tcg_type"])
         self._put_card(self.cards["charmander"], location=GameCard.Location.DEFAUSSE)
         candidate = self._put_card(
-            self.cards["squirtle"],
+            candidate_card,
             location=GameCard.Location.MAIN,
             owner=self.current,
         )
@@ -168,9 +173,9 @@ class MoveValidationTests(GameEngineTestCase):
         ok, reason = self.engine.is_move_valid(self.current, candidate)
 
         self.assertFalse(ok)
-        self.assertIn("famille", reason)
+        self.assertIn("type JCC", reason)
 
-    def test_declared_family_overrides_the_top_card_family(self):
+    def test_active_tcg_type_overrides_the_top_card_type(self):
         self._put_card(self.cards["charmander"], location=GameCard.Location.DEFAUSSE)
         water_candidate = self._put_card(
             self.cards["squirtle"],
@@ -182,8 +187,8 @@ class MoveValidationTests(GameEngineTestCase):
             location=GameCard.Location.MAIN,
             owner=self.current,
         )
-        self.game.active_family = "tides"
-        self.game.save(update_fields=["active_family"])
+        self.game.active_tcg_type = "water"
+        self.game.save(update_fields=["active_tcg_type"])
 
         water_ok, water_reason = self.engine.is_move_valid(self.current, water_candidate)
         grass_ok, _ = self.engine.is_move_valid(self.current, grass_candidate)
@@ -191,7 +196,7 @@ class MoveValidationTests(GameEngineTestCase):
         self.assertTrue(water_ok, water_reason)
         self.assertFalse(grass_ok)
 
-    def test_normal_card_discards_an_unexpected_declared_family(self):
+    def test_normal_card_discards_an_unexpected_declared_tcg_type(self):
         self._put_card(self.cards["charmander"], location=GameCard.Location.DEFAUSSE)
         candidate = self._put_card(
             self.cards["charmander_evo"],
@@ -199,12 +204,12 @@ class MoveValidationTests(GameEngineTestCase):
             owner=self.current,
         )
 
-        self.engine.play_card(self.current, candidate, declared_family="ecosystem")
+        self.engine.play_card(self.current, candidate, declared_tcg_type="grass")
 
         self.game.refresh_from_db()
         move = MoveLog.objects.get(game=self.game, game_card=candidate)
-        self.assertEqual(self.game.active_family, "")
-        self.assertEqual(move.declared_family, "")
+        self.assertEqual(self.game.active_tcg_type, "")
+        self.assertEqual(move.declared_tcg_type, "")
 
     def test_legendary_card_always_playable(self):
         # On force une carte légendaire dans la main du joueur courant.
@@ -218,7 +223,7 @@ class MoveValidationTests(GameEngineTestCase):
         ok, _ = self.engine.is_move_valid(self.current, legendary_instance)
         self.assertTrue(ok)
 
-    def test_legendary_play_requires_declared_family(self):
+    def test_legendary_play_requires_a_valid_declared_tcg_type(self):
         legendary_instance = GameCard.objects.filter(
             game=self.game, pokemon_card=self.cards["zapdos"]
         ).first()
@@ -227,7 +232,65 @@ class MoveValidationTests(GameEngineTestCase):
         legendary_instance.save(update_fields=["location", "owner"])
 
         with self.assertRaises(InvalidMoveError):
-            self.engine.play_card(self.current, legendary_instance, declared_family=None)
+            self.engine.play_card(self.current, legendary_instance, declared_tcg_type=None)
+
+        with self.assertRaises(InvalidMoveError):
+            self.engine.play_card(
+                self.current,
+                legendary_instance,
+                declared_tcg_type="poison",
+            )
+
+    def test_legendary_play_stores_the_normalized_tcg_type_slug(self):
+        legendary_instance = GameCard.objects.filter(
+            game=self.game, pokemon_card=self.cards["zapdos"]
+        ).first()
+        legendary_instance.location = GameCard.Location.MAIN
+        legendary_instance.owner = self.current
+        legendary_instance.save(update_fields=["location", "owner"])
+
+        self.engine.play_card(
+            self.current,
+            legendary_instance,
+            declared_tcg_type=" WATER ",
+        )
+
+        self.game.refresh_from_db()
+        move = MoveLog.objects.get(game=self.game, game_card=legendary_instance)
+        self.assertEqual(self.game.active_tcg_type, "water")
+        self.assertEqual(move.declared_tcg_type, "water")
+
+    def test_state_exposes_exactly_the_ten_tcg_choices_without_legacy_keys(self):
+        legendary_instance = GameCard.objects.filter(
+            game=self.game, pokemon_card=self.cards["zapdos"]
+        ).first()
+        legendary_instance.location = GameCard.Location.MAIN
+        legendary_instance.owner = self.current
+        legendary_instance.save(update_fields=["location", "owner"])
+
+        state = self.engine.get_game_state(for_player=self.current)
+        own_state = next(player for player in state["players"] if player["id"] == self.current.id)
+        card_state = next(card for card in own_state["hand"] if card["id"] == legendary_instance.id)
+
+        self.assertEqual(
+            [entry["slug"] for entry in state["available_tcg_types"]],
+            [tcg_type.slug for tcg_type in TCG_TYPES],
+        )
+        self.assertEqual(len(state["available_tcg_types"]), 10)
+        self.assertIsNone(state["active_tcg_type"])
+        self.assertEqual(card_state["tcg_type"], "lightning")
+        self.assertEqual(card_state["tcg_type_label"], "Électrique")
+        self.assertTrue(card_state["requires_tcg_type_choice"])
+        for legacy_key in ("active_family", "available_families", "active_type"):
+            self.assertNotIn(legacy_key, state)
+        for legacy_key in (
+            "families",
+            "requires_family_choice",
+            "requires_declared_type",
+            "primary_type",
+            "secondary_type",
+        ):
+            self.assertNotIn(legacy_key, card_state)
 
 
 class PlayAndDrawTests(GameEngineTestCase):
@@ -348,7 +411,7 @@ class PlayAndDrawTests(GameEngineTestCase):
         self.engine.advance_turn()
         self.assertEqual(self.engine.get_current_player().pk, first.pk)
 
-    def test_end_game_scores_losers_by_remaining_hand_value(self):
+    def test_end_game_awards_remaining_hand_value_to_winner(self):
         self._start_manually()
         current = self.engine.get_current_player()
         other = self.p1 if current.pk == self.p0.pk else self.p0
@@ -361,10 +424,12 @@ class PlayAndDrawTests(GameEngineTestCase):
         self.engine.play_card(current, winning_hand[0])
 
         self.game.refresh_from_db()
+        current.refresh_from_db()
         other.refresh_from_db()
         self.assertEqual(self.game.status, Game.Status.TERMINEE)
-        # 10 (normale) + 25 (légendaire) = 35 points pour le perdant.
-        self.assertEqual(other.score, 35)
+        # 10 (normale) + 25 (légendaire) = 35 points pour le gagnant.
+        self.assertEqual(current.score, 35)
+        self.assertEqual(other.score, 0)
 
     def test_end_game_updates_profile_stats(self):
         self._start_manually()
@@ -448,20 +513,22 @@ class ActionCardEffectsTests(GameEngineTestCase):
             ).exists()
         )
 
-    def test_draw_four_changes_family_draws_four_and_skips_target(self):
+    def test_draw_four_changes_tcg_type_draws_four_and_skips_target(self):
         draw_four = self._make_action("zapdos", PokemonCard.Action.DRAW_FOUR)
         self._set_discard_top(self.cards["charmander"])
         hand = self._force_hand(self.p0, [draw_four, self.cards["squirtle"]])
         self._seed_draw_pile()
 
-        self.engine.play_card(self.p0, hand[0], declared_family="tides")
+        self.engine.play_card(self.p0, hand[0], declared_tcg_type="water")
 
         self.game.refresh_from_db()
-        self.assertEqual(self.game.active_family, "tides")
+        move = MoveLog.objects.get(game=self.game, game_card=hand[0])
+        self.assertEqual(self.game.active_tcg_type, "water")
+        self.assertEqual(move.declared_tcg_type, "water")
         self.assertEqual(self.p1.hand_cards.count(), 4)
         self.assertEqual(self.engine.get_current_player().pk, self.p2.pk)
 
-    def test_non_legendary_draw_four_requires_a_family_in_state_contract(self):
+    def test_non_legendary_draw_four_requires_a_tcg_type_in_state_contract(self):
         draw_four = self._make_action("charmander", PokemonCard.Action.DRAW_FOUR)
         self.assertFalse(draw_four.is_legendary)
         self._set_discard_top(self.cards["squirtle"])
@@ -471,12 +538,12 @@ class ActionCardEffectsTests(GameEngineTestCase):
         own_state = next(player for player in state["players"] if player["id"] == self.p0.id)
         card_state = next(card for card in own_state["hand"] if card["id"] == hand[0].id)
 
-        self.assertTrue(card_state["requires_family_choice"])
+        self.assertTrue(card_state["requires_tcg_type_choice"])
         with self.assertRaisesMessage(
             InvalidMoveError,
-            "Cette carte impose de choisir la prochaine famille.",
+            "Cette carte impose de choisir le prochain type JCC.",
         ):
-            self.engine.play_card(self.p0, hand[0], declared_family=None)
+            self.engine.play_card(self.p0, hand[0], declared_tcg_type=None)
 
     def test_reverse_changes_direction_before_selecting_next_player(self):
         reverse = self._make_action("charmander", PokemonCard.Action.REVERSE)

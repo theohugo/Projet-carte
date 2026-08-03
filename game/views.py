@@ -4,27 +4,41 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from game.api import get_lobby_state, invalidate_game_state_cache
 from game.forms import SignUpForm
 from game.game_engine import GameEngine, GameEngineError
 from game.models import Game, GameCard
-from game.type_families import TYPE_FAMILIES
+from game.tcg_types import TCG_TYPES
 
 OPPONENT_CARD_BACK_LIMIT = 10
 
 
 def signup(request):
+    next_url = request.POST.get("next") or request.GET.get("next") or ""
     if request.method == "POST":
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect("lobby")
+            if next_url and url_has_allowed_host_and_scheme(
+                next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                return redirect(next_url)
+            return redirect("home")
     else:
         form = SignUpForm()
-    return render(request, "registration/signup.html", {"form": form})
+    return render(request, "registration/signup.html", {"form": form, "next": next_url})
+
+
+@login_required
+def hub(request):
+    return render(request, "hub.html")
 
 
 @login_required
@@ -107,7 +121,23 @@ def game_detail(request, game_id):
     game = get_object_or_404(Game, pk=game_id)
     game_player = game.players.filter(user=request.user).first()
     if game_player is None:
-        return HttpResponseForbidden("Vous ne participez pas à cette partie.")
+        player_count = game.players.count()
+        can_join = game.status == Game.Status.EN_ATTENTE and player_count < game.max_players
+        return render(
+            request,
+            "join_invitation.html",
+            {
+                "mode_name": "Poké-Uno",
+                "mode_kicker": "Défausse · pouvoirs · types JCC",
+                "host_name": game.created_by.get_username(),
+                "player_count": player_count,
+                "max_players": game.max_players,
+                "can_join": can_join,
+                "join_url": reverse("join_game", kwargs={"game_id": game.id}),
+                "lobby_url": reverse("lobby"),
+            },
+            status=200 if can_join else 403,
+        )
     game_state = GameEngine(game).get_game_state(for_player=game_player)
     players_state = game_state["players"]
     my_index = next(index for index, player in enumerate(players_state) if "hand" in player)
@@ -142,6 +172,6 @@ def game_detail(request, game_id):
             "game_state": game_state,
             "my_player": my_player,
             "opponents": opponents,
-            "declared_families": TYPE_FAMILIES,
+            "declared_tcg_types": TCG_TYPES,
         },
     )

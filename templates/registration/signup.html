@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Créer un compte — Poké-Uno{% endblock %}
+{% block title %}Créer un compte — PokéTable{% endblock %}
 {% block content %}
 <section class="auth-layout" aria-labelledby="auth-title">
     <div class="auth-showcase">
         <div>
             <p class="section-kicker">Nouveau challenger</p>
-            <h2>Construis ta main.<br>Prends l’avantage.</h2>
-            <p>Crée ton profil pour ouvrir un salon et défier tes amis sur un plateau vivant.</p>
+            <p class="auth-showcase-title">Choisis ton jeu.<br>Invite tes amis.</p>
+            <p>Crée ton profil pour ouvrir une table et retrouver tous les jeux Pokémon du salon.</p>
         </div>
         <div class="auth-card-fan" aria-hidden="true"><span></span><span></span><span></span></div>
         <ul class="feature-list" aria-label="Fonctionnalités">
@@ -22,9 +22,10 @@
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
             <button type="submit" class="btn btn-primary btn-block">Créer mon compte</button>
         </form>
-        <p class="auth-switch">Déjà un compte ? <a href="{% url 'login' %}">Se connecter</a></p>
+        <p class="auth-switch">Déjà un compte ? <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Se connecter</a></p>
     </div>
 </section>
 {% endblock %}

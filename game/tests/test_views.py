@@ -6,8 +6,8 @@ from django.urls import reverse
 
 from game.game_engine import GameEngine
 from game.models import Game, GameCard
+from game.tcg_types import TCG_TYPES
 from game.tests.factories import make_cards, make_game, make_types, make_users
-from game.type_families import TYPE_FAMILIES
 
 
 class AnonymousAccessTests(TestCase):
@@ -22,6 +22,43 @@ class AnonymousAccessTests(TestCase):
         response = self.client.get(reverse("game_detail", args=[game.id]))
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("login"), response.url)
+
+
+class SignupRedirectTests(TestCase):
+    def test_new_account_returns_to_a_safe_game_invitation(self):
+        (owner,) = make_users(1)
+        game = make_game(owner)
+        GameEngine(game).add_player(owner)
+        invitation_path = reverse("game_detail", args=[game.id])
+
+        response = self.client.get(invitation_path)
+        login_response = self.client.get(response.url)
+
+        self.assertContains(login_response, f"?next={invitation_path}")
+        response = self.client.post(
+            reverse("signup"),
+            {
+                "username": "invitee",
+                "password1": "A-very-safe-password-2026!",
+                "password2": "A-very-safe-password-2026!",
+                "next": invitation_path,
+            },
+        )
+        self.assertRedirects(response, invitation_path, fetch_redirect_response=False)
+        self.assertEqual(self.client.get(invitation_path).status_code, 200)
+
+    def test_signup_rejects_an_external_next_url(self):
+        response = self.client.post(
+            reverse("signup"),
+            {
+                "username": "safe-user",
+                "password1": "A-very-safe-password-2026!",
+                "password2": "A-very-safe-password-2026!",
+                "next": "https://attacker.example/steal",
+            },
+        )
+
+        self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
 
 
 class LobbyTests(TestCase):
@@ -61,10 +98,28 @@ class PermissionTests(TestCase):
         self.game = make_game(self.owner)
         GameEngine(self.game).add_player(self.owner)
 
-    def test_non_participant_cannot_view_game_detail(self):
+    def test_non_participant_can_accept_an_invitation_to_an_open_game(self):
         self.client.force_login(self.outsider)
         response = self.client.get(reverse("game_detail", args=[self.game.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "join_invitation.html")
+        self.assertContains(response, reverse("join_game", args=[self.game.id]))
+
+        response = self.client.post(reverse("join_game", args=[self.game.id]))
+        self.assertRedirects(response, reverse("game_detail", args=[self.game.id]))
+        self.assertTrue(self.game.players.filter(user=self.outsider).exists())
+
+    def test_non_participant_cannot_view_a_started_game(self):
+        self.game.status = Game.Status.EN_COURS
+        self.game.save(update_fields=["status"])
+        self.client.force_login(self.outsider)
+
+        response = self.client.get(reverse("game_detail", args=[self.game.id]))
+
         self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, "join_invitation.html")
+        self.assertContains(response, "Invitation expirée", status_code=403)
 
     def test_non_participant_cannot_read_game_state(self):
         self.client.force_login(self.outsider)
@@ -158,7 +213,7 @@ class GameBoardRenderingTests(TestCase):
         response = self.client.get(reverse("game_detail", args=[game.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'class="type-energy-icon"')
+        self.assertContains(response, 'class="tcg-energy-icon"')
         self.assertContains(response, "Non jouable")
 
     @mock.patch("game.game_engine.HAND_SIZE", 3)
@@ -214,7 +269,7 @@ class GameBoardRenderingTests(TestCase):
         self.assertNotContains(response, '"card_back_slots"')
         self.assertNotContains(response, '"hidden_card_count"')
 
-    def test_family_selector_and_wild_card_contract_are_rendered(self):
+    def test_tcg_type_selector_and_wild_card_contract_are_rendered(self):
         types = make_types()
         cards = make_cards(types)
         first, second = make_users(2)
@@ -236,16 +291,16 @@ class GameBoardRenderingTests(TestCase):
         response = self.client.get(reverse("game_detail", args=[game.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["declared_families"], TYPE_FAMILIES)
+        self.assertEqual(response.context["declared_tcg_types"], TCG_TYPES)
         self.assertContains(
             response,
-            'data-requires-family-choice="true"',
+            'data-requires-tcg-type-choice="true"',
             count=1,
         )
         self.assertContains(
             response,
-            "data-declared-family=",
-            count=len(TYPE_FAMILIES),
+            "data-declared-tcg-type=",
+            count=len(TCG_TYPES),
         )
 
 
@@ -369,20 +424,20 @@ class GameStateApiSecurityTests(TestCase):
         self.assertIn("hand", mine)
         self.assertEqual(len(mine["hand"]), 1)
 
-    def test_state_uses_family_contract_and_marks_wild_cards(self):
-        active_family = next(family for family in TYPE_FAMILIES if family.slug == "skyfire")
-        self.game.active_family = active_family.slug
-        self.game.save(update_fields=["active_family"])
+    def test_state_uses_tcg_type_contract_and_marks_wild_cards(self):
+        active_tcg_type = next(tcg_type for tcg_type in TCG_TYPES if tcg_type.slug == "lightning")
+        self.game.active_tcg_type = active_tcg_type.slug
+        self.game.save(update_fields=["active_tcg_type"])
         self.client.force_login(self.p1_user)
 
         response = self.client.get(reverse("api_game_state", args=[self.game.id]))
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["active_family"], active_family.as_dict())
+        self.assertEqual(data["active_tcg_type"], active_tcg_type.as_dict())
         self.assertEqual(
-            data["available_families"],
-            [family.as_dict() for family in TYPE_FAMILIES],
+            data["available_tcg_types"],
+            [tcg_type.as_dict() for tcg_type in TCG_TYPES],
         )
         self.assertNotIn("active_type", data)
         mine = next(player for player in data["players"] if player["id"] == self.gp1.id)
@@ -395,16 +450,17 @@ class GameStateApiSecurityTests(TestCase):
                 "name_fr",
                 "name_en",
                 "sprite_url",
-                "primary_type",
-                "secondary_type",
-                "families",
+                "tcg_type",
+                "tcg_type_label",
                 "is_legendary",
-                "requires_family_choice",
+                "requires_tcg_type_choice",
                 "action",
                 "action_label",
             },
         )
-        self.assertIs(card["requires_family_choice"], True)
+        self.assertEqual(card["tcg_type"], "lightning")
+        self.assertEqual(card["tcg_type_label"], "Électrique")
+        self.assertIs(card["requires_tcg_type_choice"], True)
 
 
 class PlayCardPayloadValidationTests(TestCase):
@@ -428,11 +484,28 @@ class PlayCardPayloadValidationTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["error"], "La requête doit être un objet JSON.")
 
-    def test_declared_family_must_be_a_string_or_null(self):
-        response = self.post_payload({"game_card_id": 1, "declared_family": {}})
+    def test_declared_tcg_type_must_be_a_string_or_null(self):
+        response = self.post_payload({"game_card_id": 1, "declared_tcg_type": {}})
 
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()["error"], "Famille déclarée invalide.")
+        self.assertEqual(response.json()["error"], "Type JCC déclaré invalide.")
+
+    def test_game_card_id_must_be_a_positive_integer(self):
+        for invalid_id in ("abc", {}, [], True, 0, -1):
+            with self.subTest(invalid_id=invalid_id):
+                response = self.post_payload({"game_card_id": invalid_id})
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.json()["error"], "Identifiant de carte invalide.")
+
+    def test_invalid_utf8_payload_is_rejected(self):
+        response = self.client.post(
+            self.url,
+            data=b"\xff",
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "Requête invalide.")
 
 
 class BotTurnApiViewTests(TestCase):
@@ -464,9 +537,10 @@ class BotTurnApiViewTests(TestCase):
     def test_invalid_turn_revision_is_rejected(self):
         self.client.force_login(self.owner)
 
-        response = self.post_turn(self.client, {})
-
-        self.assertEqual(response.status_code, 400)
+        for payload in ({}, [], {"expected_turn_revision": True}, {"expected_turn_revision": "7"}):
+            with self.subTest(payload=payload):
+                response = self.post_turn(self.client, payload)
+                self.assertEqual(response.status_code, 400)
 
     @mock.patch("game.api.perform_bot_turn")
     def test_human_current_turn_is_a_noop(self, perform_bot_turn):

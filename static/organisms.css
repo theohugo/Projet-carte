@@ -48,6 +48,37 @@
     margin-left: auto;
 }
 
+.site-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 4px;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 14px;
+    background: rgba(4, 13, 25, 0.58);
+}
+
+.site-nav a {
+    padding: 7px 10px;
+    border-radius: 10px;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 800;
+    text-decoration: none;
+    transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.site-nav a:hover,
+.site-nav a:focus-visible {
+    color: var(--color-text);
+    background: rgba(117, 216, 255, 0.1);
+}
+
+.site-nav a[aria-current="page"] {
+    color: #071a2d;
+    background: var(--color-brand);
+}
+
 .site-user {
     display: inline-flex;
     min-width: 0;
@@ -98,6 +129,235 @@
     padding: clamp(var(--space-4), 4vw, var(--space-7)) var(--space-5) var(--space-8);
 }
 
+/* Accueil multijeux */
+.hub-page {
+    display: grid;
+    gap: clamp(var(--space-5), 4vw, var(--space-7));
+}
+
+.hub-hero {
+    position: relative;
+    display: grid;
+    min-height: 330px;
+    grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+    align-items: center;
+    overflow: hidden;
+    padding: clamp(var(--space-6), 6vw, var(--space-8));
+    border: 1px solid rgba(117, 216, 255, 0.2);
+    border-radius: var(--radius-xl);
+    background:
+        radial-gradient(circle at 76% 36%, rgba(117, 216, 255, 0.24), transparent 17rem),
+        radial-gradient(circle at 12% 100%, rgba(170, 140, 255, 0.18), transparent 22rem),
+        linear-gradient(145deg, rgba(18, 55, 94, 0.96), rgba(7, 18, 34, 0.98));
+    box-shadow: var(--shadow-raised);
+}
+
+.hub-hero::after {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 34px 34px;
+    content: "";
+    mask-image: linear-gradient(90deg, #000, transparent 86%);
+}
+
+.hub-hero > * {
+    position: relative;
+    z-index: 1;
+}
+
+.hub-hero h1 {
+    max-width: 780px;
+    margin: 0 0 var(--space-4);
+    font-size: clamp(3rem, 7vw, 6.1rem);
+    letter-spacing: -0.065em;
+    line-height: 0.94;
+}
+
+.hub-hero h1 span {
+    color: var(--color-brand);
+}
+
+.hub-hero p:not(.section-kicker) {
+    max-width: 650px;
+    margin: 0;
+    color: #c0d0e3;
+    font-size: clamp(1rem, 2vw, 1.22rem);
+}
+
+.hub-orbit {
+    position: relative;
+    width: min(27vw, 280px);
+    aspect-ratio: 1;
+    justify-self: center;
+    border: 1px solid rgba(117, 216, 255, 0.26);
+    border-radius: 50%;
+    animation: orbit 18s linear infinite;
+}
+
+.hub-orbit::before,
+.hub-orbit::after {
+    position: absolute;
+    border: 1px solid rgba(170, 140, 255, 0.2);
+    border-radius: 50%;
+    content: "";
+}
+
+.hub-orbit::before { inset: 18%; }
+.hub-orbit::after { inset: -9%; }
+
+.hub-orbit-core {
+    position: absolute;
+    inset: 33%;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(5, 13, 26, 0.9);
+    box-shadow: 0 0 45px rgba(117, 216, 255, 0.28);
+    animation: orbit 18s linear infinite reverse;
+}
+
+.hub-orbit > .tcg-energy-icon {
+    position: absolute;
+    width: 42px;
+    height: 42px;
+    padding: 7px;
+    border: 2px solid rgba(255, 255, 255, 0.76);
+    border-radius: 50%;
+    background-color: var(--type-accent);
+    box-shadow: 0 9px 20px rgba(0, 0, 0, 0.34);
+    animation: orbit 18s linear infinite reverse;
+}
+
+.hub-orbit > :nth-child(2) { top: -21px; left: calc(50% - 21px); }
+.hub-orbit > :nth-child(3) { top: calc(50% - 21px); right: -21px; }
+.hub-orbit > :nth-child(4) { bottom: -21px; left: calc(50% - 21px); }
+.hub-orbit > :nth-child(5) { top: calc(50% - 21px); left: -21px; }
+
+.game-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-5);
+}
+
+.game-mode-card {
+    display: grid;
+    min-height: 370px;
+    grid-template-rows: 180px 1fr;
+    overflow: hidden;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(155deg, rgba(24, 44, 72, 0.94), rgba(8, 19, 35, 0.98));
+    box-shadow: var(--shadow-soft);
+    transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.game-mode-card:hover {
+    border-color: rgba(117, 216, 255, 0.38);
+    box-shadow: var(--shadow-raised);
+    transform: translateY(-5px);
+}
+
+.game-mode-art {
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 130%, rgba(117, 216, 255, 0.38), transparent 56%), #0b213d;
+    perspective: 800px;
+}
+
+.mode-playing-card {
+    position: absolute;
+    top: 25px;
+    left: calc(50% - 55px);
+    display: grid;
+    width: 110px;
+    height: 150px;
+    place-items: center;
+    border: 4px solid var(--type-accent);
+    border-radius: 16px;
+    background: #f5f8fc;
+    box-shadow: 0 8px 0 #07101e, 0 20px 30px rgba(0, 0, 0, 0.4);
+}
+
+.mode-playing-card:nth-child(1) { z-index: 2; transform: translateZ(35px) rotate(1deg); }
+.mode-playing-card:nth-child(2) { transform: translateX(-82px) rotate(-17deg); }
+.mode-playing-card:nth-child(3) { transform: translateX(82px) rotate(17deg); }
+.mode-playing-card .tcg-energy-icon { width: 38px; height: 38px; }
+.mode-playing-card b { color: #18243a; font-size: 1.4rem; }
+
+.game-mode-copy {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: var(--space-5);
+}
+
+.game-mode-copy h2 {
+    margin: 0 0 var(--space-2);
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+.game-mode-copy > p:not(.section-kicker) {
+    flex: 1;
+    color: var(--color-text-muted);
+}
+
+.game-mode-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: var(--space-4);
+    color: var(--color-positive);
+    font-size: var(--font-size-xs);
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.game-mode-status i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 11px currentColor;
+}
+
+.guess-mode-art {
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle at 50% 100%, rgba(170, 140, 255, 0.46), transparent 58%), #1a183f;
+}
+
+.guess-silhouette {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    width: 96px;
+    height: 126px;
+    place-items: center;
+    border: 3px solid rgba(255, 255, 255, 0.82);
+    border-radius: 48% 48% 38% 38%;
+    color: #fff;
+    background: linear-gradient(145deg, #7756e8, #322474);
+    box-shadow: 0 18px 35px rgba(0, 0, 0, 0.42);
+    font-size: 3rem;
+    font-weight: 950;
+}
+
+.guess-card-mini {
+    position: absolute;
+    bottom: 17px;
+    width: 70px;
+    height: 90px;
+    border: 2px solid rgba(255, 255, 255, 0.42);
+    border-radius: 10px;
+    background: rgba(10, 20, 42, 0.8);
+}
+
+.guess-card-mini:nth-of-type(2) { left: 16%; transform: rotate(-12deg); }
+.guess-card-mini:nth-of-type(3) { right: 16%; transform: rotate(12deg); }
+.guess-card-mini:nth-of-type(4) { right: 30%; transform: translateY(12px); }
+
 /* Authentification */
 .auth-layout {
     display: grid;
@@ -125,13 +385,18 @@
         linear-gradient(145deg, #12375e, #0a172a 70%);
 }
 
-.auth-showcase h2 {
+.auth-showcase-title {
     max-width: 650px;
+    margin-top: 0;
     margin-bottom: var(--space-4);
     font-size: clamp(2.3rem, 5vw, 4.8rem);
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    line-height: 1.12;
+    text-wrap: balance;
 }
 
-.auth-showcase p:not(.section-kicker) {
+.auth-showcase p:not(.section-kicker):not(.auth-showcase-title) {
     max-width: 560px;
     color: #c3d2e5;
     font-size: var(--font-size-lg);
@@ -308,7 +573,7 @@
     opacity: 0.35;
 }
 
-.hero-card .type-energy-icon {
+.hero-card .tcg-energy-icon {
     width: 48px;
     height: 48px;
     padding: 12px;
@@ -319,18 +584,18 @@
 }
 
 .hero-card--water {
-    --hero-type: var(--color-type-water);
+    --hero-type: var(--color-tcg-water);
     transform: rotate(-18deg) translate(-62px, 16px);
 }
 
 .hero-card--fire {
-    --hero-type: var(--color-type-fire);
+    --hero-type: var(--color-tcg-fire);
     z-index: 2;
     transform: translateZ(45px) rotate(2deg) translateY(-12px);
 }
 
 .hero-card--electric {
-    --hero-type: var(--color-type-electric);
+    --hero-type: var(--color-tcg-lightning);
     transform: rotate(18deg) translate(62px, 18px);
 }
 
@@ -881,6 +1146,7 @@
     width: min(620px, calc(100vw - 32px));
     max-height: min(760px, calc(100vh - 32px));
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: var(--space-6);
     border: 1px solid rgba(170, 140, 255, 0.42);
     border-radius: var(--radius-lg);
@@ -930,6 +1196,15 @@
 }
 
 @media (max-width: 900px) {
+    .hub-hero {
+        min-height: 300px;
+        grid-template-columns: 1fr minmax(190px, 0.45fr);
+    }
+
+    .game-mode-grid {
+        gap: var(--space-4);
+    }
+
     .auth-layout {
         grid-template-columns: 1fr;
     }
@@ -1010,6 +1285,26 @@
 
     .site-user-copy {
         display: none;
+    }
+
+    .site-nav {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .hub-hero {
+        min-height: auto;
+        grid-template-columns: 1fr;
+        padding-block: var(--space-7);
+    }
+
+    .hub-orbit {
+        display: none;
+    }
+
+    .game-mode-grid {
+        grid-template-columns: 1fr;
     }
 
     .lobby-grid {
@@ -1179,6 +1474,10 @@
 .game-shell--active .site-user .user-avatar {
     width: 34px;
     height: 34px;
+}
+
+.game-shell--active .site-nav {
+    display: none;
 }
 
 .game-shell--active .site-actions .btn {
@@ -1598,7 +1897,7 @@
         right: 5px;
     }
 
-    .game-shell--active .center-row .type-energy-icon {
+    .game-shell--active .center-row .tcg-energy-icon {
         width: 13px;
         height: 13px;
     }

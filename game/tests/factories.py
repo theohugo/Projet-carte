@@ -29,6 +29,7 @@ def make_cards(types):
         name_fr="Salamèche",
         name_en="Charmander",
         primary_type=types["fire"],
+        tcg_type="fire",
         sprite_url="https://example.com/4.png",
     )
     squirtle = PokemonCard.objects.create(
@@ -37,6 +38,7 @@ def make_cards(types):
         name_fr="Carapuce",
         name_en="Squirtle",
         primary_type=types["water"],
+        tcg_type="water",
         sprite_url="https://example.com/7.png",
     )
     bulbasaur = PokemonCard.objects.create(
@@ -45,6 +47,7 @@ def make_cards(types):
         name_fr="Bulbizarre",
         name_en="Bulbasaur",
         primary_type=types["grass"],
+        tcg_type="grass",
         sprite_url="https://example.com/1.png",
     )
     charmander_evo = PokemonCard.objects.create(
@@ -53,6 +56,7 @@ def make_cards(types):
         name_fr="Reptincel",
         name_en="Charmeleon",
         primary_type=types["fire"],
+        tcg_type="fire",
         sprite_url="https://example.com/5.png",
     )
     zapdos = PokemonCard.objects.create(
@@ -61,6 +65,7 @@ def make_cards(types):
         name_fr="Électhor",
         name_en="Zapdos",
         primary_type=types["flying"],
+        tcg_type="lightning",
         sprite_url="https://example.com/145.png",
         is_legendary=True,
     )
