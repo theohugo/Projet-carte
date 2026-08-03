@@ -1,0 +1,636 @@
+{
+  "types": [
+    {
+      "slug": "grass",
+      "name_fr": "Plante",
+      "name_en": "Grass"
+    },
+    {
+      "slug": "poison",
+      "name_fr": "Poison",
+      "name_en": "Poison"
+    },
+    {
+      "slug": "fire",
+      "name_fr": "Feu",
+      "name_en": "Fire"
+    },
+    {
+      "slug": "flying",
+      "name_fr": "Vol",
+      "name_en": "Flying"
+    },
+    {
+      "slug": "water",
+      "name_fr": "Eau",
+      "name_en": "Water"
+    },
+    {
+      "slug": "bug",
+      "name_fr": "Insecte",
+      "name_en": "Bug"
+    },
+    {
+      "slug": "normal",
+      "name_fr": "Normal",
+      "name_en": "Normal"
+    },
+    {
+      "slug": "electric",
+      "name_fr": "Électrik",
+      "name_en": "Electric"
+    },
+    {
+      "slug": "ground",
+      "name_fr": "Sol",
+      "name_en": "Ground"
+    },
+    {
+      "slug": "fairy",
+      "name_fr": "Fée",
+      "name_en": "Fairy"
+    },
+    {
+      "slug": "psychic",
+      "name_fr": "Psy",
+      "name_en": "Psychic"
+    },
+    {
+      "slug": "fighting",
+      "name_fr": "Combat",
+      "name_en": "Fighting"
+    },
+    {
+      "slug": "rock",
+      "name_fr": "Roche",
+      "name_en": "Rock"
+    },
+    {
+      "slug": "steel",
+      "name_fr": "Acier",
+      "name_en": "Steel"
+    },
+    {
+      "slug": "ghost",
+      "name_fr": "Spectre",
+      "name_en": "Ghost"
+    },
+    {
+      "slug": "ice",
+      "name_fr": "Glace",
+      "name_en": "Ice"
+    },
+    {
+      "slug": "dragon",
+      "name_fr": "Dragon",
+      "name_en": "Dragon"
+    },
+    {
+      "slug": "dark",
+      "name_fr": "Ténèbres",
+      "name_en": "Dark"
+    }
+  ],
+  "cards": [
+    {
+      "pokedex_id": 1,
+      "slug": "bulbasaur",
+      "name_fr": "Bulbizarre",
+      "name_en": "Bulbasaur",
+      "primary_type": "grass",
+      "secondary_type": "poison",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 2,
+      "slug": "ivysaur",
+      "name_fr": "Herbizarre",
+      "name_en": "Ivysaur",
+      "primary_type": "grass",
+      "secondary_type": "poison",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/2.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 3,
+      "slug": "venusaur",
+      "name_fr": "Florizarre",
+      "name_en": "Venusaur",
+      "primary_type": "grass",
+      "secondary_type": "poison",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/3.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 4,
+      "slug": "charmander",
+      "name_fr": "Salamèche",
+      "name_en": "Charmander",
+      "primary_type": "fire",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 5,
+      "slug": "charmeleon",
+      "name_fr": "Reptincel",
+      "name_en": "Charmeleon",
+      "primary_type": "fire",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/5.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 6,
+      "slug": "charizard",
+      "name_fr": "Dracaufeu",
+      "name_en": "Charizard",
+      "primary_type": "fire",
+      "secondary_type": "flying",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 7,
+      "slug": "squirtle",
+      "name_fr": "Carapuce",
+      "name_en": "Squirtle",
+      "primary_type": "water",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 8,
+      "slug": "wartortle",
+      "name_fr": "Carabaffe",
+      "name_en": "Wartortle",
+      "primary_type": "water",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/8.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 9,
+      "slug": "blastoise",
+      "name_fr": "Tortank",
+      "name_en": "Blastoise",
+      "primary_type": "water",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/9.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 10,
+      "slug": "caterpie",
+      "name_fr": "Chenipan",
+      "name_en": "Caterpie",
+      "primary_type": "bug",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 16,
+      "slug": "pidgey",
+      "name_fr": "Roucool",
+      "name_en": "Pidgey",
+      "primary_type": "normal",
+      "secondary_type": "flying",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/16.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 19,
+      "slug": "rattata",
+      "name_fr": "Rattata",
+      "name_en": "Rattata",
+      "primary_type": "normal",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/19.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 23,
+      "slug": "ekans",
+      "name_fr": "Abo",
+      "name_en": "Ekans",
+      "primary_type": "poison",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/23.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 25,
+      "slug": "pikachu",
+      "name_fr": "Pikachu",
+      "name_en": "Pikachu",
+      "primary_type": "electric",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 27,
+      "slug": "sandshrew",
+      "name_fr": "Sabelette",
+      "name_en": "Sandshrew",
+      "primary_type": "ground",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/27.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 35,
+      "slug": "clefairy",
+      "name_fr": "Mélofée",
+      "name_en": "Clefairy",
+      "primary_type": "fairy",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/35.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 41,
+      "slug": "zubat",
+      "name_fr": "Nosferapti",
+      "name_en": "Zubat",
+      "primary_type": "poison",
+      "secondary_type": "flying",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/41.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 43,
+      "slug": "oddish",
+      "name_fr": "Mystherbe",
+      "name_en": "Oddish",
+      "primary_type": "grass",
+      "secondary_type": "poison",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/43.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 54,
+      "slug": "psyduck",
+      "name_fr": "Psykokwak",
+      "name_en": "Psyduck",
+      "primary_type": "water",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/54.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 58,
+      "slug": "growlithe",
+      "name_fr": "Caninos",
+      "name_en": "Growlithe",
+      "primary_type": "fire",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/58.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 63,
+      "slug": "abra",
+      "name_fr": "Abra",
+      "name_en": "Abra",
+      "primary_type": "psychic",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/63.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 65,
+      "slug": "alakazam",
+      "name_fr": "Alakazam",
+      "name_en": "Alakazam",
+      "primary_type": "psychic",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/65.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 66,
+      "slug": "machop",
+      "name_fr": "Machoc",
+      "name_en": "Machop",
+      "primary_type": "fighting",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/66.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 74,
+      "slug": "geodude",
+      "name_fr": "Racaillou",
+      "name_en": "Geodude",
+      "primary_type": "rock",
+      "secondary_type": "ground",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/74.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 79,
+      "slug": "slowpoke",
+      "name_fr": "Ramoloss",
+      "name_en": "Slowpoke",
+      "primary_type": "water",
+      "secondary_type": "psychic",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/79.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 81,
+      "slug": "magnemite",
+      "name_fr": "Magnéti",
+      "name_en": "Magnemite",
+      "primary_type": "electric",
+      "secondary_type": "steel",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/81.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 83,
+      "slug": "farfetchd",
+      "name_fr": "Canarticho",
+      "name_en": "Farfetch’d",
+      "primary_type": "normal",
+      "secondary_type": "flying",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/83.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 88,
+      "slug": "grimer",
+      "name_fr": "Tadmorv",
+      "name_en": "Grimer",
+      "primary_type": "poison",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/88.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 92,
+      "slug": "gastly",
+      "name_fr": "Fantominus",
+      "name_en": "Gastly",
+      "primary_type": "ghost",
+      "secondary_type": "poison",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/92.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 94,
+      "slug": "gengar",
+      "name_fr": "Ectoplasma",
+      "name_en": "Gengar",
+      "primary_type": "ghost",
+      "secondary_type": "poison",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 95,
+      "slug": "onix",
+      "name_fr": "Onix",
+      "name_en": "Onix",
+      "primary_type": "rock",
+      "secondary_type": "ground",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/95.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 106,
+      "slug": "hitmonlee",
+      "name_fr": "Kicklee",
+      "name_en": "Hitmonlee",
+      "primary_type": "fighting",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/106.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 109,
+      "slug": "koffing",
+      "name_fr": "Smogo",
+      "name_en": "Koffing",
+      "primary_type": "poison",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/109.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 116,
+      "slug": "horsea",
+      "name_fr": "Hypotrempe",
+      "name_en": "Horsea",
+      "primary_type": "water",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/116.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 122,
+      "slug": "mr-mime",
+      "name_fr": "M. Mime",
+      "name_en": "Mr. Mime",
+      "primary_type": "psychic",
+      "secondary_type": "fairy",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/122.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 123,
+      "slug": "scyther",
+      "name_fr": "Insécateur",
+      "name_en": "Scyther",
+      "primary_type": "bug",
+      "secondary_type": "flying",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/123.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 131,
+      "slug": "lapras",
+      "name_fr": "Lokhlass",
+      "name_en": "Lapras",
+      "primary_type": "water",
+      "secondary_type": "ice",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 132,
+      "slug": "ditto",
+      "name_fr": "Métamorph",
+      "name_en": "Ditto",
+      "primary_type": "normal",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/132.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 133,
+      "slug": "eevee",
+      "name_fr": "Évoli",
+      "name_en": "Eevee",
+      "primary_type": "normal",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 134,
+      "slug": "vaporeon",
+      "name_fr": "Aquali",
+      "name_en": "Vaporeon",
+      "primary_type": "water",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/134.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 135,
+      "slug": "jolteon",
+      "name_fr": "Voltali",
+      "name_en": "Jolteon",
+      "primary_type": "electric",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/135.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 137,
+      "slug": "porygon",
+      "name_fr": "Porygon",
+      "name_en": "Porygon",
+      "primary_type": "normal",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/137.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 143,
+      "slug": "snorlax",
+      "name_fr": "Ronflex",
+      "name_en": "Snorlax",
+      "primary_type": "normal",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 144,
+      "slug": "articuno",
+      "name_fr": "Artikodin",
+      "name_en": "Articuno",
+      "primary_type": "ice",
+      "secondary_type": "flying",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/144.png",
+      "is_legendary": true
+    },
+    {
+      "pokedex_id": 145,
+      "slug": "zapdos",
+      "name_fr": "Électhor",
+      "name_en": "Zapdos",
+      "primary_type": "electric",
+      "secondary_type": "flying",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/145.png",
+      "is_legendary": true
+    },
+    {
+      "pokedex_id": 146,
+      "slug": "moltres",
+      "name_fr": "Sulfura",
+      "name_en": "Moltres",
+      "primary_type": "fire",
+      "secondary_type": "flying",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/146.png",
+      "is_legendary": true
+    },
+    {
+      "pokedex_id": 147,
+      "slug": "dratini",
+      "name_fr": "Minidraco",
+      "name_en": "Dratini",
+      "primary_type": "dragon",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/147.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 149,
+      "slug": "dragonite",
+      "name_fr": "Dracolosse",
+      "name_en": "Dragonite",
+      "primary_type": "dragon",
+      "secondary_type": "flying",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 150,
+      "slug": "mewtwo",
+      "name_fr": "Mewtwo",
+      "name_en": "Mewtwo",
+      "primary_type": "psychic",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png",
+      "is_legendary": true
+    },
+    {
+      "pokedex_id": 151,
+      "slug": "mew",
+      "name_fr": "Mew",
+      "name_en": "Mew",
+      "primary_type": "psychic",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png",
+      "is_legendary": true
+    },
+    {
+      "pokedex_id": 197,
+      "slug": "umbreon",
+      "name_fr": "Noctali",
+      "name_en": "Umbreon",
+      "primary_type": "dark",
+      "secondary_type": null,
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/197.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 208,
+      "slug": "steelix",
+      "name_fr": "Steelix",
+      "name_en": "Steelix",
+      "primary_type": "steel",
+      "secondary_type": "ground",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/208.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 227,
+      "slug": "skarmory",
+      "name_fr": "Airmure",
+      "name_en": "Skarmory",
+      "primary_type": "steel",
+      "secondary_type": "flying",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/227.png",
+      "is_legendary": false
+    },
+    {
+      "pokedex_id": 228,
+      "slug": "houndour",
+      "name_fr": "Malosse",
+      "name_en": "Houndour",
+      "primary_type": "dark",
+      "secondary_type": "fire",
+      "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/228.png",
+      "is_legendary": false
+    }
+  ]
+}
