@@ -11,6 +11,7 @@ import random
 
 from django.utils import timezone
 
+from game.deck_builder import build_balanced_card_pool
 from game.models import Game, GameCard, GamePlayer, MoveLog, PokemonCard, Profile
 
 HAND_SIZE = 7
@@ -18,6 +19,10 @@ DECK_COPIES_PER_CARD = 2
 NORMAL_CARD_POINTS = 10
 LEGENDARY_CARD_POINTS = 25
 MIN_PLAYERS = 2
+DRAW_PENALTIES = {
+    PokemonCard.Action.DRAW_TWO: 2,
+    PokemonCard.Action.DRAW_FOUR: 4,
+}
 
 
 class GameEngineError(Exception):
@@ -69,9 +74,14 @@ class GameEngine:
     # -- Démarrage & distribution -----------------------------------------
 
     def build_deck(self):
-        """Crée les GameCard (copies du catalogue) en pioche, ordre mélangé."""
-        pokemon_cards = list(PokemonCard.objects.all())
-        physical_cards = pokemon_cards * DECK_COPIES_PER_CARD
+        """Crée une pioche complète, équilibrée par type, puis la mélange."""
+        pokemon_cards = list(
+            PokemonCard.objects.filter(in_current_deck=True).select_related("primary_type", "secondary_type")
+        )
+        physical_cards = build_balanced_card_pool(
+            pokemon_cards,
+            target_size=len(pokemon_cards) * DECK_COPIES_PER_CARD,
+        )
         random.shuffle(physical_cards)
 
         game_cards = []
@@ -87,6 +97,9 @@ class GameEngine:
         GameCard.objects.bulk_create(game_cards)
 
     def start_game(self):
+        if self.game.status != Game.Status.EN_ATTENTE:
+            raise GameNotJoinableError("La partie a déjà commencé.")
+
         players = list(self.game.players.all())
         if len(players) < MIN_PLAYERS:
             raise NotEnoughPlayersError(f"Il faut au moins {MIN_PLAYERS} joueurs.")
@@ -99,11 +112,10 @@ class GameEngine:
                 self._draw_top_of_pile(player)
         MoveLog.objects.create(game=self.game, move_type=MoveLog.MoveType.DISTRIBUTION)
 
-        # Première carte de la défausse : jamais une légendaire (elle exigerait
-        # un type déclaré sans joueur pour le faire). On la ré-insère dans la
-        # pioche avec un nouvel index tant que la carte piochée est légendaire.
+        # La première défausse n'a aucun effet : la partie commence sans type
+        # à déclarer, pénalité à distribuer ou sens à inverser.
         starter = self._draw_top_of_pile(owner=None)
-        while starter.pokemon_card.is_legendary:
+        while starter.pokemon_card.is_legendary or starter.pokemon_card.action != PokemonCard.Action.NORMAL:
             starter.location = GameCard.Location.PIOCHE
             starter.order_index = self.game.next_card_sequence()
             starter.save(update_fields=["location", "order_index"])
@@ -181,7 +193,7 @@ class GameEngine:
             return False, "Cette carte n'est pas dans votre main."
 
         pokemon_card = game_card.pokemon_card
-        if pokemon_card.is_legendary:
+        if self._is_wild_card(pokemon_card):
             return True, None
 
         top_discard = self.get_top_discard()
@@ -208,9 +220,9 @@ class GameEngine:
                 raise NotYourTurnError(reason)
             raise InvalidMoveError(reason)
 
-        if game_card.pokemon_card.is_legendary:
+        if self._is_wild_card(game_card.pokemon_card):
             if declared_type is None:
-                raise InvalidMoveError("Une carte légendaire impose de choisir le prochain type.")
+                raise InvalidMoveError("Cette carte impose de choisir le prochain type.")
             self.game.active_type = declared_type
         else:
             self.game.active_type = None
@@ -229,14 +241,58 @@ class GameEngine:
             declared_type=declared_type,
         )
 
+        self._apply_card_action(player, game_card.pokemon_card.action)
+
         if not GameCard.objects.filter(
             game=self.game, location=GameCard.Location.MAIN, owner=player
         ).exists():
             self.end_game(winner=player)
-        else:
-            self.advance_turn()
 
         return game_card
+
+    @staticmethod
+    def _is_wild_card(pokemon_card: PokemonCard) -> bool:
+        return pokemon_card.is_legendary or pokemon_card.action == PokemonCard.Action.DRAW_FOUR
+
+    def _apply_card_action(self, player: GamePlayer, action: str):
+        """Applique l'effet puis place le curseur sur le prochain joueur.
+
+        Un +2/+4 fait piocher et saute la cible. Un bouclier déjà actif annule
+        entièrement cette pénalité, est consommé, et laisse la cible jouer.
+        """
+        if action == PokemonCard.Action.SHIELD:
+            player.has_protection = True
+            player.save(update_fields=["has_protection"])
+            self.advance_turn()
+            return
+
+        if action == PokemonCard.Action.REVERSE:
+            self.game.direction = -1 if self.game.direction > 0 else 1
+            self.game.save(update_fields=["direction"])
+            self.advance_turn()
+            return
+
+        draw_count = DRAW_PENALTIES.get(action)
+        if draw_count is None:
+            self.advance_turn()
+            return
+
+        target = self._get_player_at_offset(1)
+        if target.has_protection:
+            target.has_protection = False
+            target.save(update_fields=["has_protection"])
+            self.advance_turn()
+            return
+
+        for _ in range(draw_count):
+            self._draw_top_of_pile(target)
+        self.game.save(update_fields=["card_sequence_counter"])
+        MoveLog.objects.create(
+            game=self.game,
+            player=target,
+            move_type=MoveLog.MoveType.PIOCHER,
+        )
+        self.advance_turn(steps=2)
 
     def draw_card(self, player: GamePlayer, count: int = 1) -> list[GameCard]:
         if self.game.status != Game.Status.EN_COURS:
@@ -250,9 +306,16 @@ class GameEngine:
         self.advance_turn()
         return drawn
 
-    def advance_turn(self):
+    def _get_player_at_offset(self, offset: int) -> GamePlayer:
         player_count = self.game.players.count()
-        self.game.current_turn_number = (self.game.current_turn_number + self.game.direction) % player_count
+        turn_order = (self.game.current_turn_number + (self.game.direction * offset)) % player_count
+        return self.game.players.get(turn_order=turn_order)
+
+    def advance_turn(self, steps: int = 1):
+        player_count = self.game.players.count()
+        self.game.current_turn_number = (
+            self.game.current_turn_number + (self.game.direction * steps)
+        ) % player_count
         self.game.save(update_fields=["current_turn_number"])
 
     # -- Fin de partie -------------------------------------------------------
@@ -288,8 +351,29 @@ class GameEngine:
         main d'un adversaire (seulement son nombre de cartes) : cette règle
         vit ici, dans le moteur, pour rester garantie quel que soit l'endpoint
         qui appelle get_game_state."""
-        top_discard = self.get_top_discard()
-        current_player = self.get_current_player() if self.game.status == Game.Status.EN_COURS else None
+        top_discard = (
+            GameCard.objects.select_related("pokemon_card__primary_type", "pokemon_card__secondary_type")
+            .filter(game=self.game, location=GameCard.Location.DEFAUSSE)
+            .order_by("-order_index")
+            .first()
+        )
+        players = list(self.game.players.select_related("user").all())
+        current_player = (
+            next((gp for gp in players if gp.turn_order == self.game.current_turn_number), None)
+            if self.game.status == Game.Status.EN_COURS
+            else None
+        )
+
+        # Une seule requête récupère toutes les mains, y compris leurs types.
+        # L'ancien code faisait une requête par adversaire à chaque poll, ce qui
+        # rendait le plateau inutilement lent dès qu'une partie comptait 5-6 joueurs.
+        hand_cards_by_owner = {gp.pk: [] for gp in players}
+        for game_card in (
+            GameCard.objects.select_related("pokemon_card__primary_type", "pokemon_card__secondary_type")
+            .filter(game=self.game, location=GameCard.Location.MAIN)
+            .order_by("order_index")
+        ):
+            hand_cards_by_owner[game_card.owner_id].append(game_card)
 
         def serialize_card(game_card):
             pc = game_card.pokemon_card
@@ -302,33 +386,33 @@ class GameEngine:
                 "primary_type": pc.primary_type.slug,
                 "secondary_type": pc.secondary_type.slug if pc.secondary_type else None,
                 "is_legendary": pc.is_legendary,
+                "requires_declared_type": self._is_wild_card(pc),
+                "action": pc.action,
+                "action_label": pc.get_action_display(),
             }
 
         players_payload = []
-        for gp in self.game.players.select_related("user").all():
+        for gp in players:
             entry = {
                 "id": gp.id,
                 "username": gp.user.username,
                 "turn_order": gp.turn_order,
                 "score": gp.score,
+                "has_protection": gp.has_protection,
                 "is_current_turn": current_player is not None and current_player.pk == gp.pk,
             }
             if gp.pk == for_player.pk:
-                entry["hand"] = [
-                    serialize_card(gc)
-                    for gc in GameCard.objects.filter(
-                        game=self.game, location=GameCard.Location.MAIN, owner=gp
-                    ).order_by("order_index")
-                ]
+                entry["hand"] = [serialize_card(gc) for gc in hand_cards_by_owner[gp.pk]]
             else:
-                entry["hand_count"] = GameCard.objects.filter(
-                    game=self.game, location=GameCard.Location.MAIN, owner=gp
-                ).count()
+                entry["hand_count"] = len(hand_cards_by_owner[gp.pk])
             players_payload.append(entry)
 
         return {
             "game_id": str(self.game.id),
             "status": self.game.status,
+            "max_players": self.game.max_players,
+            "is_creator": self.game.created_by_id == for_player.user_id,
+            "direction": self.game.direction,
             "active_type": self.game.active_type.slug if self.game.active_type else None,
             "top_discard": serialize_card(top_discard) if top_discard else None,
             "draw_pile_count": GameCard.objects.filter(

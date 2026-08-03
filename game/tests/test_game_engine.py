@@ -5,12 +5,13 @@ from django.test import TestCase
 from game.game_engine import (
     GameEngine,
     GameFullError,
+    GameNotJoinableError,
     InvalidMoveError,
     NotEnoughPlayersError,
     NotYourTurnError,
     card_point_value,
 )
-from game.models import Game, GameCard
+from game.models import Game, GameCard, MoveLog, PokemonCard
 from game.tests.factories import make_cards, make_game, make_types, make_users
 
 
@@ -74,19 +75,36 @@ class StartGameTests(GameEngineTestCase):
         top = self.engine.get_top_discard()
         self.assertFalse(top.pokemon_card.is_legendary)
 
-    def test_build_deck_creates_two_copies_of_every_catalogue_card(self):
+    @mock.patch("game.game_engine.HAND_SIZE", 2)
+    def test_start_game_cannot_be_called_twice(self):
+        self.engine.add_player(self.users[0])
+        self.engine.add_player(self.users[1])
+        self.engine.start_game()
+        card_count = GameCard.objects.filter(game=self.game).count()
+
+        with self.assertRaises(GameNotJoinableError):
+            self.engine.start_game()
+
+        self.assertEqual(GameCard.objects.filter(game=self.game).count(), card_count)
+
+    def test_build_deck_uses_two_copies_of_each_active_catalogue_card(self):
+        inactive_card = self.cards["charmander_evo"]
+        inactive_card.in_current_deck = False
+        inactive_card.save(update_fields=["in_current_deck"])
+
         self.engine.build_deck()
         from game.game_engine import DECK_COPIES_PER_CARD
         from game.models import PokemonCard
 
-        expected = PokemonCard.objects.count() * DECK_COPIES_PER_CARD
+        active_cards = PokemonCard.objects.filter(in_current_deck=True)
+        expected = active_cards.count() * DECK_COPIES_PER_CARD
         self.assertEqual(GameCard.objects.filter(game=self.game).count(), expected)
-        # Aucune carte perdue ni dupliquée par rapport au catalogue x DECK_COPIES_PER_CARD.
-        for card in PokemonCard.objects.all():
+        for card in active_cards:
             self.assertEqual(
                 GameCard.objects.filter(game=self.game, pokemon_card=card).count(),
                 DECK_COPIES_PER_CARD,
             )
+        self.assertFalse(GameCard.objects.filter(game=self.game, pokemon_card=inactive_card).exists())
 
 
 class MoveValidationTests(GameEngineTestCase):
@@ -284,6 +302,145 @@ class PlayAndDrawTests(GameEngineTestCase):
         current.user.profile.refresh_from_db()
         self.assertEqual(current.user.profile.total_games_played, 1)
         self.assertEqual(current.user.profile.total_games_won, 1)
+
+
+class ActionCardEffectsTests(GameEngineTestCase):
+    def setUp(self):
+        super().setUp()
+        self.p0 = self.engine.add_player(self.users[0])
+        self.p1 = self.engine.add_player(self.users[1])
+        self.p2 = self.engine.add_player(self.users[2])
+        self.game.status = Game.Status.EN_COURS
+        self.game.current_turn_number = self.p0.turn_order
+        self.game.save(update_fields=["status", "current_turn_number"])
+
+    def _force_hand(self, player, pokemon_cards):
+        cards = []
+        for pokemon_card in pokemon_cards:
+            cards.append(
+                GameCard.objects.create(
+                    game=self.game,
+                    pokemon_card=pokemon_card,
+                    location=GameCard.Location.MAIN,
+                    owner=player,
+                    order_index=self.game.next_card_sequence(),
+                )
+            )
+        self.game.save(update_fields=["card_sequence_counter"])
+        return cards
+
+    def _set_discard_top(self, pokemon_card):
+        card = GameCard.objects.create(
+            game=self.game,
+            pokemon_card=pokemon_card,
+            location=GameCard.Location.DEFAUSSE,
+            order_index=self.game.next_card_sequence(),
+        )
+        self.game.save(update_fields=["card_sequence_counter"])
+        return card
+
+    def _seed_draw_pile(self, count=8):
+        for _ in range(count):
+            GameCard.objects.create(
+                game=self.game,
+                pokemon_card=self.cards["bulbasaur"],
+                location=GameCard.Location.PIOCHE,
+                order_index=self.game.next_card_sequence(),
+            )
+        self.game.save(update_fields=["card_sequence_counter"])
+
+    def _make_action(self, card_name, action):
+        pokemon_card = self.cards[card_name]
+        pokemon_card.action = action
+        pokemon_card.save(update_fields=["action"])
+        return pokemon_card
+
+    def test_draw_two_makes_target_draw_and_skips_their_turn(self):
+        draw_two = self._make_action("charmander", PokemonCard.Action.DRAW_TWO)
+        self._set_discard_top(self.cards["charmander_evo"])
+        hand = self._force_hand(self.p0, [draw_two, self.cards["squirtle"]])
+        self._seed_draw_pile()
+
+        self.engine.play_card(self.p0, hand[0])
+
+        self.assertEqual(self.p1.hand_cards.count(), 2)
+        self.assertEqual(self.engine.get_current_player().pk, self.p2.pk)
+        self.assertTrue(
+            MoveLog.objects.filter(
+                game=self.game,
+                player=self.p1,
+                move_type=MoveLog.MoveType.PIOCHER,
+            ).exists()
+        )
+
+    def test_draw_four_changes_type_draws_four_and_skips_target(self):
+        draw_four = self._make_action("zapdos", PokemonCard.Action.DRAW_FOUR)
+        self._set_discard_top(self.cards["charmander"])
+        hand = self._force_hand(self.p0, [draw_four, self.cards["squirtle"]])
+        self._seed_draw_pile()
+
+        self.engine.play_card(self.p0, hand[0], declared_type=self.types["water"])
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.active_type, self.types["water"])
+        self.assertEqual(self.p1.hand_cards.count(), 4)
+        self.assertEqual(self.engine.get_current_player().pk, self.p2.pk)
+
+    def test_non_legendary_draw_four_requires_a_declared_type_in_state_contract(self):
+        draw_four = self._make_action("charmander", PokemonCard.Action.DRAW_FOUR)
+        self.assertFalse(draw_four.is_legendary)
+        self._set_discard_top(self.cards["squirtle"])
+        hand = self._force_hand(self.p0, [draw_four, self.cards["bulbasaur"]])
+
+        state = self.engine.get_game_state(for_player=self.p0)
+        own_state = next(player for player in state["players"] if player["id"] == self.p0.id)
+        card_state = next(card for card in own_state["hand"] if card["id"] == hand[0].id)
+
+        self.assertTrue(card_state["requires_declared_type"])
+        with self.assertRaisesMessage(InvalidMoveError, "Cette carte impose de choisir le prochain type."):
+            self.engine.play_card(self.p0, hand[0], declared_type=None)
+
+    def test_reverse_changes_direction_before_selecting_next_player(self):
+        reverse = self._make_action("charmander", PokemonCard.Action.REVERSE)
+        self._set_discard_top(self.cards["charmander_evo"])
+        hand = self._force_hand(self.p0, [reverse, self.cards["squirtle"]])
+
+        self.engine.play_card(self.p0, hand[0])
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.direction, -1)
+        self.assertEqual(self.engine.get_current_player().pk, self.p2.pk)
+
+    def test_shield_grants_protection_and_exposes_it_in_state(self):
+        shield = self._make_action("charmander", PokemonCard.Action.SHIELD)
+        self._set_discard_top(self.cards["charmander_evo"])
+        hand = self._force_hand(self.p0, [shield, self.cards["squirtle"]])
+
+        self.engine.play_card(self.p0, hand[0])
+
+        self.p0.refresh_from_db()
+        state = self.engine.get_game_state(for_player=self.p0)
+        own_state = next(player for player in state["players"] if player["id"] == self.p0.id)
+        self.assertTrue(self.p0.has_protection)
+        self.assertTrue(own_state["has_protection"])
+        self.assertEqual(state["top_discard"]["action"], PokemonCard.Action.SHIELD)
+        self.assertEqual(state["top_discard"]["action_label"], "Protection")
+        self.assertEqual(state["direction"], 1)
+
+    def test_shield_cancels_penalty_is_consumed_and_preserves_target_turn(self):
+        self.p1.has_protection = True
+        self.p1.save(update_fields=["has_protection"])
+        draw_two = self._make_action("charmander", PokemonCard.Action.DRAW_TWO)
+        self._set_discard_top(self.cards["charmander_evo"])
+        hand = self._force_hand(self.p0, [draw_two, self.cards["squirtle"]])
+        self._seed_draw_pile()
+
+        self.engine.play_card(self.p0, hand[0])
+
+        self.p1.refresh_from_db()
+        self.assertFalse(self.p1.has_protection)
+        self.assertEqual(self.p1.hand_cards.count(), 0)
+        self.assertEqual(self.engine.get_current_player().pk, self.p1.pk)
 
 
 class CardPointValueTests(TestCase):

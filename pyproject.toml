@@ -14,6 +14,12 @@ dependencies = [
     "whitenoise>=6.12.0",
 ]
 
+[dependency-groups]
+dev = [
+    "black>=26.3.1",
+    "ruff>=0.15.1",
+]
+
 [tool.ruff]
 line-length = 110
 exclude = ["**/migrations/"]
@@ -25,4 +31,5 @@ extend-ignore = [
 
 [tool.black]
 line-length = 110
+target-version = ["py313"]
 extend-exclude = "/migrations/"

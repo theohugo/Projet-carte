@@ -4,6 +4,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from game.card_actions import action_for_pokedex_id
 from game.management.commands._pokedex_selection import ALL_TYPE_SLUGS, CURATED_POKEDEX_IDS
 from game.models import PokemonCard, PokemonType
 
@@ -61,6 +62,11 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def _load_into_db(self, data):
+        selected_pokedex_ids = {card["pokedex_id"] for card in data["cards"]}
+        # Une ancienne espèce peut encore être référencée par une partie. Elle
+        # reste consultable dans l'historique, mais sort des nouvelles pioches.
+        PokemonCard.objects.exclude(pokedex_id__in=selected_pokedex_ids).update(in_current_deck=False)
+
         types_by_slug = {}
         for t in data["types"]:
             obj, _ = PokemonType.objects.update_or_create(
@@ -80,6 +86,8 @@ class Command(BaseCommand):
                     "secondary_type": types_by_slug[c["secondary_type"]] if c.get("secondary_type") else None,
                     "sprite_url": c["sprite_url"],
                     "is_legendary": c["is_legendary"],
+                    "action": c.get("action", action_for_pokedex_id(c["pokedex_id"])),
+                    "in_current_deck": True,
                 },
             )
 
@@ -143,6 +151,7 @@ class Command(BaseCommand):
                     "secondary_type": type_slugs[1] if len(type_slugs) > 1 else None,
                     "sprite_url": sprite_url,
                     "is_legendary": species["is_legendary"] or species["is_mythical"],
+                    "action": action_for_pokedex_id(pokedex_id),
                 }
             )
             self.stdout.write(f"  #{pokedex_id} {name_fr} / {name_en} ({'+'.join(type_slugs)})")

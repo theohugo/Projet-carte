@@ -1,42 +1,73 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Lobby — Poké-Uno{% endblock %}
 {% block content %}
-<h1>Lobby</h1>
+<div id="lobby-app" class="lobby-page" data-state-url="{% url 'api_lobby_state' %}">
+    <section class="lobby-hero">
+        <div class="lobby-hero-copy">
+            <p class="section-kicker">Jeu multijoueur</p>
+            <h1>L’arène est<br><span>à toi.</span></h1>
+            <p class="lobby-intro">Associe les types, surprends tes adversaires et sois le premier à vider ta main.</p>
+            <div class="lobby-hero-actions">
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Créer une partie</button>
+                </form>
+                <span class="live-label"><span class="lobby-status-dot" aria-hidden="true"></span>Salons actualisés en direct</span>
+            </div>
+        </div>
+        <div class="hero-card-fan" aria-hidden="true">
+            <span class="hero-card hero-card--water"><i class="type-energy-icon" data-type="water"></i></span>
+            <span class="hero-card hero-card--fire"><i class="type-energy-icon" data-type="fire"></i></span>
+            <span class="hero-card hero-card--electric"><i class="type-energy-icon" data-type="electric"></i></span>
+        </div>
+    </section>
 
-<form method="post" class="inline-form">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-primary">Créer une nouvelle partie</button>
-</form>
+    <div class="lobby-grid">
+        <section class="lobby-panel" aria-labelledby="open-games-heading">
+            <div class="lobby-panel-heading">
+                <div><p class="section-kicker">À rejoindre</p><h2 id="open-games-heading">Salles ouvertes</h2></div>
+                <span class="count-badge">{{ open_games|length }}</span>
+            </div>
+            {% if open_games %}
+            <ul class="game-list">
+                {% for g in open_games %}
+                <li class="game-list-item">
+                    <div class="game-list-copy"><strong>Partie de {{ g.created_by.username }}</strong><span>{{ g.players.count }}/{{ g.max_players }} joueurs</span></div>
+                    <form method="post" action="{% url 'join_game' game_id=g.id %}" class="inline-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-secondary">Rejoindre</button>
+                    </form>
+                    <a class="btn btn-ghost" href="{% url 'game_detail' game_id=g.id %}">Voir</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty-state">Aucune salle ouverte. Crée la première partie.</p>
+            {% endif %}
+        </section>
 
-<h2>Parties en attente de joueurs</h2>
-{% if open_games %}
-<ul class="game-list">
-    {% for g in open_games %}
-    <li class="game-list-item">
-        Partie de {{ g.created_by.username }} — {{ g.players.count }}/{{ g.max_players }} joueurs
-        <form method="post" action="{% url 'join_game' game_id=g.id %}" class="inline-form">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-secondary">Rejoindre</button>
-        </form>
-        <a class="btn btn-ghost" href="{% url 'game_detail' game_id=g.id %}">Voir</a>
-    </li>
-    {% endfor %}
-</ul>
-{% else %}
-<p>Aucune partie en attente. Crée-en une !</p>
-{% endif %}
+        <section class="lobby-panel" aria-labelledby="my-games-heading">
+            <div class="lobby-panel-heading">
+                <div><p class="section-kicker">Historique</p><h2 id="my-games-heading">Mes parties</h2></div>
+                <span class="count-badge">{{ my_games|length }}</span>
+            </div>
+            {% if my_games %}
+            <ul class="game-list">
+                {% for g in my_games %}
+                <li class="game-list-item">
+                    <div class="game-list-copy"><strong>Partie {{ forloop.counter }}</strong><span>{{ g.get_status_display }}</span></div>
+                    <a class="btn btn-ghost" href="{% url 'game_detail' game_id=g.id %}">Ouvrir</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty-state">Tes prochaines parties apparaîtront ici.</p>
+            {% endif %}
+        </section>
+    </div>
+</div>
 
-<h2>Mes parties en cours / terminées</h2>
-{% if my_games %}
-<ul class="game-list">
-    {% for g in my_games %}
-    <li class="game-list-item">
-        Partie {{ g.id }} — {{ g.get_status_display }}
-        <a class="btn btn-ghost" href="{% url 'game_detail' game_id=g.id %}">Voir</a>
-    </li>
-    {% endfor %}
-</ul>
-{% else %}
-<p>Aucune partie jouée pour le moment.</p>
-{% endif %}
+{{ lobby_state|json_script:"lobby-initial-state" }}
+<script src="{% static 'game/js/lobby.js' %}?v=6"></script>
 {% endblock %}

@@ -19,7 +19,14 @@ class PokemonType(models.Model):
 
 
 class PokemonCard(models.Model):
-    """Carte maîtresse du catalogue (donnée seedée depuis PokeAPI), partagée entre toutes les parties."""
+    """Carte maîtresse du catalogue, partagée entre toutes les parties."""
+
+    class Action(models.TextChoices):
+        NORMAL = "NORMAL", "Aucun effet"
+        DRAW_TWO = "DRAW_TWO", "+2"
+        DRAW_FOUR = "DRAW_FOUR", "+4"
+        REVERSE = "REVERSE", "Inversion"
+        SHIELD = "SHIELD", "Protection"
 
     pokedex_id = models.PositiveIntegerField(unique=True)
     slug = models.SlugField(unique=True)
@@ -35,6 +42,11 @@ class PokemonCard(models.Model):
     )
     sprite_url = models.URLField()
     is_legendary = models.BooleanField(default=False)
+    action = models.CharField(max_length=10, choices=Action.choices, default=Action.NORMAL)
+    in_current_deck = models.BooleanField(
+        default=True,
+        help_text="Inclure cette espèce dans les nouvelles parties.",
+    )
 
     class Meta:
         ordering = ["pokedex_id"]
@@ -92,6 +104,7 @@ class GamePlayer(models.Model):
     turn_order = models.PositiveSmallIntegerField()
     score = models.PositiveIntegerField(default=0)
     has_called_uno = models.BooleanField(default=False)
+    has_protection = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     joined_at = models.DateTimeField(auto_now_add=True)
 

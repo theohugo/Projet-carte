@@ -1,30 +1,191 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Partie {{ game.id }} — Poké-Uno{% endblock %}
+{% block title %}Partie de {{ game.created_by.username }} — Poké-Uno{% endblock %}
+{% block html_class %}{% if game.status == "EN_COURS" %}game-document{% endif %}{% endblock %}
+{% block body_class %}game-shell{% if game.status == "EN_COURS" %} game-shell--active{% endif %}{% endblock %}
 {% block content %}
-<h1>Partie</h1>
+<div class="game-page">
+    <header class="game-page-heading">
+        <div>
+            <a class="back-link" href="{% url 'lobby' %}"><span aria-hidden="true">←</span> Retour au lobby</a>
+            <p class="section-kicker">Salon de {{ game.created_by.username }}</p>
+            <h1>Table de jeu <span class="status-badge" data-status="{{ game.status|lower }}">{{ game.get_status_display }}</span></h1>
+        </div>
+        <p class="game-page-note">Les changements de tour et les nouveaux joueurs apparaissent automatiquement.</p>
+    </header>
 
-{% if game.status == "EN_ATTENTE" %}
-    <p>En attente de joueurs ({{ player_count }}/{{ game.max_players }}).</p>
-    {% if is_creator %}
-    <form method="post" action="{% url 'start_game' game_id=game.id %}" class="inline-form">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-primary">Démarrer la partie</button>
-    </form>
-    {% endif %}
-{% endif %}
+    <div
+        id="game-app"
+        class="game-table"
+        data-state-url="{% url 'api_game_state' game_id=game.id %}"
+        data-play-url="{% url 'api_play_card' game_id=game.id %}"
+        data-draw-url="{% url 'api_draw_card' game_id=game.id %}"
+    >
+        <p id="game-feedback" class="message message-error" hidden role="alert"></p>
+        <p id="game-announcer" class="visually-hidden" aria-live="polite"></p>
 
-<div
-    id="game-app"
-    class="game-table"
-    data-game-id="{{ game.id }}"
-    data-state-url="{% url 'api_game_state' game_id=game.id %}"
-    data-play-url="{% url 'api_play_card' game_id=game.id %}"
-    data-draw-url="{% url 'api_draw_card' game_id=game.id %}"
->
-    <p v-if="!loaded">Chargement de la partie…</p>
+        {% if game.status == "EN_ATTENTE" %}
+        <section class="waiting-room" aria-live="polite">
+            <div class="waiting-visual" aria-hidden="true">
+                <span class="waiting-orbit waiting-orbit--outer"></span>
+                <span class="waiting-orbit waiting-orbit--inner"></span>
+                <span class="waiting-core"><strong>{{ players|length }}</strong><small>/ {{ game.max_players }}</small></span>
+            </div>
+            <div class="waiting-room-copy">
+                <p class="waiting-room-kicker"><span class="live-pulse" aria-hidden="true"></span> Salon ouvert</p>
+                <h2>En attente de joueurs</h2>
+                <p class="waiting-room-description">Partage le lien de cette page. Le salon se mettra à jour dès qu’un joueur arrivera.</p>
+                <div class="waiting-actions">
+                    <button type="button" class="btn btn-secondary" data-copy-game-url><span data-copy-label>Copier le lien d’invitation</span></button>
+                    <span class="waiting-room-count"><strong>{{ players|length }}</strong> joueur{{ players|length|pluralize }} connecté{{ players|length|pluralize }}</span>
+                </div>
+            </div>
+
+            <div class="waiting-player-list">
+                <p class="section-kicker">Joueurs dans le salon</p>
+                <ul class="waiting-room-players">
+                    {% for player in players %}
+                    <li><span class="user-avatar" aria-hidden="true">{{ player.user.username|first|upper }}</span><span><strong>{{ player.user.username }}</strong>{% if player.user_id == game.created_by_id %}<small>Créateur du salon</small>{% else %}<small>Prêt à jouer</small>{% endif %}</span></li>
+                    {% endfor %}
+                    {% if players|length < game.max_players %}
+                    <li class="waiting-seat"><span aria-hidden="true">+</span><span><strong>Place libre</strong><small>En attente d’un joueur</small></span></li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div class="waiting-start">
+                {% if is_creator %}
+                <form method="post" action="{% url 'start_game' game_id=game.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-large" {% if players|length < 2 %}disabled{% endif %}>Démarrer la partie</button>
+                </form>
+                <p class="waiting-room-help">{% if players|length < 2 %}Le démarrage sera disponible dès l’arrivée d’un deuxième joueur.{% else %}Tout le monde est prêt. Lance la partie quand tu veux.{% endif %}</p>
+                {% else %}
+                <p class="waiting-room-help"><span class="loading-dots" aria-hidden="true"><i></i><i></i><i></i></span> En attente que {{ game.created_by.username }} démarre la partie.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        {% elif game.status == "EN_COURS" %}
+        <div class="arena-stage" data-opponent-count="{{ opponents|length }}">
+            <section class="opponents-ring" aria-label="Adversaires autour de la table">
+                {% for player in opponents %}
+                <article class="opponent-seat" data-player-id="{{ player.id }}" data-seat-index="{{ forloop.counter0 }}">
+                    <div class="opponent-hand" data-motion-opponent-hand role="img" aria-label="Main de {{ player.username }}, {{ player.hand_count }} carte{{ player.hand_count|pluralize }}">
+                        {% for slot in player.card_back_slots %}<span class="opponent-card-back" aria-hidden="true"></span>{% endfor %}
+                        {% if player.hidden_card_count %}<span class="opponent-card-overflow" aria-hidden="true">+{{ player.hidden_card_count }}</span>{% endif %}
+                    </div>
+                    <div class="player-chip {% if player.is_current_turn %}is-active{% endif %}">
+                        <span class="user-avatar" aria-hidden="true">{{ player.username|first|upper }}</span>
+                        <span class="player-chip-copy"><strong>{{ player.username }}</strong><small>{{ player.hand_count }} carte{{ player.hand_count|pluralize }} · {{ player.score }} pt{{ player.score|pluralize }}</small></span>
+                        {% if player.has_protection %}<span class="protection-badge" title="Protégé contre la prochaine pénalité"><i aria-hidden="true"></i><span class="protection-label">Protégé</span></span>{% endif %}
+                        {% if player.is_current_turn %}<span class="turn-label">Joue</span>{% endif %}
+                    </div>
+                </article>
+                {% endfor %}
+            </section>
+
+            <section class="center-row" aria-label="Zone de jeu">
+            <div class="pile-zone">
+                <p class="pile-label">Pioche</p>
+                <button type="button" class="deck-stack card-tilt {% if not game_state.is_my_turn %}is-disabled{% endif %}"
+                        data-tilt-card data-draw data-motion-deck {% if not game_state.is_my_turn %}disabled{% endif %}
+                        aria-label="Piocher une carte ({{ game_state.draw_pile_count }} restantes)">
+                    <span class="deck-card deck-card--back"></span>
+                    <span class="deck-card deck-card--middle"></span>
+                    <span class="deck-card deck-card--front"><span class="brand-mark" aria-hidden="true"><span></span></span></span>
+                    <span class="deck-count" aria-hidden="true">{{ game_state.draw_pile_count }}</span>
+                </button>
+            </div>
+
+            <div class="table-meta">
+                <div class="direction-indicator" title="Sens de jeu actuel"><span aria-hidden="true">{% if game_state.direction == -1 %}↺{% else %}↻{% endif %}</span><small>{% if game_state.direction == -1 %}Sens inversé{% else %}Sens horaire{% endif %}</small></div>
+                <div class="table-rule" aria-hidden="true"><span>même type</span><i></i><span>ou même carte</span></div>
+            </div>
+
+            <div class="pile-zone discard-pile">
+                <p class="pile-label">Carte en jeu</p>
+                {% if game_state.top_discard %}
+                <div class="card-tilt card-tilt--display" data-tilt-card data-motion-discard>
+                    <div class="card-unit card-unit--display {% if game_state.top_discard.action != 'NORMAL' %}has-action{% endif %}" data-type="{{ game_state.top_discard.primary_type }}" role="img" aria-label="{{ game_state.top_discard.name_fr }}, type {{ game_state.top_discard.primary_type }}{% if game_state.top_discard.action != 'NORMAL' %}, effet {{ game_state.top_discard.action_label }}{% endif %}">
+                        <span class="card-unit-type primary" data-type="{{ game_state.top_discard.primary_type }}" aria-label="Type {{ game_state.top_discard.primary_type }}"><span class="type-energy-icon" data-type="{{ game_state.top_discard.primary_type }}"></span></span>
+                        {% if game_state.top_discard.secondary_type %}
+                        <span class="card-unit-type secondary" data-type="{{ game_state.top_discard.secondary_type }}" aria-label="Type {{ game_state.top_discard.secondary_type }}"><span class="type-energy-icon" data-type="{{ game_state.top_discard.secondary_type }}"></span></span>
+                        {% endif %}
+                        <span class="card-unit-number">#{{ game_state.top_discard.pokedex_id }}</span>
+                        {% if game_state.top_discard.action != "NORMAL" %}<span class="card-action" data-action="{{ game_state.top_discard.action }}" aria-label="Effet {{ game_state.top_discard.action_label }}">{% if game_state.top_discard.action == "DRAW_TWO" %}+2{% elif game_state.top_discard.action == "DRAW_FOUR" %}+4{% elif game_state.top_discard.action == "REVERSE" %}↺{% elif game_state.top_discard.action == "SHIELD" %}<i class="shield-symbol" aria-hidden="true"></i>{% endif %}</span>{% endif %}
+                        <img src="{{ game_state.top_discard.sprite_url }}" alt="" width="82" height="82" fetchpriority="high">
+                        <span class="card-unit-name">{{ game_state.top_discard.name_fr }}</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% if game_state.active_type %}<span class="active-type"><span class="type-energy-icon" data-type="{{ game_state.active_type }}"></span>Type imposé : {{ game_state.active_type }}</span>{% endif %}
+            </div>
+            </section>
+        </div>
+
+        <section id="legendary-choices" class="legendary-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="legendary-title">
+            <p class="section-kicker">Type à déclarer</p>
+            <h2 id="legendary-title">Choisis le prochain type</h2>
+            <p>Ce type sera imposé au joueur suivant.</p>
+            <div class="type-choice-grid">
+                {% for type in declared_types %}
+                <button type="button" class="type-choice" data-type="{{ type.slug }}" data-declared-type="{{ type.slug }}"><span class="type-energy-icon" data-type="{{ type.slug }}"></span>{{ type.name_fr }}</button>
+                {% endfor %}
+            </div>
+            <button type="button" class="btn btn-ghost" data-cancel-legendary>Annuler</button>
+        </section>
+
+        <section class="my-hand-row" aria-labelledby="my-hand-title">
+            <div class="hand-heading">
+                <div>
+                    <p class="section-kicker">Ta main</p>
+                    <h2 id="my-hand-title">{{ my_player.hand|length }} carte{{ my_player.hand|length|pluralize }}</h2>
+                </div>
+                <p class="turn-indicator {% if game_state.is_my_turn %}is-active{% endif %}">
+                    <span class="turn-indicator-dot"></span>
+                    {% if game_state.is_my_turn %}C’est ton tour{% else %}Tour de {% for player in game_state.players %}{% if player.is_current_turn %}{{ player.username }}{% endif %}{% endfor %}{% endif %}
+                </p>
+                {% if my_player.has_protection %}<span class="protection-badge"><i aria-hidden="true"></i>Protection active</span>{% endif %}
+            </div>
+            <div class="hand-scroll" data-motion-hand aria-label="Cartes de ta main">
+            <div class="player-hand" data-player-hand>
+                {% for card in my_player.hand %}
+                <div class="card-tilt {% if not card.is_playable %}is-disabled{% endif %}" data-tilt-card>
+                    <button type="button" class="card-unit {% if not card.is_playable %}is-disabled{% endif %} {% if card.action != 'NORMAL' %}has-action{% endif %}"
+                            data-type="{{ card.primary_type }}" data-play-card="{{ card.id }}"
+                            data-requires-declared-type="{{ card.requires_declared_type|yesno:'true,false' }}"
+                            {% if not card.is_playable %}disabled{% endif %} aria-label="{{ card.name_fr }}{% if card.action != 'NORMAL' %}, effet {{ card.action_label }}{% endif %} — {% if card.is_playable %}jouer{% else %}non jouable{% endif %}">
+                        <span class="card-unit-type primary" data-type="{{ card.primary_type }}" aria-label="Type {{ card.primary_type }}"><span class="type-energy-icon" data-type="{{ card.primary_type }}"></span></span>
+                        {% if card.secondary_type %}<span class="card-unit-type secondary" data-type="{{ card.secondary_type }}" aria-label="Type {{ card.secondary_type }}"><span class="type-energy-icon" data-type="{{ card.secondary_type }}"></span></span>{% endif %}
+                        <span class="card-unit-number">#{{ card.pokedex_id }}</span>
+                        {% if card.action != "NORMAL" %}<span class="card-action" data-action="{{ card.action }}" aria-label="Effet {{ card.action_label }}">{% if card.action == "DRAW_TWO" %}+2{% elif card.action == "DRAW_FOUR" %}+4{% elif card.action == "REVERSE" %}↺{% elif card.action == "SHIELD" %}<i class="shield-symbol" aria-hidden="true"></i>{% endif %}</span>{% endif %}
+                        <img src="{{ card.sprite_url }}" alt="" width="82" height="82" loading="lazy">
+                        <span class="card-unit-name">{{ card.name_fr }}</span>
+                        {% if not card.is_playable %}<span class="card-unit-lock" aria-hidden="true">Non jouable</span>{% endif %}
+                    </button>
+                </div>
+                {% empty %}
+                <p class="empty-state">Ta main est vide.</p>
+                {% endfor %}
+            </div>
+            </div>
+        </section>
+
+        {% else %}
+        <section class="score-board">
+            <p class="section-kicker">Résultats</p>
+            <h2>Partie terminée</h2>
+            <table>
+                <thead><tr><th>Joueur</th><th>Score</th></tr></thead>
+                <tbody>{% for player in game_state.players %}<tr><td>{{ player.username }}</td><td>{{ player.score }}</td></tr>{% endfor %}</tbody>
+            </table>
+            <a class="btn btn-primary" href="{% url 'lobby' %}">Retourner au lobby</a>
+        </section>
+        {% endif %}
+    </div>
 </div>
 
-<script src="{% static 'vendor/vue.global.prod.js' %}"></script>
-<script src="{% static 'game/js/game-board.js' %}"></script>
+{{ game_state|json_script:"game-initial-state" }}
+<script src="{% static 'game/js/game-board.js' %}?v=11"></script>
 {% endblock %}

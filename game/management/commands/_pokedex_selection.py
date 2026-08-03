@@ -1,59 +1,57 @@
-"""Sélection curatée de pokedex_id utilisés par `seed_pokemon_cards --from-api`.
+"""Sélection de 54 Pokémon équilibrée sur les 18 types.
 
-Critère de sélection : les 3 lignées de starters Gen 1, les 5 légendaires/mythiques
-Gen 1, et au moins 2 Pokémon par type parmi les 18 types. Le Gen 1 ne contient
-nativement aucun Pokémon Ténèbres/Acier (types introduits en Gen 2) : quelques
-ID Gen 2 sont donc ajoutés spécifiquement pour ces deux types (déviation
-assumée, documentée dans le README).
+Chaque type apparaît 4 ou 5 fois dans le catalogue. Un double-type compte dans
+ses deux catégories. Avec deux exemplaires par espèce, une partie contient donc
+8 à 10 cartes de chaque type tout en conservant une pioche de 108 cartes.
 """
 
 STARTER_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 LEGENDARY_IDS = [144, 145, 146, 150, 151]
 
-# Couverture des 18 types + variété (Gen 1, sauf mention contraire).
+# Sélection optimisée sous contraintes : 54 espèces, 4 à 5 occurrences par type,
+# les trois lignées de starters et les cinq légendaires/mythiques de la Gen 1.
 EXTRA_IDS = [
     10,  # Caterpie — Bug
-    16,  # Pidgey — Normal/Flying
+    11,  # Metapod — Bug
     19,  # Rattata — Normal
-    23,  # Ekans — Poison
     25,  # Pikachu — Electric
     27,  # Sandshrew — Ground
     35,  # Clefairy — Fairy
-    41,  # Zubat — Poison/Flying
-    43,  # Oddish — Grass/Poison
+    36,  # Clefable — Fairy
+    46,  # Paras — Bug/Grass
     54,  # Psyduck — Water
-    58,  # Growlithe — Fire
+    56,  # Mankey — Fighting
+    57,  # Primeape — Fighting
     63,  # Abra — Psychic
     65,  # Alakazam — Psychic
     66,  # Machop — Fighting
     74,  # Geodude — Rock/Ground
-    79,  # Slowpoke — Water/Psychic
+    75,  # Graveler — Rock/Ground
     81,  # Magnemite — Electric/Steel
-    83,  # Farfetch'd — Normal/Flying
-    88,  # Grimer — Poison
     92,  # Gastly — Ghost/Poison
     94,  # Gengar — Ghost/Poison
     95,  # Onix — Rock/Ground
     106,  # Hitmonlee — Fighting
-    109,  # Koffing — Poison
-    116,  # Horsea — Water
     122,  # Mr. Mime — Psychic/Fairy
-    123,  # Scyther — Bug/Flying
     131,  # Lapras — Water/Ice
     132,  # Ditto — Normal
     133,  # Eevee — Normal
-    134,  # Vaporeon — Water
     135,  # Jolteon — Electric
     137,  # Porygon — Normal
     143,  # Snorlax — Normal
     147,  # Dratini — Dragon
+    148,  # Dragonair — Dragon
     149,  # Dragonite — Dragon/Flying
-    # Gen 2 : seule génération disponible pour Ténèbres/Acier natifs.
     197,  # Umbreon — Dark
-    228,  # Houndour — Dark/Fire
+    205,  # Forretress — Bug/Steel
     208,  # Steelix — Steel/Ground
-    227,  # Skarmory — Steel/Flying
+    215,  # Sneasel — Dark/Ice
+    228,  # Houndour — Dark/Fire
+    248,  # Tyranitar — Rock/Dark
+    303,  # Mawile — Steel/Fairy
+    478,  # Froslass — Ice/Ghost
+    887,  # Dragapult — Dragon/Ghost
 ]
 
 CURATED_POKEDEX_IDS = sorted(set(STARTER_IDS + LEGENDARY_IDS + EXTRA_IDS))

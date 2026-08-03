@@ -8,6 +8,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import sys
 from pathlib import Path
 
 import environ
@@ -126,7 +127,10 @@ STORAGES = {
     "staticfiles": {
         "BACKEND": (
             "django.contrib.staticfiles.storage.StaticFilesStorage"
-            if DEBUG
+            # Les tests rendent aussi des templates. Ils doivent pouvoir tourner
+            # directement via ``manage.py test`` sans exiger un collectstatic
+            # préalable et son manifeste local.
+            if DEBUG or "test" in sys.argv
             else "whitenoise.storage.CompressedManifestStaticFilesStorage"
         )
     },

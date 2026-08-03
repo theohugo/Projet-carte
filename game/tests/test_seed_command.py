@@ -22,6 +22,7 @@ SAMPLE_FIXTURE = {
             "secondary_type": None,
             "sprite_url": "https://example.com/4.png",
             "is_legendary": False,
+            "action": "DRAW_TWO",
         },
         {
             "pokedex_id": 7,
@@ -49,9 +50,27 @@ class SeedPokemonCardsTests(TestCase):
         self.assertEqual(PokemonType.objects.count(), 2)
         self.assertEqual(PokemonCard.objects.count(), 2)
         self.assertTrue(PokemonCard.objects.filter(pokedex_id=4, name_fr="Salamèche").exists())
+        self.assertEqual(PokemonCard.objects.get(pokedex_id=4).action, PokemonCard.Action.DRAW_TWO)
+        self.assertEqual(PokemonCard.objects.get(pokedex_id=7).action, PokemonCard.Action.NORMAL)
 
     def test_running_twice_is_idempotent(self):
         call_command("seed_pokemon_cards", fixture=self.fixture_path)
         call_command("seed_pokemon_cards", fixture=self.fixture_path)
         self.assertEqual(PokemonCard.objects.count(), 2)
         self.assertEqual(PokemonType.objects.count(), 2)
+
+    def test_cards_removed_from_the_fixture_are_kept_but_deactivated(self):
+        stale = PokemonCard.objects.create(
+            pokedex_id=999,
+            slug="stale",
+            name_fr="Ancienne",
+            name_en="Stale",
+            primary_type=PokemonType.objects.create(slug="old", name_fr="Ancien", name_en="Old"),
+            sprite_url="https://example.com/999.png",
+        )
+
+        call_command("seed_pokemon_cards", fixture=self.fixture_path)
+
+        stale.refresh_from_db()
+        self.assertFalse(stale.in_current_deck)
+        self.assertEqual(PokemonCard.objects.filter(in_current_deck=True).count(), 2)

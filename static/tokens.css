@@ -1,63 +1,81 @@
-/* Design Tokens — variables centralisées (couleurs, espacements, typo).
-   Aucune valeur codée en dur ailleurs : atoms.css / molecules.css /
-   organisms.css ne font que consommer ces variables. */
 :root {
-    /* Couleur par type Pokémon (joue le rôle de la "couleur" en Uno) */
-    --color-type-normal: #A8A878;
-    --color-type-fire: #F08030;
-    --color-type-water: #6890F0;
-    --color-type-electric: #F8D030;
-    --color-type-grass: #78C850;
-    --color-type-ice: #98D8D8;
-    --color-type-fighting: #C03028;
-    --color-type-poison: #A040A0;
-    --color-type-ground: #E0C068;
-    --color-type-flying: #A890F0;
-    --color-type-psychic: #F85888;
-    --color-type-bug: #A8B820;
-    --color-type-rock: #B8A038;
-    --color-type-ghost: #705898;
-    --color-type-dragon: #7038F8;
-    --color-type-dark: #705848;
-    --color-type-steel: #B8B8D0;
-    --color-type-fairy: #EE99AC;
+    color-scheme: dark;
 
-    /* Neutres */
-    --color-bg: #f4f5f7;
-    --color-surface: #ffffff;
-    --color-text: #1f2430;
-    --color-text-muted: #5b6472;
-    --color-border: #d8dbe2;
-    --color-danger: #c0392b;
-    --color-danger-bg: #fdecea;
+    /* Types Pokémon */
+    --color-type-normal: #b8b89a;
+    --color-type-fire: #ff7043;
+    --color-type-water: #5595ff;
+    --color-type-electric: #f5cc37;
+    --color-type-grass: #6fcf72;
+    --color-type-ice: #81d8d0;
+    --color-type-fighting: #d34b45;
+    --color-type-poison: #b665c2;
+    --color-type-ground: #dfbd63;
+    --color-type-flying: #a78bfa;
+    --color-type-psychic: #ff648e;
+    --color-type-bug: #a8bf3f;
+    --color-type-rock: #bba44d;
+    --color-type-ghost: #7563aa;
+    --color-type-dragon: #7657ff;
+    --color-type-dark: #625a58;
+    --color-type-steel: #aeb6ca;
+    --color-type-fairy: #f09ab6;
 
-    /* Feedback */
-    --color-turn-active: #2ecc71;
-    --color-focus-ring: #4c6ef5;
+    /* Marque et surfaces */
+    --color-bg: #050b14;
+    --color-bg-soft: #081321;
+    --color-surface: #101d30;
+    --color-surface-raised: #172944;
+    --color-surface-glass: rgba(16, 29, 48, 0.78);
+    --color-text: #f6f9ff;
+    --color-text-muted: #a7b6ca;
+    --color-border: #2b425f;
+    --color-border-soft: rgba(170, 204, 240, 0.14);
+    --color-brand: #75d8ff;
+    --color-brand-strong: #32b5ef;
+    --color-accent: #aa8cff;
+    --color-positive: #62e6a6;
+    --color-danger: #ffd6db;
+    --color-danger-bg: #5d2432;
 
-    /* Espacements */
+    /* Plateau et cartes */
+    --color-table-start: #123c65;
+    --color-table-end: #08182d;
+    --color-card-face: #f7f9fc;
+    --color-card-face-muted: #dfe7f1;
+    --color-card-text: #142238;
+    --color-card-edge: #07101e;
+    --color-card-shade: rgba(20, 42, 70, 0.1);
+    --color-focus-ring: #8ddfff;
+    --color-turn-active: #62e6a6;
+
+    /* Échelle d'espacement */
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
     --space-4: 16px;
     --space-5: 24px;
     --space-6: 32px;
+    --space-7: 48px;
+    --space-8: 64px;
 
-    /* Typographie */
-    --font-family: "Segoe UI", system-ui, sans-serif;
-    --font-size-sm: 0.85rem;
+    /* Typographie système, rapide et stable */
+    --font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
     --font-size-base: 1rem;
     --font-size-lg: 1.25rem;
-    --font-size-xl: 1.75rem;
+    --font-size-xl: 1.875rem;
 
-    /* Rayons & ombres */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 14px;
-    --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.15);
-    --shadow-card-hover: 0 6px 14px rgba(0, 0, 0, 0.25);
-
-    /* Transitions */
-    --transition-fast: 120ms ease-out;
-    --transition-base: 200ms ease-out;
+    /* Rayons, ombres et mouvement */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 22px;
+    --radius-xl: 30px;
+    --shadow-soft: 0 16px 45px rgba(0, 0, 0, 0.24);
+    --shadow-raised: 0 28px 70px rgba(0, 0, 0, 0.42);
+    --shadow-card-3d: 0 9px 0 var(--color-card-edge), 0 22px 30px rgba(0, 0, 0, 0.38);
+    --shadow-card-3d-hover: 0 13px 0 var(--color-card-edge), 0 32px 42px rgba(0, 0, 0, 0.52);
+    --transition-fast: 130ms ease-out;
+    --transition-base: 220ms cubic-bezier(0.2, 0.75, 0.25, 1);
 }

@@ -1,13 +1,30 @@
 {% extends "base.html" %}
 {% block title %}Créer un compte — Poké-Uno{% endblock %}
 {% block content %}
-<div class="auth-card">
-    <h1>Créer un compte</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">Créer mon compte</button>
-    </form>
-    <p><a href="{% url 'login' %}">Déjà un compte ? Se connecter</a></p>
-</div>
+<section class="auth-layout" aria-labelledby="auth-title">
+    <div class="auth-showcase">
+        <div>
+            <p class="section-kicker">Nouveau challenger</p>
+            <h2>Construis ta main.<br>Prends l’avantage.</h2>
+            <p>Crée ton profil pour ouvrir un salon et défier tes amis sur un plateau vivant.</p>
+        </div>
+        <div class="auth-card-fan" aria-hidden="true"><span></span><span></span><span></span></div>
+        <ul class="feature-list" aria-label="Fonctionnalités">
+            <li><span aria-hidden="true">01</span> Compte gratuit</li>
+            <li><span aria-hidden="true">02</span> Parties instantanées</li>
+            <li><span aria-hidden="true">03</span> Progression sauvegardée</li>
+        </ul>
+    </div>
+    <div class="auth-card">
+        <p class="section-kicker">Rejoins la partie</p>
+        <h1 id="auth-title">Créer un compte</h1>
+        <p class="auth-intro">Quelques secondes suffisent pour commencer.</p>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary btn-block">Créer mon compte</button>
+        </form>
+        <p class="auth-switch">Déjà un compte ? <a href="{% url 'login' %}">Se connecter</a></p>
+    </div>
+</section>
 {% endblock %}
