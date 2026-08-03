@@ -1,0 +1,12 @@
+# Fusionné automatiquement par `docker compose` en plus de docker-compose.yml :
+# confort de développement (rechargement à chaud, pas de build de statiques figée).
+services:
+  web:
+    volumes:
+      - .:/app
+      - /app/.venv
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    environment:
+      DEBUG: "True"
+    command: uv run python manage.py runserver 0.0.0.0:8000
