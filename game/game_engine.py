@@ -13,6 +13,12 @@ from django.utils import timezone
 
 from game.deck_builder import build_balanced_card_pool
 from game.models import Game, GameCard, GamePlayer, MoveLog, PokemonCard, Profile
+from game.type_families import (
+    TYPE_FAMILIES,
+    family_slug_for_type,
+    family_slugs_for_card,
+    get_family,
+)
 
 HAND_SIZE = 7
 DECK_COPIES_PER_CARD = 2
@@ -23,6 +29,7 @@ DRAW_PENALTIES = {
     PokemonCard.Action.DRAW_TWO: 2,
     PokemonCard.Action.DRAW_FOUR: 4,
 }
+BOT_NAMES = ("IA Porygon", "IA Motisma", "IA Lucario", "IA Mimiqui", "IA Métalosse")
 
 
 class GameEngineError(Exception):
@@ -70,6 +77,39 @@ class GameEngine:
 
         turn_order = self.game.players.count()
         return GamePlayer.objects.create(game=self.game, user=user, turn_order=turn_order)
+
+    def add_bot(self) -> GamePlayer:
+        if self.game.status != Game.Status.EN_ATTENTE:
+            raise GameNotJoinableError("La partie a déjà commencé.")
+        if self.game.players.count() >= self.game.max_players:
+            raise GameFullError("La partie est complète.")
+
+        used_names = set(self.game.players.exclude(bot_name="").values_list("bot_name", flat=True))
+        bot_name = next((name for name in BOT_NAMES if name not in used_names), None)
+        if bot_name is None:
+            suffix = 1
+            while f"IA {suffix}" in used_names:
+                suffix += 1
+            bot_name = f"IA {suffix}"
+        return GamePlayer.objects.create(
+            game=self.game,
+            user=None,
+            bot_name=bot_name,
+            turn_order=self.game.players.count(),
+        )
+
+    def remove_bot(self, player_id: int):
+        if self.game.status != Game.Status.EN_ATTENTE:
+            raise GameNotJoinableError("La partie a déjà commencé.")
+        bot = self.game.players.filter(pk=player_id, user__isnull=True).first()
+        if bot is None:
+            raise GameEngineError("Cette IA n'existe pas dans ce salon.")
+
+        removed_order = bot.turn_order
+        bot.delete()
+        for player in self.game.players.filter(turn_order__gt=removed_order).order_by("turn_order"):
+            player.turn_order -= 1
+            player.save(update_fields=["turn_order"])
 
     # -- Démarrage & distribution -----------------------------------------
 
@@ -126,7 +166,20 @@ class GameEngine:
         self.game.status = Game.Status.EN_COURS
         self.game.started_at = timezone.now()
         self.game.current_turn_number = 0
-        self.game.save(update_fields=["status", "started_at", "current_turn_number", "card_sequence_counter"])
+        self.game.turn_revision = 1
+        self.game.active_family = ""
+        self.game.active_type = None
+        self.game.save(
+            update_fields=[
+                "status",
+                "started_at",
+                "current_turn_number",
+                "turn_revision",
+                "active_family",
+                "active_type",
+                "card_sequence_counter",
+            ]
+        )
 
     def _draw_top_of_pile(self, owner) -> GameCard:
         """Retire la carte du dessus de la pioche (remélange si épuisée) et la place en MAIN (ou laisse en transit si owner=None)."""
@@ -200,38 +253,49 @@ class GameEngine:
         if top_discard is None:
             return True, None
 
-        effective_type_ids = (
-            {self.game.active_type_id}
-            if self.game.active_type_id
-            else {t.id for t in top_discard.pokemon_card.types}
+        effective_families = (
+            {self.game.active_family}
+            if self.game.active_family
+            else set(family_slugs_for_card(top_discard.pokemon_card))
         )
-        card_type_ids = {t.id for t in pokemon_card.types}
-        if effective_type_ids & card_type_ids:
+        card_families = set(family_slugs_for_card(pokemon_card))
+        if effective_families & card_families:
             return True, None
         if pokemon_card.pokedex_id == top_discard.pokemon_card.pokedex_id:
             return True, None
 
-        return False, "Cette carte ne partage ni le type ni l'espèce de la carte du dessus."
+        return False, "Cette carte ne partage ni la famille ni l'espèce de la carte du dessus."
 
-    def play_card(self, player: GamePlayer, game_card: GameCard, declared_type=None) -> GameCard:
+    def play_card(
+        self,
+        player: GamePlayer,
+        game_card: GameCard,
+        declared_family: str | None = None,
+        declared_type=None,
+    ) -> GameCard:
         ok, reason = self.is_move_valid(player, game_card)
         if not ok:
             if self.get_current_player().pk != player.pk:
                 raise NotYourTurnError(reason)
             raise InvalidMoveError(reason)
 
-        if self._is_wild_card(game_card.pokemon_card):
-            if declared_type is None:
-                raise InvalidMoveError("Cette carte impose de choisir le prochain type.")
-            self.game.active_type = declared_type
+        if declared_family is None and declared_type is not None:
+            declared_family = family_slug_for_type(declared_type.slug)
+
+        if self.requires_family_choice(game_card.pokemon_card):
+            if get_family(declared_family) is None:
+                raise InvalidMoveError("Cette carte impose de choisir la prochaine famille.")
+            self.game.active_family = declared_family
         else:
-            self.game.active_type = None
+            declared_family = ""
+            self.game.active_family = ""
+        self.game.active_type = None
 
         game_card.location = GameCard.Location.DEFAUSSE
         game_card.owner = None
         game_card.order_index = self.game.next_card_sequence()
         game_card.save(update_fields=["location", "owner", "order_index"])
-        self.game.save(update_fields=["active_type", "card_sequence_counter"])
+        self.game.save(update_fields=["active_family", "active_type", "card_sequence_counter"])
 
         MoveLog.objects.create(
             game=self.game,
@@ -239,6 +303,7 @@ class GameEngine:
             move_type=MoveLog.MoveType.JOUER_CARTE,
             game_card=game_card,
             declared_type=declared_type,
+            declared_family=declared_family or "",
         )
 
         self._apply_card_action(player, game_card.pokemon_card.action)
@@ -251,8 +316,13 @@ class GameEngine:
         return game_card
 
     @staticmethod
-    def _is_wild_card(pokemon_card: PokemonCard) -> bool:
+    def requires_family_choice(pokemon_card: PokemonCard) -> bool:
         return pokemon_card.is_legendary or pokemon_card.action == PokemonCard.Action.DRAW_FOUR
+
+    @staticmethod
+    def _is_wild_card(pokemon_card: PokemonCard) -> bool:
+        """Alias interne conservé pour les appels historiques."""
+        return GameEngine.requires_family_choice(pokemon_card)
 
     def _apply_card_action(self, player: GamePlayer, action: str):
         """Applique l'effet puis place le curseur sur le prochain joueur.
@@ -316,7 +386,8 @@ class GameEngine:
         self.game.current_turn_number = (
             self.game.current_turn_number + (self.game.direction * steps)
         ) % player_count
-        self.game.save(update_fields=["current_turn_number"])
+        self.game.turn_revision += 1
+        self.game.save(update_fields=["current_turn_number", "turn_revision"])
 
     # -- Fin de partie -------------------------------------------------------
 
@@ -335,7 +406,7 @@ class GameEngine:
             other.score += points
             other.save(update_fields=["score"])
 
-        for game_player in self.game.players.all():
+        for game_player in self.game.players.filter(user__isnull=False):
             profile, _ = Profile.objects.get_or_create(user=game_player.user)
             profile.total_games_played += 1
             if game_player.pk == winner.pk:
@@ -385,8 +456,9 @@ class GameEngine:
                 "sprite_url": pc.sprite_url,
                 "primary_type": pc.primary_type.slug,
                 "secondary_type": pc.secondary_type.slug if pc.secondary_type else None,
+                "families": list(family_slugs_for_card(pc)),
                 "is_legendary": pc.is_legendary,
-                "requires_declared_type": self._is_wild_card(pc),
+                "requires_family_choice": self.requires_family_choice(pc),
                 "action": pc.action,
                 "action_label": pc.get_action_display(),
             }
@@ -395,7 +467,8 @@ class GameEngine:
         for gp in players:
             entry = {
                 "id": gp.id,
-                "username": gp.user.username,
+                "username": gp.display_name,
+                "is_bot": gp.is_bot,
                 "turn_order": gp.turn_order,
                 "score": gp.score,
                 "has_protection": gp.has_protection,
@@ -407,13 +480,16 @@ class GameEngine:
                 entry["hand_count"] = len(hand_cards_by_owner[gp.pk])
             players_payload.append(entry)
 
+        active_family = get_family(self.game.active_family)
         return {
             "game_id": str(self.game.id),
             "status": self.game.status,
             "max_players": self.game.max_players,
             "is_creator": self.game.created_by_id == for_player.user_id,
             "direction": self.game.direction,
-            "active_type": self.game.active_type.slug if self.game.active_type else None,
+            "turn_revision": self.game.turn_revision,
+            "active_family": active_family.as_dict() if active_family else None,
+            "available_families": [family.as_dict() for family in TYPE_FAMILIES],
             "top_discard": serialize_card(top_discard) if top_discard else None,
             "draw_pile_count": GameCard.objects.filter(
                 game=self.game, location=GameCard.Location.PIOCHE

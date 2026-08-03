@@ -3,6 +3,8 @@ import uuid
 from django.conf import settings
 from django.db import models
 
+from game.type_families import FAMILY_CHOICES
+
 
 class PokemonType(models.Model):
     """Un des 18 types Pokémon (joue le rôle de la "couleur" en Uno)."""
@@ -75,10 +77,12 @@ class Game(models.Model):
     max_players = models.PositiveSmallIntegerField(default=6)
     direction = models.SmallIntegerField(default=1)
     current_turn_number = models.PositiveSmallIntegerField(default=0)
+    turn_revision = models.PositiveBigIntegerField(default=0)
     card_sequence_counter = models.PositiveIntegerField(default=0)
     active_type = models.ForeignKey(
         PokemonType, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
+    active_family = models.CharField(max_length=16, choices=FAMILY_CHOICES, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -99,8 +103,13 @@ class GamePlayer(models.Model):
 
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="players")
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="game_participations"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="game_participations",
+        null=True,
+        blank=True,
     )
+    bot_name = models.CharField(max_length=40, blank=True, default="")
     turn_order = models.PositiveSmallIntegerField()
     score = models.PositiveIntegerField(default=0)
     has_called_uno = models.BooleanField(default=False)
@@ -113,10 +122,28 @@ class GamePlayer(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["game", "user"], name="unique_player_per_game"),
             models.UniqueConstraint(fields=["game", "turn_order"], name="unique_turn_order_per_game"),
+            models.UniqueConstraint(
+                fields=["game", "bot_name"],
+                condition=~models.Q(bot_name=""),
+                name="unique_bot_name_per_game",
+            ),
+            models.CheckConstraint(
+                condition=(models.Q(user__isnull=True) & ~models.Q(bot_name=""))
+                | models.Q(user__isnull=False, bot_name=""),
+                name="valid_game_player_controller",
+            ),
         ]
 
     def __str__(self):
-        return f"{self.user} @ {self.game_id}"
+        return f"{self.display_name} @ {self.game_id}"
+
+    @property
+    def display_name(self):
+        return self.bot_name if self.is_bot else self.user.get_username()
+
+    @property
+    def is_bot(self):
+        return self.user_id is None
 
 
 class GameCard(models.Model):
@@ -160,6 +187,7 @@ class MoveLog(models.Model):
     move_type = models.CharField(max_length=20, choices=MoveType.choices)
     game_card = models.ForeignKey(GameCard, on_delete=models.SET_NULL, null=True, blank=True)
     declared_type = models.ForeignKey(PokemonType, on_delete=models.SET_NULL, null=True, blank=True)
+    declared_family = models.CharField(max_length=16, choices=FAMILY_CHOICES, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

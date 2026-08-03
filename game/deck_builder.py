@@ -10,6 +10,7 @@ from collections.abc import Iterable, Sequence
 from functools import partial
 
 from game.models import PokemonCard
+from game.type_families import family_slugs_for_card
 
 ACTION_CARD_COPIES = 2
 BASE_NORMAL_CARD_COPIES = 1
@@ -30,6 +31,14 @@ def count_cards_per_type(cards: Iterable[PokemonCard]) -> Counter[str]:
     counts: Counter[str] = Counter()
     for card in cards:
         counts.update(card_type_slugs(card))
+    return counts
+
+
+def count_cards_per_family(cards: Iterable[PokemonCard]) -> Counter[str]:
+    """Compte une carte une fois dans chacune de ses familles de jeu."""
+    counts: Counter[str] = Counter()
+    for card in cards:
+        counts.update(family_slugs_for_card(card))
     return counts
 
 

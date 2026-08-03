@@ -7,6 +7,7 @@ from django.urls import reverse
 from game.game_engine import GameEngine
 from game.models import Game, GameCard
 from game.tests.factories import make_cards, make_game, make_types, make_users
+from game.type_families import TYPE_FAMILIES
 
 
 class AnonymousAccessTests(TestCase):
@@ -42,7 +43,16 @@ class LobbyTests(TestCase):
         response = self.client.get(reverse("api_lobby_state"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["open_game_ids"], [str(game.id)])
+        self.assertEqual(
+            response.json()["open_games"],
+            [
+                {
+                    "id": str(game.id),
+                    "player_count": 1,
+                    "max_players": game.max_players,
+                }
+            ],
+        )
 
 
 class PermissionTests(TestCase):
@@ -124,7 +134,9 @@ class ApiStartGameTests(TestCase):
 
         joiner_client = Client()
         joiner_client.force_login(third)
-        joiner_client.post(reverse("join_game", args=[self.game.id]))
+        with self.captureOnCommitCallbacks(execute=True):
+            response = joiner_client.post(reverse("join_game", args=[self.game.id]))
+        self.assertEqual(response.status_code, 302)
 
         after = self.client.get(reverse("api_game_state", args=[self.game.id])).json()
         self.assertEqual(len(after["players"]), 3)
@@ -202,6 +214,99 @@ class GameBoardRenderingTests(TestCase):
         self.assertNotContains(response, '"card_back_slots"')
         self.assertNotContains(response, '"hidden_card_count"')
 
+    def test_family_selector_and_wild_card_contract_are_rendered(self):
+        types = make_types()
+        cards = make_cards(types)
+        first, second = make_users(2)
+        game = make_game(first)
+        engine = GameEngine(game)
+        first_player = engine.add_player(first)
+        engine.add_player(second)
+        GameCard.objects.create(
+            game=game,
+            pokemon_card=cards["zapdos"],
+            location=GameCard.Location.MAIN,
+            owner=first_player,
+            order_index=0,
+        )
+        game.status = Game.Status.EN_COURS
+        game.save(update_fields=["status"])
+
+        self.client.force_login(first)
+        response = self.client.get(reverse("game_detail", args=[game.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["declared_families"], TYPE_FAMILIES)
+        self.assertContains(
+            response,
+            'data-requires-family-choice="true"',
+            count=1,
+        )
+        self.assertContains(
+            response,
+            "data-declared-family=",
+            count=len(TYPE_FAMILIES),
+        )
+
+
+class BotLobbyViewTests(TestCase):
+    def setUp(self):
+        self.owner, self.other = make_users(2)
+        self.game = make_game(self.owner)
+        self.engine = GameEngine(self.game)
+        self.engine.add_player(self.owner)
+        self.engine.add_player(self.other)
+
+    def test_creator_can_add_render_and_remove_bot(self):
+        self.client.force_login(self.owner)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            add_response = self.client.post(reverse("add_bot", args=[self.game.id]))
+
+        self.assertRedirects(add_response, reverse("game_detail", args=[self.game.id]))
+        bot = self.game.players.get(user__isnull=True)
+
+        detail_response = self.client.get(reverse("game_detail", args=[self.game.id]))
+        self.assertContains(detail_response, bot.display_name)
+        self.assertContains(detail_response, "Joueur IA")
+        self.assertContains(detail_response, reverse("add_bot", args=[self.game.id]))
+        self.assertContains(
+            detail_response,
+            reverse("remove_bot", args=[self.game.id, bot.id]),
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            remove_response = self.client.post(reverse("remove_bot", args=[self.game.id, bot.id]))
+
+        self.assertRedirects(remove_response, reverse("game_detail", args=[self.game.id]))
+        self.assertFalse(self.game.players.filter(user__isnull=True).exists())
+
+    def test_non_creator_cannot_see_or_use_bot_controls(self):
+        bot = self.engine.add_bot()
+        add_url = reverse("add_bot", args=[self.game.id])
+        remove_url = reverse("remove_bot", args=[self.game.id, bot.id])
+        self.client.force_login(self.other)
+
+        detail_response = self.client.get(reverse("game_detail", args=[self.game.id]))
+        self.assertNotContains(detail_response, add_url)
+        self.assertNotContains(detail_response, remove_url)
+        self.assertEqual(self.client.post(add_url).status_code, 403)
+        self.assertEqual(self.client.post(remove_url).status_code, 403)
+        self.assertTrue(self.game.players.filter(pk=bot.id, user__isnull=True).exists())
+
+    def test_state_identifies_bot_without_exposing_a_hand(self):
+        bot = self.engine.add_bot()
+        self.client.force_login(self.owner)
+
+        response = self.client.get(reverse("api_game_state", args=[self.game.id]))
+
+        self.assertEqual(response.status_code, 200)
+        bot_state = next(player for player in response.json()["players"] if player["id"] == bot.id)
+        self.assertIs(bot_state["is_bot"], True)
+        self.assertEqual(bot_state["username"], bot.display_name)
+        self.assertNotIn("hand", bot_state)
+        self.assertEqual(bot_state["hand_count"], 0)
+
 
 class GameStateApiSecurityTests(TestCase):
     """La règle anti-fuite vit dans le moteur (get_game_state), mais on la
@@ -219,7 +324,11 @@ class GameStateApiSecurityTests(TestCase):
         # Distribution manuelle minimale pour avoir une main non vide côté p1.
         from game.models import GameCard
 
-        first_p1_card = GameCard.objects.filter(game=self.game, location=GameCard.Location.PIOCHE).first()
+        first_p1_card = GameCard.objects.filter(
+            game=self.game,
+            location=GameCard.Location.PIOCHE,
+            pokemon_card=self.cards["zapdos"],
+        ).first()
         first_p1_card.location = GameCard.Location.MAIN
         first_p1_card.owner = self.gp1
         first_p1_card.save()
@@ -241,6 +350,7 @@ class GameStateApiSecurityTests(TestCase):
             {
                 "id",
                 "username",
+                "is_bot",
                 "turn_order",
                 "score",
                 "has_protection",
@@ -249,6 +359,7 @@ class GameStateApiSecurityTests(TestCase):
             },
         )
         self.assertEqual(opponent["hand_count"], 1)
+        self.assertIs(opponent["is_bot"], False)
 
     def test_my_own_hand_is_serialized(self):
         self.client.force_login(self.p1_user)
@@ -257,6 +368,116 @@ class GameStateApiSecurityTests(TestCase):
         mine = next(p for p in data["players"] if p["username"] == self.p1_user.username)
         self.assertIn("hand", mine)
         self.assertEqual(len(mine["hand"]), 1)
+
+    def test_state_uses_family_contract_and_marks_wild_cards(self):
+        active_family = next(family for family in TYPE_FAMILIES if family.slug == "skyfire")
+        self.game.active_family = active_family.slug
+        self.game.save(update_fields=["active_family"])
+        self.client.force_login(self.p1_user)
+
+        response = self.client.get(reverse("api_game_state", args=[self.game.id]))
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["active_family"], active_family.as_dict())
+        self.assertEqual(
+            data["available_families"],
+            [family.as_dict() for family in TYPE_FAMILIES],
+        )
+        self.assertNotIn("active_type", data)
+        mine = next(player for player in data["players"] if player["id"] == self.gp1.id)
+        card = mine["hand"][0]
+        self.assertEqual(
+            set(card),
+            {
+                "id",
+                "pokedex_id",
+                "name_fr",
+                "name_en",
+                "sprite_url",
+                "primary_type",
+                "secondary_type",
+                "families",
+                "is_legendary",
+                "requires_family_choice",
+                "action",
+                "action_label",
+            },
+        )
+        self.assertIs(card["requires_family_choice"], True)
+
+
+class PlayCardPayloadValidationTests(TestCase):
+    def setUp(self):
+        (self.user,) = make_users(1)
+        self.game = make_game(self.user)
+        GameEngine(self.game).add_player(self.user)
+        self.client.force_login(self.user)
+        self.url = reverse("api_play_card", args=[self.game.id])
+
+    def post_payload(self, payload):
+        return self.client.post(
+            self.url,
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+
+    def test_json_payload_must_be_an_object(self):
+        response = self.post_payload([])
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "La requête doit être un objet JSON.")
+
+    def test_declared_family_must_be_a_string_or_null(self):
+        response = self.post_payload({"game_card_id": 1, "declared_family": {}})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "Famille déclarée invalide.")
+
+
+class BotTurnApiViewTests(TestCase):
+    def setUp(self):
+        self.owner, self.other, self.outsider = make_users(3)
+        self.game = make_game(self.owner)
+        engine = GameEngine(self.game)
+        engine.add_player(self.owner)
+        engine.add_player(self.other)
+        self.game.status = Game.Status.EN_COURS
+        self.game.turn_revision = 7
+        self.game.save(update_fields=["status", "turn_revision"])
+        self.url = reverse("api_bot_turn", args=[self.game.id])
+
+    def post_turn(self, client, payload):
+        return client.post(
+            self.url,
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+
+    def test_non_participant_cannot_trigger_bot_turn(self):
+        self.client.force_login(self.outsider)
+
+        response = self.post_turn(self.client, {"expected_turn_revision": 7})
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_invalid_turn_revision_is_rejected(self):
+        self.client.force_login(self.owner)
+
+        response = self.post_turn(self.client, {})
+
+        self.assertEqual(response.status_code, 400)
+
+    @mock.patch("game.api.perform_bot_turn")
+    def test_human_current_turn_is_a_noop(self, perform_bot_turn):
+        self.client.force_login(self.owner)
+
+        response = self.post_turn(self.client, {"expected_turn_revision": 7})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["turn_revision"], 7)
+        self.assertTrue(response.json()["is_my_turn"])
+        perform_bot_turn.assert_not_called()
 
 
 class CsrfEnforcedTests(TestCase):

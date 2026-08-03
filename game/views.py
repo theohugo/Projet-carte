@@ -9,7 +9,8 @@ from django.views.decorators.http import require_POST
 from game.api import get_lobby_state, invalidate_game_state_cache
 from game.forms import SignUpForm
 from game.game_engine import GameEngine, GameEngineError
-from game.models import Game, GameCard, PokemonType
+from game.models import Game, GameCard
+from game.type_families import TYPE_FAMILIES
 
 OPPONENT_CARD_BACK_LIMIT = 10
 
@@ -72,6 +73,36 @@ def start_game_view(request, game_id):
 
 
 @login_required
+@require_POST
+@transaction.atomic
+def add_bot_view(request, game_id):
+    game = get_object_or_404(Game.objects.select_for_update(), pk=game_id)
+    if game.created_by_id != request.user.id:
+        return HttpResponseForbidden("Seul le créateur peut ajouter une IA.")
+    try:
+        GameEngine(game).add_bot()
+    except GameEngineError as exc:
+        messages.error(request, str(exc))
+    invalidate_game_state_cache(game)
+    return redirect("game_detail", game_id=game.id)
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def remove_bot_view(request, game_id, player_id):
+    game = get_object_or_404(Game.objects.select_for_update(), pk=game_id)
+    if game.created_by_id != request.user.id:
+        return HttpResponseForbidden("Seul le créateur peut retirer une IA.")
+    try:
+        GameEngine(game).remove_bot(player_id)
+    except GameEngineError as exc:
+        messages.error(request, str(exc))
+    invalidate_game_state_cache(game)
+    return redirect("game_detail", game_id=game.id)
+
+
+@login_required
 def game_detail(request, game_id):
     game = get_object_or_404(Game, pk=game_id)
     game_player = game.players.filter(user=request.user).first()
@@ -111,6 +142,6 @@ def game_detail(request, game_id):
             "game_state": game_state,
             "my_player": my_player,
             "opponents": opponents,
-            "declared_types": PokemonType.objects.order_by("name_fr"),
+            "declared_families": TYPE_FAMILIES,
         },
     )

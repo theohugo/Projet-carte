@@ -554,6 +554,27 @@ a:focus-visible {
     border-color: rgba(255, 255, 255, 0.82);
 }
 
+.btn-icon {
+    display: inline-grid;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    color: var(--color-text-muted);
+    background: rgba(5, 15, 29, 0.55);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.btn-icon:hover {
+    border-color: rgba(255, 112, 132, 0.68);
+    color: #fff;
+    background: rgba(199, 47, 74, 0.42);
+}
+
 /* Formulaires */
 form p {
     display: flex;

@@ -21,6 +21,7 @@
     let pendingLegendaryCardId = null;
     let pendingLegendaryCardElement = null;
     let resizeFrame = null;
+    let botTurnTimer = null;
 
     function stateFingerprint(state) {
         return JSON.stringify(state, (key, value) => (key === "is_playable" ? undefined : value));
@@ -149,7 +150,9 @@
 
     function cancelPoll() {
         window.clearTimeout(pollTimer);
+        window.clearTimeout(botTurnTimer);
         pollTimer = null;
+        botTurnTimer = null;
         pollController?.abort();
         pollController = null;
     }
@@ -427,6 +430,7 @@
             showError(error.message);
             context.source?.focus();
             schedulePoll();
+            if (context.kind === "bot") scheduleBotTurn(1800);
             return;
         }
 
@@ -495,19 +499,19 @@
         const choices = document.getElementById("legendary-choices");
         setTypeChoiceBackgroundInert(true);
         choices.hidden = false;
-        choices.querySelector("[data-declared-type]")?.focus();
+        choices.querySelector("[data-declared-family]")?.focus();
     }
 
     board.addEventListener("click", (event) => {
         const card = event.target.closest("[data-play-card]");
         if (card) {
             if (card.disabled) return;
-            if (card.dataset.requiresDeclaredType === "true") {
+            if (card.dataset.requiresFamilyChoice === "true") {
                 openLegendaryChoices(card);
             } else {
                 submitAction(
                     board.dataset.playUrl,
-                    { game_card_id: card.dataset.playCard, declared_type: null },
+                    { game_card_id: card.dataset.playCard, declared_family: null },
                     { kind: "play", source: card },
                 );
             }
@@ -519,14 +523,14 @@
             return;
         }
 
-        const type = event.target.closest("[data-declared-type]");
-        if (type && pendingLegendaryCardId) {
+        const family = event.target.closest("[data-declared-family]");
+        if (family && pendingLegendaryCardId) {
             const source = pendingLegendaryCardElement;
             const gameCardId = pendingLegendaryCardId;
             closeLegendaryChoices({ restoreFocus: false });
             submitAction(
                 board.dataset.playUrl,
-                { game_card_id: gameCardId, declared_type: type.dataset.declaredType },
+                { game_card_id: gameCardId, declared_family: family.dataset.declaredFamily },
                 { kind: "play", source },
             );
             return;
@@ -652,14 +656,37 @@
         });
     }
 
+    function scheduleBotTurn(delay = 850) {
+        window.clearTimeout(botTurnTimer);
+        if (reloadRequested || initialGameState.status !== "EN_COURS") return;
+        const currentPlayer = initialGameState.players.find((player) => player.is_current_turn);
+        if (!currentPlayer?.is_bot || !board.dataset.botTurnUrl) return;
+
+        botTurnTimer = window.setTimeout(() => {
+            if (document.hidden) return;
+            if (phase !== "idle") {
+                scheduleBotTurn(600);
+                return;
+            }
+            announce(`${currentPlayer.username} réfléchit…`);
+            submitAction(
+                board.dataset.botTurnUrl,
+                { expected_turn_revision: initialGameState.turn_revision },
+                { kind: "bot" },
+            );
+        }, delay);
+    }
+
     layoutPlayerHand();
     setupTiltCards();
     window.addEventListener("resize", scheduleHandLayout, { passive: true });
     schedulePoll();
+    scheduleBotTurn();
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden && phase === "idle") {
             cancelPoll();
             schedulePoll(0);
+            scheduleBotTurn(300);
         }
     });
 })();

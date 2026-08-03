@@ -70,6 +70,13 @@
     text-transform: uppercase;
 }
 
+.user-avatar.is-bot {
+    color: #eafff4;
+    background: linear-gradient(145deg, #346cf2, #6b2ed3);
+    font-size: 0.68rem;
+    letter-spacing: -0.04em;
+}
+
 .site-user-copy {
     display: flex;
     min-width: 0;
@@ -802,6 +809,11 @@
     display: flex;
     min-width: 0;
     flex-direction: column;
+}
+
+.waiting-player-action {
+    flex: 0 0 auto;
+    margin-left: auto;
 }
 
 .waiting-room-players strong,

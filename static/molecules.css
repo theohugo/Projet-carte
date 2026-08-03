@@ -549,6 +549,44 @@
     transform: translateY(-2px);
 }
 
+.family-choice {
+    min-height: 58px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    text-transform: none;
+}
+
+.family-choice-icons {
+    display: flex;
+    align-items: center;
+}
+
+.family-choice-icons .type-energy-icon {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.78);
+    border-radius: 50%;
+    background-color: var(--type-accent);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.24);
+}
+
+.family-choice-icons .type-energy-icon + .type-energy-icon {
+    margin-left: -5px;
+}
+
+.bot-label {
+    display: inline-flex;
+    margin-left: 5px;
+    padding: 1px 5px;
+    border: 1px solid rgba(114, 255, 184, 0.44);
+    border-radius: 999px;
+    color: #72ffb8;
+    font-size: 0.54rem;
+    letter-spacing: 0.08em;
+    vertical-align: middle;
+}
+
 @media (max-width: 640px) {
     .messages {
         padding-inline: var(--space-3);

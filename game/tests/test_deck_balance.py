@@ -8,6 +8,7 @@ from game.deck_builder import (
     MAX_NORMAL_CARD_COPIES,
     allocate_balanced_copies,
     build_balanced_card_pool,
+    count_cards_per_family,
     count_cards_per_type,
 )
 from game.models import PokemonCard
@@ -54,12 +55,15 @@ class BalancedDeckTests(TestCase):
 
         catalogue_counts = count_cards_per_type(cards)
         balanced_counts = count_cards_per_type(balanced_pool)
+        family_counts = count_cards_per_family(balanced_pool)
         copies_by_card = Counter(card.pk for card in balanced_pool)
 
         self.assertEqual(len(cards), 54)
         self.assertEqual(len(catalogue_counts), 18)
         self.assertEqual((min(catalogue_counts.values()), max(catalogue_counts.values())), (4, 5))
         self.assertEqual((min(balanced_counts.values()), max(balanced_counts.values())), (8, 10))
+        self.assertEqual(len(family_counts), 8)
+        self.assertEqual((min(family_counts.values()), max(family_counts.values())), (16, 18))
         self.assertEqual(len(balanced_pool), 108)
         for card in cards:
             self.assertEqual(copies_by_card[card.pk], 2)

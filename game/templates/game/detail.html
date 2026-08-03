@@ -20,6 +20,7 @@
         data-state-url="{% url 'api_game_state' game_id=game.id %}"
         data-play-url="{% url 'api_play_card' game_id=game.id %}"
         data-draw-url="{% url 'api_draw_card' game_id=game.id %}"
+        data-bot-turn-url="{% url 'api_bot_turn' game_id=game.id %}"
     >
         <p id="game-feedback" class="message message-error" hidden role="alert"></p>
         <p id="game-announcer" class="visually-hidden" aria-live="polite"></p>
@@ -37,6 +38,12 @@
                 <p class="waiting-room-description">Partage le lien de cette page. Le salon se mettra à jour dès qu’un joueur arrivera.</p>
                 <div class="waiting-actions">
                     <button type="button" class="btn btn-secondary" data-copy-game-url><span data-copy-label>Copier le lien d’invitation</span></button>
+                    {% if is_creator and players|length < game.max_players %}
+                    <form method="post" action="{% url 'add_bot' game_id=game.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-ghost"><span aria-hidden="true">＋</span> Ajouter une IA</button>
+                    </form>
+                    {% endif %}
                     <span class="waiting-room-count"><strong>{{ players|length }}</strong> joueur{{ players|length|pluralize }} connecté{{ players|length|pluralize }}</span>
                 </div>
             </div>
@@ -45,7 +52,16 @@
                 <p class="section-kicker">Joueurs dans le salon</p>
                 <ul class="waiting-room-players">
                     {% for player in players %}
-                    <li><span class="user-avatar" aria-hidden="true">{{ player.user.username|first|upper }}</span><span><strong>{{ player.user.username }}</strong>{% if player.user_id == game.created_by_id %}<small>Créateur du salon</small>{% else %}<small>Prêt à jouer</small>{% endif %}</span></li>
+                    <li>
+                        <span class="user-avatar {% if player.is_bot %}is-bot{% endif %}" aria-hidden="true">{% if player.is_bot %}IA{% else %}{{ player.display_name|first|upper }}{% endif %}</span>
+                        <span><strong>{{ player.display_name }}</strong>{% if player.user_id == game.created_by_id %}<small>Créateur du salon</small>{% elif player.is_bot %}<small>Joueur IA · prêt</small>{% else %}<small>Prêt à jouer</small>{% endif %}</span>
+                        {% if is_creator and player.is_bot %}
+                        <form method="post" action="{% url 'remove_bot' game_id=game.id player_id=player.id %}" class="waiting-player-action">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon" aria-label="Retirer {{ player.display_name }}">×</button>
+                        </form>
+                        {% endif %}
+                    </li>
                     {% endfor %}
                     {% if players|length < game.max_players %}
                     <li class="waiting-seat"><span aria-hidden="true">+</span><span><strong>Place libre</strong><small>En attente d’un joueur</small></span></li>
@@ -76,8 +92,8 @@
                         {% if player.hidden_card_count %}<span class="opponent-card-overflow" aria-hidden="true">+{{ player.hidden_card_count }}</span>{% endif %}
                     </div>
                     <div class="player-chip {% if player.is_current_turn %}is-active{% endif %}">
-                        <span class="user-avatar" aria-hidden="true">{{ player.username|first|upper }}</span>
-                        <span class="player-chip-copy"><strong>{{ player.username }}</strong><small>{{ player.hand_count }} carte{{ player.hand_count|pluralize }} · {{ player.score }} pt{{ player.score|pluralize }}</small></span>
+                        <span class="user-avatar {% if player.is_bot %}is-bot{% endif %}" aria-hidden="true">{% if player.is_bot %}IA{% else %}{{ player.username|first|upper }}{% endif %}</span>
+                        <span class="player-chip-copy"><strong>{{ player.username }}{% if player.is_bot %}<span class="bot-label">IA</span>{% endif %}</strong><small>{{ player.hand_count }} carte{{ player.hand_count|pluralize }} · {{ player.score }} pt{{ player.score|pluralize }}</small></span>
                         {% if player.has_protection %}<span class="protection-badge" title="Protégé contre la prochaine pénalité"><i aria-hidden="true"></i><span class="protection-label">Protégé</span></span>{% endif %}
                         {% if player.is_current_turn %}<span class="turn-label">Joue</span>{% endif %}
                     </div>
@@ -100,7 +116,7 @@
 
             <div class="table-meta">
                 <div class="direction-indicator" title="Sens de jeu actuel"><span aria-hidden="true">{% if game_state.direction == -1 %}↺{% else %}↻{% endif %}</span><small>{% if game_state.direction == -1 %}Sens inversé{% else %}Sens horaire{% endif %}</small></div>
-                <div class="table-rule" aria-hidden="true"><span>même type</span><i></i><span>ou même carte</span></div>
+                <div class="table-rule" aria-hidden="true"><span>même famille</span><i></i><span>ou même Pokémon</span></div>
             </div>
 
             <div class="pile-zone discard-pile">
@@ -119,18 +135,21 @@
                     </div>
                 </div>
                 {% endif %}
-                {% if game_state.active_type %}<span class="active-type"><span class="type-energy-icon" data-type="{{ game_state.active_type }}"></span>Type imposé : {{ game_state.active_type }}</span>{% endif %}
+                {% if game_state.active_family %}<span class="active-type" data-family="{{ game_state.active_family.slug }}" data-type="{{ game_state.active_family.accent_type }}"><span class="type-energy-icon" data-type="{{ game_state.active_family.accent_type }}"></span>Famille imposée : {{ game_state.active_family.name_fr }}</span>{% endif %}
             </div>
             </section>
         </div>
 
         <section id="legendary-choices" class="legendary-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="legendary-title">
-            <p class="section-kicker">Type à déclarer</p>
-            <h2 id="legendary-title">Choisis le prochain type</h2>
-            <p>Ce type sera imposé au joueur suivant.</p>
+            <p class="section-kicker">Famille à déclarer</p>
+            <h2 id="legendary-title">Choisis la prochaine famille</h2>
+            <p>Cette famille sera imposée au joueur suivant.</p>
             <div class="type-choice-grid">
-                {% for type in declared_types %}
-                <button type="button" class="type-choice" data-type="{{ type.slug }}" data-declared-type="{{ type.slug }}"><span class="type-energy-icon" data-type="{{ type.slug }}"></span>{{ type.name_fr }}</button>
+                {% for family in declared_families %}
+                <button type="button" class="type-choice family-choice" data-family="{{ family.slug }}" data-type="{{ family.accent_type }}" data-declared-family="{{ family.slug }}">
+                    <span class="family-choice-icons" aria-hidden="true">{% for type_slug in family.type_slugs %}<span class="type-energy-icon" data-type="{{ type_slug }}"></span>{% endfor %}</span>
+                    <span>{{ family.name_fr }}</span>
+                </button>
                 {% endfor %}
             </div>
             <button type="button" class="btn btn-ghost" data-cancel-legendary>Annuler</button>
@@ -154,7 +173,7 @@
                 <div class="card-tilt {% if not card.is_playable %}is-disabled{% endif %}" data-tilt-card>
                     <button type="button" class="card-unit {% if not card.is_playable %}is-disabled{% endif %} {% if card.action != 'NORMAL' %}has-action{% endif %}"
                             data-type="{{ card.primary_type }}" data-play-card="{{ card.id }}"
-                            data-requires-declared-type="{{ card.requires_declared_type|yesno:'true,false' }}"
+                            data-requires-family-choice="{{ card.requires_family_choice|yesno:'true,false' }}"
                             {% if not card.is_playable %}disabled{% endif %} aria-label="{{ card.name_fr }}{% if card.action != 'NORMAL' %}, effet {{ card.action_label }}{% endif %} — {% if card.is_playable %}jouer{% else %}non jouable{% endif %}">
                         <span class="card-unit-type primary" data-type="{{ card.primary_type }}" aria-label="Type {{ card.primary_type }}"><span class="type-energy-icon" data-type="{{ card.primary_type }}"></span></span>
                         {% if card.secondary_type %}<span class="card-unit-type secondary" data-type="{{ card.secondary_type }}" aria-label="Type {{ card.secondary_type }}"><span class="type-energy-icon" data-type="{{ card.secondary_type }}"></span></span>{% endif %}
@@ -187,5 +206,5 @@
 </div>
 
 {{ game_state|json_script:"game-initial-state" }}
-<script src="{% static 'game/js/game-board.js' %}?v=11"></script>
+<script src="{% static 'game/js/game-board.js' %}?v=12"></script>
 {% endblock %}
