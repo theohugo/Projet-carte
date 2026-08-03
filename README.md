@@ -1,6 +1,6 @@
 # Poké-Uno
 
-Plateforme web de jeu de cartes façon Uno, avec des cartes Pokémon à la place des enseignes classiques. Projet Django réalisé pour le cours IPSSI (cahier des charges : voir le skill [`projet-cartes`](../.claude/skills/projet-cartes/SKILL.md)).
+Plateforme web de jeu de cartes façon Uno, avec des cartes Pokémon à la place des enseignes classiques. Projet Django réalisé pour le cours IPSSI (cahier des charges : voir le skill [`projet-cartes`](.claude/skills/projet-cartes/SKILL.md)).
 
 **Auteurs :** Hugo Raguin, Amine Taleb, Rizlene Berrag
 
@@ -123,13 +123,13 @@ Toute la logique métier (distribution, validation des coups, mélange, tour par
 
 - 35 tests Django (`game/tests/`) : modèles (contraintes d'unicité), moteur de jeu (distribution, mélange, validation des coups type/espèce/légendaire, tour hors-jeu, remélange défausse, rotation du tour, score exact de fin de partie), vues/API (permissions, CSRF, anti-fuite de la main d'un adversaire), commande de seed (idempotence).
 - Lint `ruff` + formatage `black` (config dans `pyproject.toml`, 110 colonnes, migrations exclues).
-- CI GitHub Actions (`.github/workflows/ci.yml`, à la racine du repo, scopée aux changements de `PROJET-CARTES/`) : services PostgreSQL + Redis, lint, format check, migrations, suite de tests — à chaque push et pull request.
+- CI GitHub Actions (`.github/workflows/ci.yml`) : services PostgreSQL + Redis, lint, format check, migrations, suite de tests — à chaque push et pull request.
 
 ## Journal d'architecture & auto-évaluation
 
 Déviations assumées par rapport au cahier des charges, documentées ici plutôt que silencieuses :
 
-- **Python 3.13 au lieu de `python:3.11-slim`** littéralement mentionné dans le sujet : Django 6.0 exige Python ≥ 3.12. On garde 3.13 pour rester cohérent avec `PROJET-COURS/` du même repo.
+- **Python 3.13 au lieu de `python:3.11-slim`** littéralement mentionné dans le sujet : Django 6.0 exige Python ≥ 3.12.
 - **Vue 3 vendorisé** plutôt qu'un `<script src="cdn...">` : le critère éliminatoire « démarre sans erreur via `docker compose up` » ne doit pas dépendre d'un accès réseau tiers au runtime.
 - **Sous-ensemble curaté de ~54 Pokémon** (voir `game/management/commands/_pokedex_selection.py`) plutôt que les 151 de la Gen 1 : couvre les 18 types, les 3 lignées de starters et 5 légendaires/mythiques, largement suffisant pour un deck de ~108 cartes physiques (`DECK_COPIES_PER_CARD = 2`) sans base de données surchargée. Les types Ténèbres et Acier n'existant pas en Gen 1, quelques Pokémon de Gen 2 (Noctali, Malosse, Steelix, Airmure) ont été ajoutés spécifiquement pour ces deux types.
 - **Polling (2s) plutôt que WebSocket** pour synchroniser l'état entre joueurs : suffisant pour un jeu au tour par tour, et beaucoup plus simple à containeriser correctement (pas de serveur ASGI dédié à mettre en place dans le temps imparti). Piste d'amélioration évidente pour une v2.
