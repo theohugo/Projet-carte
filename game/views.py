@@ -15,7 +15,7 @@ from game.forms import AccountForm, ProfileForm, SignUpForm
 from game.game_engine import GameEngine, GameEngineError, close_stale_games
 from game.models import Friendship, Game, GameCard, PokemonCard, Profile
 from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID
-from game.pokemon_types import POKEMON_TYPES, type_color
+from game.pokemon_types import POKEMON_TYPES
 
 OPPONENT_CARD_BACK_LIMIT = 10
 
@@ -98,26 +98,14 @@ def hub(request):
 def collection(request):
     """Affiche les 151 premières cartes du Pokédex (génération 1)."""
 
-    cards = (
-        PokemonCard.objects.filter(
-            pokedex_id__lte=GEN_ONE_MAX_POKEDEX_ID,
-        )
-        .select_related("primary_type")
-        .order_by("pokedex_id")
-    )
-
-    entries = [
-        {
-            "card": card,
-            "accent": type_color(card.primary_type.slug),
-        }
-        for card in cards
-    ]
+    cards = PokemonCard.objects.filter(
+        pokedex_id__lte=GEN_ONE_MAX_POKEDEX_ID,
+    ).order_by("pokedex_id")
 
     return render(
         request,
         "game/collection.html",
-        {"entries": entries},
+        {"cards": cards},
     )
 
 

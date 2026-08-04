@@ -46,6 +46,11 @@ tasks:
     cmds:
       - uv run python manage.py seed_pokemon_cards --from-api
 
+  tcg:refresh:
+    desc: Régénérer le fixture des visuels de cartes TCG depuis Pokémon TCG API (accès réseau requis)
+    cmds:
+      - uv run python manage.py fetch_tcg_card_images
+
   run:
     desc: Lancer le serveur de développement Django
     cmds:

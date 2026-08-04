@@ -17,8 +17,8 @@
         </h1>
 
         <p>
-            Les {{ entries|length }} premières espèces du Pokédex,
-            génération 1.
+            Les {{ cards|length }} premières espèces du Pokédex,
+            génération 1. Termine des quêtes pour débloquer leur carte.
         </p>
     </header>
 
@@ -26,26 +26,33 @@
         class="collection-grid"
         role="list"
     >
-        {% for entry in entries %}
+        {% for card in cards %}
             <figure
                 class="collection-card"
                 role="listitem"
-                style="--type-accent: {{ entry.accent }}"
             >
-                <span class="collection-card-number">
-                    #{{ entry.card.pokedex_id }}
-                </span>
-
-                <img
-                    src="{{ entry.card.sprite_url }}"
-                    alt=""
-                    width="72"
-                    height="72"
-                    loading="lazy"
+                <div
+                    class="collection-card-frame collection-card-locked"
+                    aria-label="Carte non débloquée"
                 >
+                    <img
+                        class="collection-card-locked-back"
+                        src="https://i0.wp.com/blog.myplanner.fr/source/web-pixs/02-anniversaires/2-2-enfants/pokemon/Dos-carte-pokemon-icone.png?resize=222%2C310"
+                        alt=""
+                        loading="lazy"
+                    >
+
+                    <span class="collection-card-locked-label">
+                        Verrouillé
+                    </span>
+
+                    <span class="collection-card-locked-number">
+                        #{{ card.pokedex_id }}
+                    </span>
+                </div>
 
                 <figcaption>
-                    {{ entry.card.name_fr }}
+                    {{ card.name_fr }}
                 </figcaption>
             </figure>
         {% endfor %}
