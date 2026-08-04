@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Créer un compte — PokéTable{% endblock %}
 {% block content %}
 <section class="auth-layout" aria-labelledby="auth-title">
@@ -19,13 +20,37 @@
         <p class="section-kicker">Rejoins la partie</p>
         <h1 id="auth-title">Créer un compte</h1>
         <p class="auth-intro">Quelques secondes suffisent pour commencer.</p>
-        <form method="post">
+        <form method="post" id="signup-form">
             {% csrf_token %}
-            {{ form.as_p }}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+                <p>
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {{ field.errors }}
+                    {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+                    {% if field.name == 'password2' %}
+                        <span class="password-checklist-title" id="password-checklist-title">Pour être accepté, le mot de passe doit respecter :</span>
+                        <ul class="password-checklist" id="password-checklist" aria-labelledby="password-checklist-title">
+                            {% for rule in form.password_rules %}
+                                <li class="password-rule is-{{ rule.state }}"
+                                    data-rule="{{ rule.code }}"
+                                    {% if rule.min_length %}data-min-length="{{ rule.min_length }}"{% endif %}
+                                    {% if not rule.checked_client_side %}data-server-only="true"{% endif %}>
+                                    <span class="password-rule-mark" aria-hidden="true"></span>
+                                    <span class="password-rule-label">{{ rule.label }}</span>
+                                    <span class="visually-hidden" data-rule-status>{% if rule.state == 'satisfied' %}règle respectée{% elif rule.state == 'missing' %}règle non respectée{% else %}règle à vérifier{% endif %}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </p>
+            {% endfor %}
             {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
             <button type="submit" class="btn btn-primary btn-block">Créer mon compte</button>
         </form>
         <p class="auth-switch">Déjà un compte ? <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Se connecter</a></p>
     </div>
 </section>
+<script src="{% static 'game/js/signup.js' %}?v=1"></script>
 {% endblock %}

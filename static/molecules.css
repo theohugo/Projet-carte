@@ -33,6 +33,62 @@
     font-weight: 800;
 }
 
+/* Checklist des critères de mot de passe de l'inscription. */
+.password-checklist-title {
+    margin-top: var(--space-2);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 750;
+}
+
+.password-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin: var(--space-1) 0 0;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    background: rgba(4, 12, 23, 0.4);
+    list-style: none;
+}
+
+.password-rule {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    line-height: 1.45;
+}
+
+.password-rule-mark {
+    flex: none;
+    width: 1em;
+    font-weight: 800;
+    text-align: center;
+}
+
+.password-rule-mark::before {
+    content: "•";
+}
+
+.password-rule.is-satisfied {
+    color: var(--color-positive);
+}
+
+.password-rule.is-satisfied .password-rule-mark::before {
+    content: "✓";
+}
+
+.password-rule.is-missing {
+    color: var(--color-danger);
+}
+
+.password-rule.is-missing .password-rule-mark::before {
+    content: "✕";
+}
+
 .messages {
     max-width: 1180px;
     margin: var(--space-3) auto 0;
