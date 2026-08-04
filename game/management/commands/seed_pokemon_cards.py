@@ -1,5 +1,6 @@
 import json
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
@@ -17,6 +18,9 @@ from game.tcg_types import get_tcg_type, tcg_type_slug_for_source_type
 
 DEFAULT_FIXTURE = Path(__file__).resolve().parent.parent.parent / "fixtures" / "pokemon_cards.json"
 POKEAPI_BASE = "https://pokeapi.co/api/v2"
+# PokeAPI n'impose pas de quota, mais reste un service gratuit : la
+# parallélisation est modérée pour ne pas le marteler.
+CATALOGUE_WORKERS = 8
 
 
 class Command(BaseCommand):
@@ -31,6 +35,15 @@ class Command(BaseCommand):
             "--from-api",
             action="store_true",
             help="Régénère le fixture en interrogeant PokeAPI (nécessite un accès réseau).",
+        )
+        parser.add_argument(
+            "--catalogue-limit",
+            type=int,
+            default=0,
+            help=(
+                "Avec --from-api, limite le nombre d'espèces hors pioche récupérées "
+                "(0 = tout le Pokédex). Utile pour un essai rapide."
+            ),
         )
         parser.add_argument(
             "--fixture",
@@ -48,7 +61,7 @@ class Command(BaseCommand):
         fixture_path = options["fixture"]
 
         if options["from_api"]:
-            data = self._fetch_from_api()
+            data = self._fetch_from_api(options["catalogue_limit"])
             fixture_path.parent.mkdir(parents=True, exist_ok=True)
             fixture_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
             self.stdout.write(self.style.SUCCESS(f"Fixture régénéré : {fixture_path}"))
@@ -69,6 +82,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def _load_into_db(self, data):
+        catalogue = data.get("catalogue", [])
         selected_pokedex_ids = {card["pokedex_id"] for card in data["cards"]}
         # Une ancienne espèce peut encore être référencée par une partie. Elle
         # reste consultable dans l'historique, mais sort des nouvelles pioches.
@@ -85,27 +99,36 @@ class Command(BaseCommand):
         card_field_names = {field.name for field in PokemonCard._meta.concrete_fields}
         supports_tcg_type = "tcg_type" in card_field_names
 
-        for c in data["cards"]:
+        # La pioche Poké-Uno (`in_current_deck`) reste la sélection éditoriale ;
+        # le reste du catalogue n'existe que pour le tirage du Qui est-ce ?.
+        for card, in_current_deck in [(c, True) for c in data["cards"]] + [(c, False) for c in catalogue]:
             defaults = {
-                "slug": c["slug"],
-                "name_fr": c["name_fr"],
-                "name_en": c["name_en"],
-                "primary_type": types_by_slug[c["primary_type"]],
-                "secondary_type": types_by_slug[c["secondary_type"]] if c.get("secondary_type") else None,
-                "sprite_url": c["sprite_url"],
-                "is_legendary": c["is_legendary"],
-                "action": c.get("action", action_for_pokedex_id(c["pokedex_id"])),
-                "in_current_deck": True,
+                "slug": card["slug"],
+                "name_fr": card["name_fr"],
+                "name_en": card["name_en"],
+                "primary_type": types_by_slug[card["primary_type"]],
+                "secondary_type": (
+                    types_by_slug[card["secondary_type"]] if card.get("secondary_type") else None
+                ),
+                "sprite_url": card["sprite_url"],
+                "is_legendary": card["is_legendary"],
+                "action": card.get("action", action_for_pokedex_id(card["pokedex_id"])),
+                "in_current_deck": in_current_deck,
             }
             if supports_tcg_type:
-                defaults["tcg_type"] = self._tcg_type_for_card(c)
+                defaults["tcg_type"] = self._tcg_type_for_card(card)
 
             PokemonCard.objects.update_or_create(
-                pokedex_id=c["pokedex_id"],
+                pokedex_id=card["pokedex_id"],
                 defaults=defaults,
             )
 
-        self.stdout.write(self.style.SUCCESS(f"{len(data['cards'])} cartes chargées."))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"{len(data['cards'])} cartes de la pioche et {len(catalogue)} espèces "
+                "supplémentaires au catalogue."
+            )
+        )
 
     def _print_coverage_report(self, data):
         covered_types = set()
@@ -130,6 +153,8 @@ class Command(BaseCommand):
         distribution = ", ".join(f"{slug}={tcg_type_counts.get(slug, 0)}" for slug in ALL_TCG_TYPE_SLUGS)
         self.stdout.write(f"Répartition JCC : {distribution}")
         self.stdout.write(f"Cartes légendaires : {legendary_count}")
+        catalogue_size = len(data["cards"]) + len(data.get("catalogue", []))
+        self.stdout.write(f"Catalogue total (tirage du Qui est-ce ?) : {catalogue_size} espèces")
 
     @staticmethod
     def _tcg_type_for_card(card):
@@ -149,52 +174,115 @@ class Command(BaseCommand):
             raise CommandError(f"Impossible de déterminer le type JCC du Pokémon #{card['pokedex_id']}.")
         return fallback
 
-    def _fetch_from_api(self):
-        import requests
+    def _fetch_from_api(self, catalogue_limit=0):
+        """Récupère la pioche éditoriale, puis tout le reste du Pokédex.
 
-        self.stdout.write(f"Récupération de {len(CURATED_POKEDEX_IDS)} Pokémon depuis PokeAPI...")
+        Les espèces hors pioche ne servent qu'au plateau du Qui est-ce ?, tiré
+        au sort dans l'ensemble du catalogue : elles n'ont donc pas de type JCC
+        éditorial et sont chargées avec ``in_current_deck=False``.
+        """
 
-        type_cache = {}
+        types = self._fetch_types()
 
-        def get_type(slug):
-            if slug not in type_cache:
-                resp = requests.get(f"{POKEAPI_BASE}/type/{slug}", timeout=10)
-                resp.raise_for_status()
-                names = resp.json()["names"]
-                name_fr = next(n["name"] for n in names if n["language"]["name"] == "fr")
-                name_en = next(n["name"] for n in names if n["language"]["name"] == "en")
-                type_cache[slug] = {"slug": slug, "name_fr": name_fr, "name_en": name_en}
-            return type_cache[slug]
-
+        self.stdout.write(f"Récupération de {len(CURATED_POKEDEX_IDS)} Pokémon de la pioche...")
         cards = []
         for pokedex_id in CURATED_POKEDEX_IDS:
-            pokemon = requests.get(f"{POKEAPI_BASE}/pokemon/{pokedex_id}", timeout=10).json()
-            species = requests.get(f"{POKEAPI_BASE}/pokemon-species/{pokedex_id}", timeout=10).json()
+            card = self._fetch_card(pokedex_id)
+            if card is None:
+                raise CommandError(f"Le Pokémon #{pokedex_id} de la pioche est introuvable sur PokeAPI.")
+            card["tcg_type"] = TCG_TYPE_BY_POKEDEX_ID[pokedex_id]
+            cards.append(card)
+            self.stdout.write(f"  #{pokedex_id} {card['name_fr']} / {card['name_en']}")
 
-            names = species["names"]
-            name_fr = next(n["name"] for n in names if n["language"]["name"] == "fr")
-            name_en = next(n["name"] for n in names if n["language"]["name"] == "en")
+        catalogue_ids = [i for i in self._all_species_ids() if i not in set(CURATED_POKEDEX_IDS)]
+        if catalogue_limit > 0:
+            catalogue_ids = catalogue_ids[:catalogue_limit]
 
-            type_slugs = [t["type"]["name"] for t in sorted(pokemon["types"], key=lambda t: t["slot"])]
-            for slug in type_slugs:
-                get_type(slug)
+        self.stdout.write(f"Récupération de {len(catalogue_ids)} espèces supplémentaires...")
+        catalogue = []
+        skipped = []
+        with ThreadPoolExecutor(max_workers=CATALOGUE_WORKERS) as pool:
+            for pokedex_id, card in zip(catalogue_ids, pool.map(self._fetch_card, catalogue_ids)):
+                if card is None:
+                    skipped.append(pokedex_id)
+                    continue
+                catalogue.append(card)
 
-            sprite_url = pokemon["sprites"]["other"]["official-artwork"]["front_default"]
+        catalogue.sort(key=lambda card: card["pokedex_id"])
+        if skipped:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"{len(skipped)} espèces ignorées (illustration ou type indisponible) : "
+                    f"{skipped[:10]}{'...' if len(skipped) > 10 else ''}"
+                )
+            )
 
-            cards.append(
+        return {"types": types, "cards": cards, "catalogue": catalogue}
+
+    def _fetch_types(self):
+        """Nom français des 18 types source, seule base acceptée du catalogue."""
+
+        import requests
+
+        types = []
+        for slug in ALL_TYPE_SLUGS:
+            resp = requests.get(f"{POKEAPI_BASE}/type/{slug}", timeout=10)
+            resp.raise_for_status()
+            names = resp.json()["names"]
+            types.append(
                 {
-                    "pokedex_id": pokedex_id,
-                    "slug": pokemon["name"],
-                    "name_fr": name_fr,
-                    "name_en": name_en,
-                    "primary_type": type_slugs[0],
-                    "secondary_type": type_slugs[1] if len(type_slugs) > 1 else None,
-                    "sprite_url": sprite_url,
-                    "is_legendary": species["is_legendary"] or species["is_mythical"],
-                    "action": action_for_pokedex_id(pokedex_id),
-                    "tcg_type": TCG_TYPE_BY_POKEDEX_ID[pokedex_id],
+                    "slug": slug,
+                    "name_fr": next(n["name"] for n in names if n["language"]["name"] == "fr"),
+                    "name_en": next(n["name"] for n in names if n["language"]["name"] == "en"),
                 }
             )
-            self.stdout.write(f"  #{pokedex_id} {name_fr} / {name_en} ({'+'.join(type_slugs)})")
+        return types
 
-        return {"types": list(type_cache.values()), "cards": cards}
+    def _fetch_card(self, pokedex_id):
+        """Une espèce du Pokédex, ou ``None`` si elle n'est pas exploitable."""
+
+        import requests
+
+        try:
+            pokemon = requests.get(f"{POKEAPI_BASE}/pokemon/{pokedex_id}", timeout=20)
+            pokemon.raise_for_status()
+            pokemon = pokemon.json()
+            species = requests.get(f"{POKEAPI_BASE}/pokemon-species/{pokedex_id}", timeout=20)
+            species.raise_for_status()
+            species = species.json()
+        except requests.RequestException:
+            return None
+
+        type_slugs = [t["type"]["name"] for t in sorted(pokemon["types"], key=lambda t: t["slot"])]
+        # Les types hors des 18 types source (« stellar », « unknown ») n'ont pas
+        # de correspondance JCC : l'espèce est écartée plutôt que mal classée.
+        if not type_slugs or any(slug not in ALL_TYPE_SLUGS for slug in type_slugs):
+            return None
+
+        sprite_url = pokemon["sprites"]["other"]["official-artwork"]["front_default"]
+        if not sprite_url:
+            return None
+
+        names = species["names"]
+        name_en = next((n["name"] for n in names if n["language"]["name"] == "en"), pokemon["name"])
+        name_fr = next((n["name"] for n in names if n["language"]["name"] == "fr"), name_en)
+
+        return {
+            "pokedex_id": pokedex_id,
+            "slug": pokemon["name"],
+            "name_fr": name_fr,
+            "name_en": name_en,
+            "primary_type": type_slugs[0],
+            "secondary_type": type_slugs[1] if len(type_slugs) > 1 else None,
+            "sprite_url": sprite_url,
+            "is_legendary": species["is_legendary"] or species["is_mythical"],
+            "action": action_for_pokedex_id(pokedex_id),
+        }
+
+    @staticmethod
+    def _all_species_ids():
+        import requests
+
+        resp = requests.get(f"{POKEAPI_BASE}/pokemon-species?limit=100000", timeout=30)
+        resp.raise_for_status()
+        return sorted(int(result["url"].rstrip("/").rsplit("/", 1)[-1]) for result in resp.json()["results"])

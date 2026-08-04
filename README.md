@@ -16,9 +16,9 @@ PokéTable est une plateforme Django de jeux de société Pokémon multijoueurs.
 - Le vainqueur marque les points des mains adverses : 10 points par carte normale et 25 par légendaire.
 - L’hôte peut ajouter ou retirer des IA avant le départ. Leur décision est validée par le même moteur serveur que celle d’un humain.
 
-Le jeu emploie les 10 types de cartes Pokémon imprimés dans le JCC moderne : **Plante, Feu, Eau, Électrique, Psy, Combat, Obscurité, Métal, Dragon et Incolore**. Chaque carte possède exactement un type JCC, visible avec son symbole officiel. Les 18 types du jeu vidéo restent des métadonnées Pokédex, notamment utiles aux questions du Qui est-ce, mais ne pilotent plus la compatibilité Poké‑Uno.
+Le jeu emploie les quatre types de cartes du JCC retenus pour cette édition : **Plante, Feu, Eau et Électrique**. Chaque carte possède exactement un type JCC, visible avec son symbole officiel. Les 18 types du jeu vidéo restent des métadonnées Pokédex, notamment utiles aux questions du Qui est-ce, mais ne pilotent plus la compatibilité Poké‑Uno.
 
-Le catalogue actif contient 54 espèces, chacune présente deux fois dans la pioche :
+La pioche Poké‑Uno contient 22 espèces, chacune présente deux fois :
 
 | Type JCC | Espèces | Cartes physiques |
 | --- | ---: | ---: |
@@ -26,14 +26,10 @@ Le catalogue actif contient 54 espèces, chacune présente deux fois dans la pio
 | Feu | 5 | 10 |
 | Eau | 6 | 12 |
 | Électrique | 5 | 10 |
-| Psy | 6 | 12 |
-| Combat | 5 | 10 |
-| Obscurité | 5 | 10 |
-| Métal | 5 | 10 |
-| Dragon | 5 | 10 |
-| Incolore | 6 | 12 |
 
-L’écart maximal est donc de 2 cartes physiques entre les types. La sélection couvre toujours les 18 types source, les 3 lignées complètes de starters et 5 légendaires ou fabuleux de la première génération.
+L’écart maximal est donc de 2 cartes physiques entre les types. La sélection couvre les 3 lignées complètes de starters et les 3 oiseaux légendaires de la première génération.
+
+Le catalogue en base est bien plus large que cette pioche : `seed_pokemon_cards` charge tout le Pokédex (1024 espèces exploitables sur les 1025 de PokeAPI), les espèces hors pioche étant marquées `in_current_deck=False`. Poké‑Uno ne tire que dans la pioche ; le Qui est-ce ? tire ses 24 Pokémon au hasard dans tout le catalogue, ce qui rend chaque plateau différent.
 
 Références officielles : [règles françaises du JCC Pokémon](https://www.pokemon.com/static-assets/content-assets/cms2-fr-fr/pdf/trading-card-game/rulebook/par_rulebook_fr.pdf) et [base de données des cartes Pokémon](https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards?format=unlimited).
 

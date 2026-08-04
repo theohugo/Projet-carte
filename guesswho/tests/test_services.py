@@ -1,7 +1,12 @@
+import json
+from pathlib import Path
+
+from django.conf import settings
 from django.test import TestCase
 
 from guesswho.models import GuessWhoCandidateState, GuessWhoGame, GuessWhoTurn
 from guesswho.services import (
+    ROSTER_SIZE,
     GuessWhoPermissionError,
     GuessWhoRosterError,
     GuessWhoStateError,
@@ -288,3 +293,27 @@ class GuessWhoServiceTests(TestCase):
         self.assertEqual(state["roster"][0]["tcg_type"], "grass")
         self.assertEqual(state["history"][0]["answer"], True)
         self.assertEqual(state["history"][0]["responder"]["username"], self.guest.username)
+
+
+class ShippedCatalogTests(TestCase):
+    """Le catalogue livré doit pouvoir alimenter un plateau, sinon le mode est
+    hors service en production alors que les tests unitaires, qui construisent
+    leur propre catalogue, restent verts."""
+
+    def test_committed_fixture_holds_enough_species_for_a_roster(self):
+        fixture_path = Path(settings.BASE_DIR) / "game" / "fixtures" / "pokemon_cards.json"
+        data = json.loads(fixture_path.read_text(encoding="utf-8"))
+
+        species_count = len(data["cards"]) + len(data.get("catalogue", []))
+
+        self.assertGreaterEqual(species_count, ROSTER_SIZE)
+
+    def test_committed_fixture_leaves_room_for_random_rosters(self):
+        fixture_path = Path(settings.BASE_DIR) / "game" / "fixtures" / "pokemon_cards.json"
+        data = json.loads(fixture_path.read_text(encoding="utf-8"))
+
+        species_count = len(data["cards"]) + len(data.get("catalogue", []))
+
+        # Un catalogue tout juste égal à ROSTER_SIZE donnerait le même plateau
+        # à chaque partie : le tirage aléatoire n'aurait plus aucun effet.
+        self.assertGreater(species_count, ROSTER_SIZE * 2)

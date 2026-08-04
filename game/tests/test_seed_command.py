@@ -57,6 +57,28 @@ class SeedPokemonCardsTests(TestCase):
         self.assertEqual(PokemonCard.objects.get(pokedex_id=4).tcg_type, "fire")
         self.assertEqual(PokemonCard.objects.get(pokedex_id=7).tcg_type, "water")
 
+    def test_catalogue_species_are_loaded_outside_the_current_deck(self):
+        fixture = dict(SAMPLE_FIXTURE)
+        fixture["catalogue"] = [
+            {
+                "pokedex_id": 25,
+                "slug": "pikachu",
+                "name_fr": "Pikachu",
+                "name_en": "Pikachu",
+                "primary_type": "fire",
+                "secondary_type": None,
+                "sprite_url": "https://example.com/25.png",
+                "is_legendary": False,
+            }
+        ]
+        self.fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
+
+        call_command("seed_pokemon_cards", fixture=self.fixture_path)
+
+        self.assertEqual(PokemonCard.objects.count(), 3)
+        self.assertEqual(PokemonCard.objects.filter(in_current_deck=True).count(), 2)
+        self.assertFalse(PokemonCard.objects.get(pokedex_id=25).in_current_deck)
+
     def test_running_twice_is_idempotent(self):
         call_command("seed_pokemon_cards", fixture=self.fixture_path)
         call_command("seed_pokemon_cards", fixture=self.fixture_path)

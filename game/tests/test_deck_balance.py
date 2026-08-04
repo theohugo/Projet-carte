@@ -19,7 +19,11 @@ class BalancedDeckTests(TestCase):
         self.cards = make_cards(make_types())
 
     def _catalogue(self):
-        return list(PokemonCard.objects.select_related("primary_type", "secondary_type").all())
+        # Même filtre que `GameEngine` : le reste du catalogue n'alimente que le
+        # tirage du Qui est-ce ?, pas la pioche Poké-Uno.
+        return list(
+            PokemonCard.objects.filter(in_current_deck=True).select_related("primary_type", "secondary_type")
+        )
 
     def test_allocation_is_deterministic_and_preserves_every_pokemon(self):
         cards = self._catalogue()
