@@ -8,28 +8,27 @@ PokéTable est une plateforme Django de jeux de société Pokémon multijoueurs.
 
 ### Poké‑Uno
 
+- Au démarrage, la partie **tire 4 types Pokémon au sort** (parmi les 18 des jeux vidéo) et les révèle par une animation. Toute la pioche est composée de ces types.
 - Chaque joueur reçoit 7 cartes. Le premier à vider sa main gagne.
-- Une carte est jouable si elle partage le **type JCC** ou l’**espèce** de la défausse.
-- Les cartes légendaires et les cartes `+4` sont des jokers : le joueur choisit le prochain type JCC.
+- Une carte est jouable si elle **partage un type** avec la défausse ou si c'est la **même espèce**. Un Pokémon à double type sert donc de passerelle entre deux couleurs de la partie.
+- Les cartes légendaires et les cartes `+4` sont des jokers : le joueur choisit lequel des 4 types de la partie sera imposé au suivant.
 - `+2` et `+4` font piocher la cible et sautent son tour, **Inversion** change le sens, et **Protection** annule la prochaine pénalité reçue.
 - Piocher termine le tour. Lorsque la pioche est vide, la défausse est remélangée en conservant sa carte supérieure.
 - Le vainqueur marque les points des mains adverses : 10 points par carte normale et 25 par légendaire.
 - L’hôte peut ajouter ou retirer des IA avant le départ. Leur décision est validée par le même moteur serveur que celle d’un humain.
 
-Le jeu emploie les quatre types de cartes du JCC retenus pour cette édition : **Plante, Feu, Eau et Électrique**. Chaque carte possède exactement un type JCC, visible avec son symbole officiel. Les 18 types du jeu vidéo restent des métadonnées Pokédex, notamment utiles aux questions du Qui est-ce, mais ne pilotent plus la compatibilité Poké‑Uno.
+### Composition d'une pioche
 
-La pioche Poké‑Uno contient 22 espèces, chacune présente deux fois :
+Le catalogue en base contient tout le Pokédex : `seed_pokemon_cards` charge 1024 espèces exploitables sur les 1025 de PokeAPI, avec leurs types authentiques. Chaque partie y puise sa propre pioche :
 
-| Type JCC | Espèces | Cartes physiques |
-| --- | ---: | ---: |
-| Plante | 6 | 12 |
-| Feu | 5 | 10 |
-| Eau | 6 | 12 |
-| Électrique | 5 | 10 |
+| Étape | Règle |
+| --- | --- |
+| Types de la partie | 4 types tirés au sort parmi ceux comptant assez d'espèces |
+| Espèces par type | 20 (une espèce bi-type peut servir deux types de la partie) |
+| Exemplaires | 2 par espèce, soit environ 150 cartes |
+| Cartes à effet | 10 % des espèces en `+2`, 10 % en Inversion, 10 % en Protection, 5 % en `+4` |
 
-L’écart maximal est donc de 2 cartes physiques entre les types. La sélection couvre les 3 lignées complètes de starters et les 3 oiseaux légendaires de la première génération.
-
-Le catalogue en base est bien plus large que cette pioche : `seed_pokemon_cards` charge tout le Pokédex (1024 espèces exploitables sur les 1025 de PokeAPI), les espèces hors pioche étant marquées `in_current_deck=False`. Poké‑Uno ne tire que dans la pioche ; le Qui est-ce ? tire ses 24 Pokémon au hasard dans tout le catalogue, ce qui rend chaque plateau différent.
+Les pouvoirs sont donc tirés par partie et non figés sur une espèce du catalogue : sans cela, un tirage aléatoire ne contiendrait presque jamais de carte à effet. Les deux exemplaires d'une même espèce partagent toujours le même pouvoir, ce qui reste mémorisable en cours de partie. Les légendaires n'en reçoivent pas : ils sont déjà des jokers.
 
 Références officielles : [règles françaises du JCC Pokémon](https://www.pokemon.com/static-assets/content-assets/cms2-fr-fr/pdf/trading-card-game/rulebook/par_rulebook_fr.pdf) et [base de données des cartes Pokémon](https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards?format=unlimited).
 
@@ -94,17 +93,17 @@ classDiagram
 
     class PokemonCard {
         +pokedex_id
-        +tcg_type
         +primary_type
         +secondary_type
-        +action
+        +is_legendary
     }
     class Game {
         +UUID id
         +status
         +current_turn_number
         +turn_revision
-        +active_tcg_type
+        +selected_types
+        +active_type
         +direction
     }
     class GuessWhoGame {
@@ -116,7 +115,7 @@ classDiagram
     }
 ```
 
-`GameCard` représente une carte physique d’une partie Poké‑Uno. Sa position est déterminée par `location` et un `order_index` monotone : aucune pile n’est stockée dans un blob JSON. `PokemonCard.tcg_type` porte la règle publique du jeu, tandis que `primary_type` et `secondary_type` conservent les données Pokédex.
+`GameCard` représente une carte physique d’une partie Poké‑Uno. Sa position est déterminée par `location` et un `order_index` monotone : aucune pile n’est stockée dans un blob JSON. C'est aussi elle qui porte le pouvoir (`action`), tiré au sort pour la partie, tandis que `PokemonCard` ne garde que les données Pokédex partagées par toutes les parties. `Game.selected_types` retient les 4 types tirés et `Game.active_type` le type imposé par le dernier joker.
 
 Les deux moteurs métier sont séparés des vues :
 
@@ -159,7 +158,7 @@ stateDiagram-v2
 
 ## UI/UX et Design System
 
-L’identité « salon de jeux nocturne » repose sur des tokens centralisés dans `static/tokens.css` : couleurs JCC, surfaces, contrastes, espaces, rayons, ombres et durées. Les composants suivent l’Atomic Design :
+L’identité « salon de jeux nocturne » repose sur des tokens centralisés dans `static/tokens.css` : couleurs de marque, surfaces, contrastes, espaces, rayons, ombres et durées. Les composants suivent l’Atomic Design :
 
 - **atomes** dans `static/atoms.css` : boutons, badges, symboles d’énergie, cartes 3D, champs ;
 - **molécules** dans `static/molecules.css` : mains en éventail, pioche, défausse, indicateurs de tour, sélecteur de type ;
@@ -180,6 +179,6 @@ Le plateau Poké‑Uno tient dans le viewport sans scroll de page. Les mains dis
 - **Python 3.13** : Django 6 exige Python 3.12 ou plus.
 - **Polling plutôt que WebSocket** : adapté à ces jeux au tour par tour et plus simple à exécuter avec le serveur WSGI demandé. Une évolution ASGI reste possible.
 - **JavaScript natif** pour les interactions temps réel : aucun framework ni CDN JavaScript au runtime.
-- **Icônes d’énergie JCC** chargées depuis le domaine officiel Pokémon, avec préconnexion ; les sprites du catalogue sont eux aussi des URL figées dans la fixture.
+- **Couleurs de type servies par le serveur** en style inline : les 18 types tiennent ainsi sans dix-huit règles CSS, et les sprites du catalogue restent des URL figées dans la fixture.
 
 Le cahier des charges d’origine est conservé dans [`.claude/skills/projet-cartes/SKILL.md`](.claude/skills/projet-cartes/SKILL.md).

@@ -396,6 +396,26 @@ a:focus-visible {
     backdrop-filter: blur(5px);
 }
 
+/* Symboles d'énergie du JCC : décor des pages vitrines (accueil, lobby), sans
+   rapport avec la règle du jeu, qui s'appuie sur les types des jeux vidéo. */
+.tcg-energy-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+    background: center / contain no-repeat;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.42));
+}
+
+.tcg-energy-icon[data-tcg-type="grass"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/grass.png"); }
+.tcg-energy-icon[data-tcg-type="fire"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/fire.png"); }
+.tcg-energy-icon[data-tcg-type="water"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/water.png"); }
+.tcg-energy-icon[data-tcg-type="lightning"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/lightning.png"); }
+
+[data-tcg-type="grass"] { --type-accent: var(--color-tcg-grass); }
+[data-tcg-type="fire"] { --type-accent: var(--color-tcg-fire); }
+[data-tcg-type="water"] { --type-accent: var(--color-tcg-water); }
+[data-tcg-type="lightning"] { --type-accent: var(--color-tcg-lightning); }
+
 /* Les types du Pokémon : un badge par type, la couleur porte l'information. */
 .card-unit-types {
     position: absolute;
