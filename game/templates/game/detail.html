@@ -4,6 +4,7 @@
 {% block html_class %}{% if game.status == "EN_COURS" %}game-document{% endif %}{% endblock %}
 {% block body_class %}game-shell{% if game.status == "EN_COURS" %} game-shell--active{% endif %}{% endblock %}
 {% block content %}
+{% type_sprite %}
 <div class="game-page">
     <header class="game-page-heading">
         <div>
@@ -99,7 +100,8 @@
                 <h2 class="type-draw-title">Les 4 types de la partie</h2>
                 <ul class="type-draw-slots">
                     {% for type in game_types %}
-                    <li class="type-draw-slot" data-slot="{{ forloop.counter0 }}" data-final-type="{{ type.name_fr }}" data-final-color="{{ type.color }}">
+                    <li class="type-draw-slot" data-slot="{{ forloop.counter0 }}" data-final-type="{{ type.name_fr }}" data-final-color="{{ type.color }}" data-final-slug="{{ type.slug }}">
+                        <span class="type-draw-glyph" data-type-glyph></span>
                         <span class="type-draw-name">?</span>
                     </li>
                     {% endfor %}
@@ -143,7 +145,7 @@
                 <div class="direction-indicator" title="Sens de jeu actuel"><span aria-hidden="true">{% if game_state.direction == -1 %}↺{% else %}↻{% endif %}</span><small>{% if game_state.direction == -1 %}Sens inversé{% else %}Sens horaire{% endif %}</small></div>
                 <div class="table-rule" aria-hidden="true"><span>un type en commun</span><i></i><span>ou même Pokémon</span></div>
                 <ul class="game-types" aria-label="Types tirés pour cette partie">
-                    {% for type in game_types %}<li class="type-pill" style="--type-accent: {{ type.color }}">{{ type.name_fr }}</li>{% endfor %}
+                    {% for type in game_types %}<li class="type-pill type-pill--labelled" style="--type-accent: {{ type.color }}">{% type_icon type.slug %}{{ type.name_fr }}</li>{% endfor %}
                 </ul>
             </div>
 
@@ -152,7 +154,7 @@
                 {% if game_state.top_discard %}
                 <div class="card-tilt card-tilt--display" data-tilt-card data-motion-discard>
                     <div class="card-unit card-unit--display {% if game_state.top_discard.action != 'NORMAL' %}has-action{% endif %}" style="--type-accent: {{ game_state.top_discard.types.0.color }}" role="img" aria-label="{{ game_state.top_discard.name_fr }}, type {% for type in game_state.top_discard.types %}{{ type.name_fr }}{% if not forloop.last %} et {% endif %}{% endfor %}{% if game_state.top_discard.action != 'NORMAL' %}, effet {{ game_state.top_discard.action_label }}{% endif %}">
-                        <span class="card-unit-types">{% for type in game_state.top_discard.types %}<span class="type-pill" style="--type-accent: {{ type.color }}">{{ type.name_fr }}</span>{% endfor %}</span>
+                        <span class="card-unit-types">{% for type in game_state.top_discard.types %}<span class="type-pill" style="--type-accent: {{ type.color }}" role="img" aria-label="{{ type.name_fr }}" title="{{ type.name_fr }}">{% type_icon type.slug %}</span>{% endfor %}</span>
                         <span class="card-unit-number">#{{ game_state.top_discard.pokedex_id }}</span>
                         {% if game_state.top_discard.action != "NORMAL" %}<span class="card-action" data-action="{{ game_state.top_discard.action }}" aria-label="Effet {{ game_state.top_discard.action_label }}">{% if game_state.top_discard.action == "DRAW_TWO" %}+2{% elif game_state.top_discard.action == "DRAW_FOUR" %}+4{% elif game_state.top_discard.action == "REVERSE" %}↺{% elif game_state.top_discard.action == "SHIELD" %}<i class="shield-symbol" aria-hidden="true"></i>{% endif %}</span>{% endif %}
                         <img src="{{ game_state.top_discard.sprite_url }}" alt="" width="82" height="82" fetchpriority="high">
@@ -200,7 +202,7 @@
                             data-reload-focus-key="hand-card-{{ card.id }}"
                             data-requires-type-choice="{{ card.requires_type_choice|yesno:'true,false' }}"
                             {% if not card.is_playable %}disabled{% endif %} aria-label="{{ card.name_fr }}, type {% for type in card.types %}{{ type.name_fr }}{% if not forloop.last %} et {% endif %}{% endfor %}{% if card.action != 'NORMAL' %}, effet {{ card.action_label }}{% endif %} — {% if card.is_playable %}jouer{% else %}non jouable{% endif %}">
-                        <span class="card-unit-types">{% for type in card.types %}<span class="type-pill" style="--type-accent: {{ type.color }}">{{ type.name_fr }}</span>{% endfor %}</span>
+                        <span class="card-unit-types">{% for type in card.types %}<span class="type-pill" style="--type-accent: {{ type.color }}" role="img" aria-label="{{ type.name_fr }}" title="{{ type.name_fr }}">{% type_icon type.slug %}</span>{% endfor %}</span>
                         <span class="card-unit-number">#{{ card.pokedex_id }}</span>
                         {% if card.action != "NORMAL" %}<span class="card-action" data-action="{{ card.action }}" aria-label="Effet {{ card.action_label }}">{% if card.action == "DRAW_TWO" %}+2{% elif card.action == "DRAW_FOUR" %}+4{% elif card.action == "REVERSE" %}↺{% elif card.action == "SHIELD" %}<i class="shield-symbol" aria-hidden="true"></i>{% endif %}</span>{% endif %}
                         <img src="{{ card.sprite_url }}" alt="" width="82" height="82" loading="lazy">
@@ -231,5 +233,5 @@
 
 {{ game_state|json_script:"game-initial-state" }}
 {{ all_types|json_script:"pokemon-types" }}
-<script src="{% static 'game/js/game-board.js' %}?v=15"></script>
+<script src="{% static 'game/js/game-board.js' %}?v=16"></script>
 {% endblock %}

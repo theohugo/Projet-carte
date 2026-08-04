@@ -390,6 +390,34 @@
         }
     }
 
+    const SVG_NS = "http://www.w3.org/2000/svg";
+
+    // Les 18 pictogrammes sont déposés une fois dans la page ({% type_sprite %}) :
+    // ici on ne fait que pointer le bon symbole.
+    function buildTypeGlyph(slug) {
+        const svg = document.createElementNS(SVG_NS, "svg");
+        svg.setAttribute("class", "type-glyph");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("fill", "currentColor");
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("focusable", "false");
+        const use = document.createElementNS(SVG_NS, "use");
+        use.setAttribute("href", `#type-${slug}`);
+        svg.appendChild(use);
+        return svg;
+    }
+
+    function buildTypePill(cardType) {
+        const pill = document.createElement("span");
+        pill.className = "type-pill";
+        pill.style.setProperty("--type-accent", cardType.color);
+        pill.setAttribute("role", "img");
+        pill.setAttribute("aria-label", cardType.name_fr);
+        pill.title = cardType.name_fr;
+        pill.appendChild(buildTypeGlyph(cardType.slug));
+        return pill;
+    }
+
     function buildMotionCardFace(card) {
         const face = document.createElement("div");
         face.className = `card-unit card-unit--display motion-card-reveal${card.action !== "NORMAL" ? " has-action" : ""}`;
@@ -399,13 +427,7 @@
 
         const badges = document.createElement("span");
         badges.className = "card-unit-types";
-        cardTypes.forEach((cardType) => {
-            const pill = document.createElement("span");
-            pill.className = "type-pill";
-            pill.style.setProperty("--type-accent", cardType.color);
-            pill.textContent = cardType.name_fr;
-            badges.appendChild(pill);
-        });
+        cardTypes.forEach((cardType) => badges.appendChild(buildTypePill(cardType)));
         face.appendChild(badges);
 
         const number = document.createElement("span");
@@ -846,10 +868,15 @@
         curtain.removeAttribute("aria-hidden");
         document.body.classList.add("has-type-draw");
 
+        const paint = (slot, slug, name, color) => {
+            slot.style.setProperty("--type-accent", color);
+            slot.querySelector(".type-draw-name").textContent = name;
+            slot.querySelector("[data-type-glyph]").replaceChildren(buildTypeGlyph(slug));
+        };
+
         const reveal = (slot) => {
             slot.classList.add("is-revealed");
-            slot.style.setProperty("--type-accent", slot.dataset.finalColor);
-            slot.querySelector(".type-draw-name").textContent = slot.dataset.finalType;
+            paint(slot, slot.dataset.finalSlug, slot.dataset.finalType, slot.dataset.finalColor);
         };
 
         if (reducedMotion.matches || !pool.length) {
@@ -857,12 +884,10 @@
             await wait(1200);
         } else {
             for (const slot of slots) {
-                const name = slot.querySelector(".type-draw-name");
                 slot.classList.add("is-spinning");
                 for (let tick = 0; tick < 12; tick += 1) {
                     const candidate = pool[Math.floor(Math.random() * pool.length)];
-                    slot.style.setProperty("--type-accent", candidate.color);
-                    name.textContent = candidate.name_fr;
+                    paint(slot, candidate.slug, candidate.name_fr, candidate.color);
                     await wait(60 + tick * 8);
                 }
                 slot.classList.remove("is-spinning");

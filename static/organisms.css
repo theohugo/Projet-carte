@@ -2008,8 +2008,13 @@
     }
 
     .game-shell--active .center-row .type-pill {
-        padding: 1px 4px;
-        font-size: 0.5rem;
+        width: 16px;
+        height: 16px;
+    }
+
+    .game-shell--active .center-row .type-glyph {
+        width: 10px;
+        height: 10px;
     }
 
     .game-shell--active .center-row .card-action {
@@ -2142,7 +2147,9 @@
 
 .type-draw-slot {
     display: grid;
-    min-height: 74px;
+    min-height: 96px;
+    align-content: center;
+    gap: var(--space-2);
     padding: var(--space-3);
     border: 2px solid rgba(255, 255, 255, 0.16);
     border-radius: var(--radius-md);
@@ -2151,6 +2158,27 @@
     color: #0d1726;
     font-weight: 900;
     transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+/* Le symbole d'abord, le nom en dessous : on reconnaît le type avant de lire. */
+.type-draw-glyph {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.28);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.type-draw-glyph .type-glyph {
+    width: 26px;
+    height: 26px;
+}
+
+.type-draw-slot:not(.is-revealed):not(.is-spinning) .type-draw-glyph {
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
 }
 
 .type-draw-slot:not(.is-revealed):not(.is-spinning) {
