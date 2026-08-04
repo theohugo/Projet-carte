@@ -10,17 +10,24 @@ from game.tests.factories import make_cards, make_draft_catalogue, make_game, ma
 
 
 class AnonymousAccessTests(TestCase):
-    def test_lobby_redirects_anonymous_to_login(self):
-        response = self.client.get(reverse("lobby"))
-        self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse("login"), response.url)
+    """Les jeux sont ouverts sans compte : l'anonyme voit la porte invité,
+    qui propose de jouer tout de suite ou de se connecter."""
 
-    def test_game_detail_redirects_anonymous_to_login(self):
+    def test_lobby_offers_the_guest_entrance(self):
+        response = self.client.get(reverse("lobby"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "guest_gate.html")
+        self.assertContains(response, reverse("play_as_guest"))
+
+    def test_game_detail_offers_the_guest_entrance(self):
         (user,) = make_users(1)
         game = make_game(user)
+
         response = self.client.get(reverse("game_detail", args=[game.id]))
-        self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse("login"), response.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "guest_gate.html")
 
 
 class SignupRedirectTests(TestCase):
@@ -30,10 +37,10 @@ class SignupRedirectTests(TestCase):
         GameEngine(game).add_player(owner)
         invitation_path = reverse("game_detail", args=[game.id])
 
-        response = self.client.get(invitation_path)
-        login_response = self.client.get(response.url)
+        # La porte invité conserve la destination pour l'inscription.
+        gate = self.client.get(invitation_path)
+        self.assertContains(gate, invitation_path)
 
-        self.assertContains(login_response, f"?next={invitation_path}")
         response = self.client.post(
             reverse("signup"),
             {

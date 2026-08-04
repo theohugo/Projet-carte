@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
+from game.guests import guest_allowed
+
 from .models import GuessWhoGame
 from .services import (
     GuessWhoError,
@@ -75,7 +77,7 @@ def _error_response(exc, game_id, user):
     return JsonResponse({"error": str(exc)}, status=status)
 
 
-@login_required
+@guest_allowed
 def lobby(request):
     open_games = (
         GuessWhoGame.objects.filter(status=GuessWhoGame.Status.EN_ATTENTE)
@@ -130,7 +132,7 @@ def join_game(request, game_id):
     return redirect("guesswho:game_detail", game_id=game.id)
 
 
-@login_required
+@guest_allowed
 def game_detail(request, game_id):
     game = get_object_or_404(GuessWhoGame, pk=game_id)
     if not game.players.filter(user=request.user).exists():

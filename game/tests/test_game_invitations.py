@@ -214,16 +214,16 @@ class GameInvitationTests(TestCase):
             },
         )
 
-    def test_invitations_page_requires_authentication(self):
+    def test_invitations_page_requires_a_full_account(self):
         response = self.client.get(reverse("game_invitations"))
 
         self.assertEqual(
             response.status_code,
-            302,
+            200,
         )
-        self.assertIn(
-            reverse("login"),
-            response.url,
+        self.assertTemplateUsed(
+            response,
+            "members_only.html",
         )
 
     def test_host_can_open_friend_selection_page(self):

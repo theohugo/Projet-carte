@@ -1,6 +1,5 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
 from django.http import Http404, HttpResponseForbidden
@@ -11,6 +10,7 @@ from django.views.decorators.http import require_POST
 
 from game.api import invalidate_game_state_cache
 from game.game_engine import GameEngine, GameEngineError
+from game.guests import member_feature, members_only
 from game.models import (
     Friendship,
     Game,
@@ -325,7 +325,11 @@ def _active_pending_invitations(queryset):
     return active_invitations
 
 
-@login_required
+@members_only
+@member_feature(
+    "Tes invitations",
+    "Invite tes amis en un clic et retrouve toutes les parties où l'on t'attend.",
+)
 def game_invitations(request):
     """Affiche les invitations reçues et envoyées."""
 
@@ -361,7 +365,7 @@ def game_invitations(request):
     )
 
 
-@login_required
+@members_only
 def invite_friends_to_game(
     request,
     mode,
@@ -487,7 +491,7 @@ def invite_friends_to_game(
     )
 
 
-@login_required
+@members_only
 @require_POST
 @transaction.atomic
 def send_game_invitation(
@@ -626,7 +630,7 @@ def send_game_invitation(
     )
 
 
-@login_required
+@members_only
 @require_POST
 @transaction.atomic
 def accept_game_invitation(
@@ -763,7 +767,7 @@ def accept_game_invitation(
     )
 
 
-@login_required
+@members_only
 @require_POST
 @transaction.atomic
 def decline_game_invitation(
@@ -798,7 +802,7 @@ def decline_game_invitation(
     return redirect("game_invitations")
 
 
-@login_required
+@members_only
 @require_POST
 @transaction.atomic
 def cancel_game_invitation(

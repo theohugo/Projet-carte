@@ -350,6 +350,11 @@ class Profile(models.Model):
         blank=True,
     )
 
+    is_guest = models.BooleanField(
+        default=False,
+        help_text="Compte temporaire créé pour jouer sans inscription.",
+    )
+
     total_games_played = models.PositiveIntegerField(
         default=0,
     )

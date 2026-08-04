@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}{% if feature %}{{ feature.label }}{% else %}Réservé aux membres{% endif %} — PokéTable{% endblock %}
+
+{% block content %}
+<section class="gate" aria-labelledby="members-title">
+    <div class="gate-card">
+        <p class="section-kicker"><span class="lock-glyph" aria-hidden="true"></span> Réservé aux comptes</p>
+        <h1 id="members-title">{% if feature %}{{ feature.label }}{% else %}Cette page est réservée aux membres{% endif %}</h1>
+        <p class="gate-lead">{% if feature %}{{ feature.promise }}{% else %}Crée ton compte pour débloquer tout ce que le mode invité laisse de côté.{% endif %}</p>
+
+        {% if user.is_authenticated %}
+        <p class="gate-note">Tu joues actuellement en invité sous le nom <strong>{{ user.username }}</strong>. En créant ton compte, tu gardes ce que tu as déjà joué : tes parties en cours et tes scores restent attachés à toi.</p>
+        {% endif %}
+
+        <div class="gate-actions">
+            <a class="btn btn-primary btn-large" href="{% url 'signup' %}?next={{ next|urlencode }}">{% if user.is_authenticated %}Transformer mon pseudo en compte{% else %}Créer mon compte{% endif %}</a>
+            <a class="btn btn-ghost" href="{% url 'login' %}?next={{ next|urlencode }}">J’ai déjà un compte</a>
+        </div>
+
+        <ul class="gate-perks" aria-label="Ce que débloque un compte">
+            <li><span class="gate-perk-mark" aria-hidden="true"></span><strong>Ta collection</strong>Les 151 cartes de la première génération à débloquer.</li>
+            <li><span class="gate-perk-mark" aria-hidden="true"></span><strong>Tes quêtes</strong>Des objectifs quotidiens et hebdomadaires.</li>
+            <li><span class="gate-perk-mark" aria-hidden="true"></span><strong>Tes amis</strong>Invitations en un clic et parties entre amis.</li>
+            <li><span class="gate-perk-mark" aria-hidden="true"></span><strong>Ton profil</strong>Avatar, description et statistiques conservées.</li>
+        </ul>
+
+        <p class="gate-switch"><a href="{% url 'home' %}">Retourner aux jeux</a></p>
+    </div>
+</section>
+{% endblock %}

@@ -13,6 +13,14 @@ from django.views.decorators.http import require_POST
 from game.api import get_lobby_state, invalidate_game_state_cache
 from game.forms import AccountForm, ProfileForm, SignUpForm
 from game.game_engine import GameEngine, GameEngineError, close_stale_games
+from game.guests import (
+    guest_allowed,
+    is_guest,
+    member_feature,
+    members_only,
+    safe_next_url,
+    start_guest_session,
+)
 from game.models import Friendship, Game, GameCard, PokemonCard, Profile
 from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID
 from game.pokemon_types import POKEMON_TYPES
@@ -60,12 +68,24 @@ def _get_relationship(current_user, other_user):
 
 def signup(request):
     next_url = request.POST.get("next") or request.GET.get("next") or ""
+    # Un invité qui s'inscrit garde son compte : ses parties, ses scores et ses
+    # salons en cours suivent, seul son nom et son mot de passe changent.
+    upgrading_guest = is_guest(request.user)
 
     if request.method == "POST":
-        form = SignUpForm(request.POST)
+        form = SignUpForm(
+            request.POST,
+            instance=request.user if upgrading_guest else None,
+        )
 
         if form.is_valid():
             user = form.save()
+
+            if upgrading_guest:
+                profile = user.profile
+                profile.is_guest = False
+                profile.save(update_fields=["is_guest"])
+
             login(request, user)
 
             if next_url and url_has_allowed_host_and_scheme(
@@ -77,7 +97,7 @@ def signup(request):
 
             return redirect("home")
     else:
-        form = SignUpForm()
+        form = SignUpForm(instance=request.user if upgrading_guest else None)
 
     return render(
         request,
@@ -85,16 +105,30 @@ def signup(request):
         {
             "form": form,
             "next": next_url,
+            "upgrading_guest": upgrading_guest,
         },
     )
 
 
-@login_required
+@require_POST
+def play_as_guest(request):
+    """Ouvre une session invité en un clic, puis renvoie là où on allait."""
+
+    if not request.user.is_authenticated:
+        start_guest_session(request)
+
+    return redirect(safe_next_url(request))
+
+
 def hub(request):
     return render(request, "hub.html")
 
 
-@login_required
+@members_only
+@member_feature(
+    "Ta collection",
+    "Les 151 cartes de la première génération, débloquées au fil de tes quêtes.",
+)
 def collection(request):
     """Affiche les 151 premières cartes du Pokédex (génération 1)."""
 
@@ -109,7 +143,11 @@ def collection(request):
     )
 
 
-@login_required
+@members_only
+@member_feature(
+    "Tes quêtes",
+    "Des objectifs quotidiens et hebdomadaires qui font grandir ta collection.",
+)
 def quests(request):
     """Affiche les quêtes quotidiennes et hebdomadaires du joueur."""
 
@@ -145,7 +183,7 @@ def quests(request):
     )
 
 
-@login_required
+@guest_allowed
 def lobby(request):
     if request.method == "POST":
         game = Game.objects.create(
@@ -290,7 +328,7 @@ def remove_bot_view(request, game_id, player_id):
     )
 
 
-@login_required
+@guest_allowed
 def game_detail(request, game_id):
     close_stale_games()
 
@@ -404,7 +442,11 @@ def game_detail(request, game_id):
     )
 
 
-@login_required
+@members_only
+@member_feature(
+    "Ton profil",
+    "Un avatar, une description et tes statistiques conservées de partie en partie.",
+)
 def my_profile(request):
     """Affiche le profil de l'utilisateur connecté."""
 
@@ -425,7 +467,7 @@ def my_profile(request):
     )
 
 
-@login_required
+@members_only
 def public_profile(request, username):
     """Affiche le profil public d'un joueur."""
 
@@ -456,7 +498,7 @@ def public_profile(request, username):
     )
 
 
-@login_required
+@members_only
 @transaction.atomic
 def edit_profile(request):
     """Permet de modifier le compte et le profil connecté."""
@@ -507,7 +549,11 @@ def edit_profile(request):
     )
 
 
-@login_required
+@members_only
+@member_feature(
+    "Tes amis",
+    "Retrouve tes amis, suis leurs parties et invite-les d'un clic.",
+)
 def friends(request):
     """Affiche les amis et les demandes de l'utilisateur."""
 
@@ -577,7 +623,7 @@ def friends(request):
     )
 
 
-@login_required
+@members_only
 def player_search(request):
     """Recherche des joueurs par pseudo, prénom ou nom."""
 
@@ -626,7 +672,7 @@ def player_search(request):
     )
 
 
-@login_required
+@members_only
 @require_POST
 @transaction.atomic
 def send_friend_request(request, username):
@@ -707,7 +753,7 @@ def send_friend_request(request, username):
     )
 
 
-@login_required
+@members_only
 @require_POST
 @transaction.atomic
 def accept_friend_request(request, friendship_id):
@@ -737,7 +783,7 @@ def accept_friend_request(request, friendship_id):
     return redirect("friends")
 
 
-@login_required
+@members_only
 @require_POST
 @transaction.atomic
 def reject_friend_request(request, friendship_id):
@@ -767,7 +813,7 @@ def reject_friend_request(request, friendship_id):
     return redirect("friends")
 
 
-@login_required
+@members_only
 @require_POST
 @transaction.atomic
 def cancel_friend_request(request, friendship_id):
@@ -790,7 +836,7 @@ def cancel_friend_request(request, friendship_id):
     return redirect("friends")
 
 
-@login_required
+@members_only
 @require_POST
 @transaction.atomic
 def remove_friend(request, friendship_id):

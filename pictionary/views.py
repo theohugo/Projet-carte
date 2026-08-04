@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
+from game.guests import guest_allowed
 from pictionary.models import PictionaryGame
 from pictionary.services import (
     PictionaryError,
@@ -50,7 +51,7 @@ def _since_sequence(request):
         return 0
 
 
-@login_required
+@guest_allowed
 def lobby(request):
     my_games = (
         PictionaryGame.objects.filter(players__user=request.user)
@@ -113,7 +114,7 @@ def start_game_view(request, game_id):
     return redirect("pictionary:game_detail", game_id=game_id)
 
 
-@login_required
+@guest_allowed
 def game_detail(request, game_id):
     game = get_object_or_404(PictionaryGame, pk=game_id)
     if not game.players.filter(user=request.user).exists():

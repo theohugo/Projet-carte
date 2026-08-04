@@ -21,6 +21,11 @@ urlpatterns = [
         views.signup,
         name="signup",
     ),
+    path(
+        "jouer-en-invite/",
+        views.play_as_guest,
+        name="play_as_guest",
+    ),
     # Profils
     path(
         "profil/",

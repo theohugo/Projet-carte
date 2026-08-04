@@ -45,13 +45,19 @@
 
     <link
         rel="stylesheet"
-        href="{% static 'molecules.css' %}?v=14"
+        href="{% static 'molecules.css' %}?v=15"
     >
 
     <link
         rel="stylesheet"
-        href="{% static 'organisms.css' %}?v=27"
+        href="{% static 'organisms.css' %}?v=28"
     >
+
+    <script
+        defer
+        src="https://analytics.theoxeu.com/script.js"
+        data-website-id="6d2d7407-2d56-44e1-b144-e228868fe5bb"
+    ></script>
 </head>
 
 <body class="{% block body_class %}{% endblock %}">
@@ -194,7 +200,7 @@
 
                             <span class="site-user-copy">
                                 <small>
-                                    Joueur connecté
+                                    {% if is_guest %}Mode invité{% else %}Joueur connecté{% endif %}
                                 </small>
 
                                 {{ user.username }}
@@ -207,13 +213,23 @@
                         </summary>
 
                         <div class="nav-panel">
+                            {% if is_guest %}
+                                <a
+                                    class="nav-panel-upsell"
+                                    href="{% url 'signup' %}"
+                                >
+                                    Créer mon compte
+                                    <small>Garde tes parties et débloque tout</small>
+                                </a>
+                            {% endif %}
+
                             <a
                                 href="{% url 'my_profile' %}"
                                 {% if request.resolver_match.url_name == "my_profile" or request.resolver_match.url_name == "edit_profile" %}
                                     aria-current="page"
                                 {% endif %}
                             >
-                                Mon profil
+                                <span class="nav-panel-label">Mon profil{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
                                 <small>Avatar et description</small>
                             </a>
 
@@ -223,7 +239,7 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                Amis
+                                <span class="nav-panel-label">Amis{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
                                 <small>Demandes et recherche</small>
                             </a>
 
@@ -233,7 +249,7 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                Invitations
+                                <span class="nav-panel-label">Invitations{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
                                 <small>Parties auxquelles on te convie</small>
                             </a>
 
@@ -243,7 +259,7 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                Quêtes
+                                <span class="nav-panel-label">Quêtes{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
                                 <small>Objectifs en cours</small>
                             </a>
 
@@ -253,7 +269,7 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                Collection
+                                <span class="nav-panel-label">Collection{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
                                 <small>Cartes débloquées</small>
                             </a>
 
@@ -267,12 +283,33 @@
                                     type="submit"
                                     class="nav-panel-action"
                                 >
-                                    Se déconnecter
+                                    {% if is_guest %}Quitter le mode invité{% else %}Se déconnecter{% endif %}
                                 </button>
                             </form>
                         </div>
                     </details>
                 {% else %}
+                    <form
+                        method="post"
+                        action="{% url 'play_as_guest' %}"
+                        class="inline-form"
+                    >
+                        {% csrf_token %}
+
+                        <input
+                            type="hidden"
+                            name="next"
+                            value="{{ request.get_full_path }}"
+                        >
+
+                        <button
+                            type="submit"
+                            class="btn btn-ghost"
+                        >
+                            Jouer en invité
+                        </button>
+                    </form>
+
                     <a
                         class="btn btn-ghost"
                         href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}"

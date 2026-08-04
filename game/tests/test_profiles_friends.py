@@ -31,7 +31,7 @@ class ProfileViewTests(TestCase):
             user=self.other_user,
         )
 
-    def test_profile_pages_require_authentication(self):
+    def test_profile_pages_require_a_full_account(self):
         protected_urls = [
             reverse("my_profile"),
             reverse("edit_profile"),
@@ -49,14 +49,15 @@ class ProfileViewTests(TestCase):
             with self.subTest(url=url):
                 response = self.client.get(url)
 
+                # Un visiteur ou un invité reçoit l'argumentaire du compte
+                # plutôt qu'une redirection sèche vers la connexion.
                 self.assertEqual(
                     response.status_code,
-                    302,
+                    200,
                 )
-
-                self.assertIn(
-                    reverse("login"),
-                    response.url,
+                self.assertTemplateUsed(
+                    response,
+                    "members_only.html",
                 )
 
     def test_my_profile_displays_private_email(self):

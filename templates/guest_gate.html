@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Rejoindre la partie — PokéTable{% endblock %}
+
+{% block content %}
+<section class="gate" aria-labelledby="gate-title">
+    <div class="gate-card">
+        <p class="section-kicker"><span class="live-pulse" aria-hidden="true"></span> Une table t’attend</p>
+        <h1 id="gate-title">Joue tout de suite,<br><span>sans créer de compte</span></h1>
+        <p class="gate-lead">Un pseudo temporaire suffit pour entrer dans la partie. Tu pourras transformer ce pseudo en vrai compte à tout moment : tes parties en cours te suivront.</p>
+
+        <form method="post" action="{% url 'play_as_guest' %}" class="gate-actions">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="guest">Jouer en invité</button>
+        </form>
+
+        <p class="gate-switch">Déjà un compte ? <a href="{% url 'login' %}?next={{ next|urlencode }}">Se connecter</a> · <a href="{% url 'signup' %}?next={{ next|urlencode }}">Créer un compte</a></p>
+
+        <ul class="gate-compare" aria-label="Ce que change un compte">
+            <li>
+                <p class="gate-compare-title">En invité</p>
+                <span>Les quatre jeux, tout de suite</span>
+                <span>Un pseudo temporaire</span>
+                <span class="is-off">Rien n’est conservé</span>
+            </li>
+            <li class="is-highlight">
+                <p class="gate-compare-title">Avec un compte</p>
+                <span>Les quatre jeux, tout de suite</span>
+                <span>Ton pseudo, ton avatar</span>
+                <span>Collection, quêtes, amis et scores gardés</span>
+            </li>
+        </ul>
+    </div>
+</section>
+{% endblock %}

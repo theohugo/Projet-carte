@@ -9,6 +9,21 @@
             <p class="section-kicker">Le salon de jeux Pokémon</p>
             <h1 id="hub-title">À quoi joue-t-on<br><span>ce soir ?</span></h1>
             <p>Crée une table, invite un ami et retrouve des jeux de société revisités dans un univers Pokémon vivant.</p>
+            {% if not user.is_authenticated %}
+            <div class="hub-cta">
+                <form method="post" action="{% url 'play_as_guest' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-large">Jouer sans compte</button>
+                </form>
+                <a class="btn btn-ghost" href="{% url 'signup' %}">Créer mon compte</a>
+                <p class="hub-cta-note">Les quatre jeux sont ouverts en invité. Le compte garde tes scores et débloque collection, quêtes et amis.</p>
+            </div>
+            {% elif is_guest %}
+            <div class="hub-cta">
+                <a class="btn btn-primary btn-large" href="{% url 'signup' %}">Garder mes parties : créer mon compte</a>
+                <p class="hub-cta-note">Tu joues en invité sous le nom <strong>{{ user.username }}</strong> : rien n’est conservé quand la session se termine.</p>
+            </div>
+            {% endif %}
         </div>
         <div class="hub-orbit" aria-hidden="true">
             <span class="hub-orbit-core"><span class="brand-mark"><span></span></span></span>
@@ -31,7 +46,7 @@
                 <p class="section-kicker">2 à 6 joueurs · IA disponibles</p>
                 <h2>Poké-Uno</h2>
                 <p>Vide ta main avec les 18 types Pokémon, les cartes pouvoir et des adversaires IA.</p>
-                <a class="btn btn-primary" href="{% url 'lobby' %}">Entrer dans l’arène</a>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'lobby' %}">Entrer dans l’arène</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Entrer dans l’arène</button></form>{% endif %}
             </div>
         </article>
 
@@ -45,7 +60,7 @@
                 <p class="section-kicker">2 joueurs · Déduction & chat</p>
                 <h2>Qui est-ce ? Pokémon</h2>
                 <p>Choisis une cible secrète, pose tes questions et rabats les cartes jusqu’à trouver le Pokémon adverse.</p>
-                <a class="btn btn-primary" href="{% url 'guesswho:lobby' %}">Lancer une enquête</a>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'guesswho:lobby' %}">Lancer une enquête</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'guesswho:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Lancer une enquête</button></form>{% endif %}
             </div>
         </article>
         <article class="game-mode-card game-mode-card--silhouette">
@@ -58,7 +73,7 @@
                 <p class="section-kicker">Autant de joueurs qu’on veut · 5 à 15 manches</p>
                 <h2>Qui est ce Pokémon ?</h2>
                 <p>Une silhouette, un chrono. Réponds avant les autres : le type tombe à 5 secondes, les initiales à 10.</p>
-                <a class="btn btn-primary" href="{% url 'silhouette:lobby' %}">Ouvrir un salon</a>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'silhouette:lobby' %}">Ouvrir un salon</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'silhouette:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Ouvrir un salon</button></form>{% endif %}
             </div>
         </article>
 
@@ -72,9 +87,47 @@
                 <p class="section-kicker">2 joueurs et plus · 3 à 9 manches</p>
                 <h2>Pictionary Pokémon</h2>
                 <p>Un joueur dessine son Pokémon, les autres devinent au clavier. Le dessinateur marque à chaque bonne réponse.</p>
-                <a class="btn btn-primary" href="{% url 'pictionary:lobby' %}">Prendre le crayon</a>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'pictionary:lobby' %}">Prendre le crayon</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'pictionary:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Prendre le crayon</button></form>{% endif %}
             </div>
         </article>
     </section>
+
+    {% if not is_member %}
+    <section class="locked-grid" aria-labelledby="locked-title">
+        <div class="locked-intro">
+            <p class="section-kicker"><span class="lock-glyph" aria-hidden="true"></span> Avec un compte</p>
+            <h2 id="locked-title">Ce qui t’attend derrière le cadenas</h2>
+            <p>Le compte est gratuit et se crée en dix secondes.{% if is_guest %} Tes parties d’invité sont conservées.{% endif %}</p>
+            <a class="btn btn-primary btn-large" href="{% url 'signup' %}">{% if is_guest %}Transformer mon pseudo en compte{% else %}Créer mon compte{% endif %}</a>
+        </div>
+
+        <ul class="locked-list">
+            <li class="locked-card">
+                <span class="lock-badge" aria-hidden="true"></span>
+                <strong>Collection</strong>
+                <span>Les 151 cartes de la première génération, à débloquer une par une.</span>
+                <a href="{% url 'collection' %}">Voir ce que ça donne</a>
+            </li>
+            <li class="locked-card">
+                <span class="lock-badge" aria-hidden="true"></span>
+                <strong>Quêtes</strong>
+                <span>Des objectifs quotidiens et hebdomadaires qui font grandir ta collection.</span>
+                <a href="{% url 'quests' %}">Voir ce que ça donne</a>
+            </li>
+            <li class="locked-card">
+                <span class="lock-badge" aria-hidden="true"></span>
+                <strong>Amis</strong>
+                <span>Ajoute tes amis, vois leurs parties et invite-les d’un clic.</span>
+                <a href="{% url 'friends' %}">Voir ce que ça donne</a>
+            </li>
+            <li class="locked-card">
+                <span class="lock-badge" aria-hidden="true"></span>
+                <strong>Profil et scores</strong>
+                <span>Ton avatar, ta description et tes statistiques gardées d’une partie à l’autre.</span>
+                <a href="{% url 'my_profile' %}">Voir ce que ça donne</a>
+            </li>
+        </ul>
+    </section>
+    {% endif %}
 </div>
 {% endblock %}

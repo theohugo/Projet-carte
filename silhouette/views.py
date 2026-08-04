@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
+from game.guests import guest_allowed
 from silhouette.models import SilhouetteGame, SilhouetteRound
 from silhouette.services import (
     SilhouetteError,
@@ -46,7 +47,7 @@ def _error_response(exc, game, user):
     return JsonResponse({"error": str(exc)}, status=status)
 
 
-@login_required
+@guest_allowed
 def lobby(request):
     my_games = (
         SilhouetteGame.objects.filter(players__user=request.user)
@@ -109,7 +110,7 @@ def start_game_view(request, game_id):
     return redirect("silhouette:game_detail", game_id=game_id)
 
 
-@login_required
+@guest_allowed
 def game_detail(request, game_id):
     game = get_object_or_404(SilhouetteGame, pk=game_id)
     if not game.players.filter(user=request.user).exists():
