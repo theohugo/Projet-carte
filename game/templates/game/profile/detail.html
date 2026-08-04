@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Profil de {{ profile_user.username }} — PokéTable{% endblock %}
+
+{% block content %}
+<section class="profile-page" aria-labelledby="profile-title">
+    <div class="profile-shell">
+        <article class="profile-hero-card">
+            <div class="profile-hero-top">
+                {% if profile.avatar %}
+                    <img
+                        class="profile-avatar"
+                        src="{{ profile.avatar.url }}"
+                        alt="Photo de profil de {{ profile_user.username }}"
+                    >
+                {% else %}
+                    <div class="profile-avatar profile-avatar--fallback" aria-hidden="true">
+                        {{ profile_user.username|first|upper }}
+                    </div>
+                {% endif %}
+
+                <div class="profile-hero-copy">
+                    <p class="section-kicker">Profil joueur</p>
+                    <h1 id="profile-title">{{ profile_user.username }}</h1>
+
+                    {% if profile_user.get_full_name %}
+                        <p class="profile-fullname">{{ profile_user.get_full_name }}</p>
+                    {% endif %}
+
+                    <span class="profile-meta">
+                        Membre depuis {{ profile_user.date_joined|date:"F Y" }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="profile-bio-card">
+                <p class="profile-card-kicker">À propos</p>
+
+                {% if profile.description %}
+                    <p class="profile-bio">{{ profile.description|linebreaksbr }}</p>
+                {% else %}
+                    <p class="profile-empty">
+                        Ce joueur n’a pas encore ajouté de description.
+                    </p>
+                {% endif %}
+            </div>
+
+            <div class="profile-stats-grid">
+                <div class="profile-stat-card">
+                    <p class="profile-stat-label">Parties jouées</p>
+                    <strong class="profile-stat-value">{{ profile.total_games_played }}</strong>
+                </div>
+
+                <div class="profile-stat-card">
+                    <p class="profile-stat-label">Victoires</p>
+                    <strong class="profile-stat-value">{{ profile.total_games_won }}</strong>
+                </div>
+
+                <div class="profile-stat-card">
+                    <p class="profile-stat-label">Ratio de victoire</p>
+                    <strong class="profile-stat-value">
+                        {% if profile.total_games_played > 0 %}
+                            {% widthratio profile.total_games_won profile.total_games_played 100 %}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </strong>
+                </div>
+            </div>
+        </article>
+
+        <aside class="profile-panel">
+            <p class="section-kicker">Informations</p>
+            <h2>Compte joueur</h2>
+
+            <div class="profile-info-list">
+                <div class="profile-info-item">
+                    <span class="profile-info-label">Nom d’utilisateur</span>
+                    <strong>{{ profile_user.username }}</strong>
+                </div>
+
+                <div class="profile-info-item">
+                    <span class="profile-info-label">Nom complet</span>
+                    <strong>
+                        {% if profile_user.get_full_name %}
+                            {{ profile_user.get_full_name }}
+                        {% else %}
+                            Non renseigné
+                        {% endif %}
+                    </strong>
+                </div>
+
+                {% if is_owner %}
+                    <div class="profile-info-item">
+                        <span class="profile-info-label">Adresse e-mail</span>
+                        <strong>
+                            {% if profile_user.email %}
+                                {{ profile_user.email }}
+                            {% else %}
+                                Non renseignée
+                            {% endif %}
+                        </strong>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if is_owner %}
+                <div class="profile-actions">
+                    <a class="btn btn-primary btn-block" href="{% url 'edit_profile' %}">
+                        Modifier mon profil
+                    </a>
+                </div>
+            {% endif %}
+        </aside>
+    </div>
+</section>
+{% endblock %}

@@ -5,7 +5,16 @@ from game import api, views
 urlpatterns = [
     path("", views.hub, name="home"),
     path("uno/", views.lobby, name="lobby"),
+    
     path("signup/", views.signup, name="signup"),
+    path("profil/", views.my_profile, name="my_profile"),
+path("profil/modifier/", views.edit_profile, name="edit_profile"),
+path(
+    "joueurs/<str:username>/",
+    views.public_profile,
+    name="public_profile",
+),
+
     path("games/<uuid:game_id>/", views.game_detail, name="game_detail"),
     path("games/<uuid:game_id>/join/", views.join_game, name="join_game"),
     path("games/<uuid:game_id>/start/", views.start_game_view, name="start_game"),

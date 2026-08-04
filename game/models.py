@@ -212,11 +212,99 @@ class MoveLog(models.Model):
 
 
 class Profile(models.Model):
-    """Statistiques d'un utilisateur, indépendantes d'une partie précise."""
+    """Profil public et statistiques d'un utilisateur."""
 
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="profile",
+    )
+    avatar = models.ImageField(
+        upload_to="profiles/avatars/%Y/%m/",
+        blank=True,
+    )
+    description = models.TextField(
+        max_length=500,
+        blank=True,
+    )
     total_games_played = models.PositiveIntegerField(default=0)
     total_games_won = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Profil de {self.user}"
+
+
+class Friendship(models.Model):
+    """Demande d'ami et relation entre deux utilisateurs."""
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "En attente"
+        ACCEPTED = "ACCEPTED", "Acceptée"
+        REJECTED = "REJECTED", "Refusée"
+
+    requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="friendships_sent",
+    )
+    addressee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="friendships_received",
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+
+    # Cette clé empêche deux relations inversées :
+    # Alice → Bob et Bob → Alice.
+    pair_key = models.CharField(
+        max_length=50,
+        unique=True,
+        editable=False,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(requester=models.F("addressee")),
+                name="friendship_users_must_be_different",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["requester", "status"]),
+            models.Index(fields=["addressee", "status"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.requester_id and self.addressee_id:
+            first_id, second_id = sorted(
+                (self.requester_id, self.addressee_id)
+            )
+            self.pair_key = f"{first_id}:{second_id}"
+
+        super().save(*args, **kwargs)
+
+    def get_other_user(self, user):
+        """Retourne l'autre utilisateur de la relation."""
+
+        if user.pk == self.requester_id:
+            return self.addressee
+
+        if user.pk == self.addressee_id:
+            return self.requester
+
+        raise ValueError("Cet utilisateur ne fait pas partie de cette relation.")
+
+    def __str__(self):
+        return (
+            f"{self.requester} → {self.addressee} "
+            f"({self.get_status_display()})"
+        )

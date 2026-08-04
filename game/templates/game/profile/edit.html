@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier mon profil — PokéTable{% endblock %}
+
+{% block content %}
+<section class="profile-edit-page" aria-labelledby="profile-edit-title">
+
+    <header class="profile-edit-header">
+        <div>
+            <p class="section-kicker">Personnalisation</p>
+            <h1 id="profile-edit-title">Modifier mon profil</h1>
+            <p>
+                Personnalise ton identité de joueur et les informations visibles
+                par les autres membres.
+            </p>
+        </div>
+
+        <a class="btn btn-ghost" href="{% url 'my_profile' %}">
+            Retour au profil
+        </a>
+    </header>
+
+    <div class="profile-edit-shell">
+
+        <aside class="profile-preview-card">
+            <p class="profile-preview-label">Aperçu du profil</p>
+
+            <div class="profile-preview-avatar-wrapper">
+                <img
+                    id="avatar-preview-image"
+                    class="profile-preview-avatar{% if not profile.avatar %} is-hidden{% endif %}"
+                    {% if profile.avatar %}
+                        src="{{ profile.avatar.url }}"
+                    {% endif %}
+                    alt="Aperçu de la photo de profil"
+                >
+
+                <div
+                    id="avatar-preview-fallback"
+                    class="profile-preview-avatar profile-preview-avatar--fallback{% if profile.avatar %} is-hidden{% endif %}"
+                    aria-hidden="true"
+                >
+                    {{ user.username|first|upper }}
+                </div>
+            </div>
+
+            <div class="profile-preview-copy">
+                <h2>{{ user.username }}</h2>
+
+                {% if user.get_full_name %}
+                    <p class="profile-preview-name">
+                        {{ user.get_full_name }}
+                    </p>
+                {% endif %}
+
+                <p
+                    id="description-preview"
+                    class="profile-preview-description"
+                >
+                    {% if profile.description %}
+                        {{ profile.description }}
+                    {% else %}
+                        Ta description apparaîtra ici.
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="profile-preview-stats">
+                <div>
+                    <strong>{{ profile.total_games_played }}</strong>
+                    <span>Parties</span>
+                </div>
+
+                <div>
+                    <strong>{{ profile.total_games_won }}</strong>
+                    <span>Victoires</span>
+                </div>
+            </div>
+        </aside>
+
+        <form
+            method="post"
+            enctype="multipart/form-data"
+            class="profile-edit-form"
+        >
+            {% csrf_token %}
+
+            {{ account_form.non_field_errors }}
+            {{ profile_form.non_field_errors }}
+
+            <section class="profile-form-section">
+                <div class="profile-form-heading">
+                    <span class="profile-form-number">01</span>
+
+                    <div>
+                        <h2>Informations du compte</h2>
+                        <p>Ton identité et tes informations de connexion.</p>
+                    </div>
+                </div>
+
+                <div class="profile-form-grid">
+                    <div class="profile-field profile-field--full">
+                        {{ account_form.username.label_tag }}
+                        {{ account_form.username }}
+                        {{ account_form.username.errors }}
+
+                        {% if account_form.username.help_text %}
+                            <span class="helptext">
+                                {{ account_form.username.help_text }}
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="profile-field">
+                        {{ account_form.first_name.label_tag }}
+                        {{ account_form.first_name }}
+                        {{ account_form.first_name.errors }}
+                    </div>
+
+                    <div class="profile-field">
+                        {{ account_form.last_name.label_tag }}
+                        {{ account_form.last_name }}
+                        {{ account_form.last_name.errors }}
+                    </div>
+
+                    <div class="profile-field profile-field--full">
+                        {{ account_form.email.label_tag }}
+                        {{ account_form.email }}
+                        {{ account_form.email.errors }}
+                    </div>
+                </div>
+            </section>
+
+            <section class="profile-form-section">
+                <div class="profile-form-heading">
+                    <span class="profile-form-number">02</span>
+
+                    <div>
+                        <h2>Photo de profil</h2>
+                        <p>Choisis une image qui permettra de te reconnaître.</p>
+                    </div>
+                </div>
+
+                <div class="profile-avatar-editor">
+                    <div class="profile-avatar-editor-preview">
+                        {% if profile.avatar %}
+                            <img
+                                id="avatar-editor-image"
+                                src="{{ profile.avatar.url }}"
+                                alt="Photo de profil actuelle"
+                            >
+                        {% else %}
+                            <div
+                                id="avatar-editor-fallback"
+                                class="profile-avatar-editor-fallback"
+                                aria-hidden="true"
+                            >
+                                {{ user.username|first|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="profile-avatar-editor-controls">
+                        <label
+                            class="profile-file-button"
+                            for="id_avatar"
+                        >
+                            Choisir une nouvelle photo
+                        </label>
+
+                        <input
+                            class="profile-file-input"
+                            type="file"
+                            name="avatar"
+                            id="id_avatar"
+                            accept="image/png,image/jpeg,image/webp"
+                        >
+
+                        <span
+                            id="avatar-file-name"
+                            class="profile-file-name"
+                        >
+                            Aucun nouveau fichier sélectionné
+                        </span>
+
+                        <p class="profile-file-help">
+                            JPG, PNG ou WebP. Taille maximale : 5 Mo.
+                        </p>
+
+                        {% if profile.avatar %}
+                            <label class="profile-avatar-remove">
+                                <input
+                                    type="checkbox"
+                                    name="avatar-clear"
+                                    id="avatar-clear_id"
+                                >
+                                Supprimer ma photo actuelle
+                            </label>
+                        {% endif %}
+
+                        {{ profile_form.avatar.errors }}
+                    </div>
+                </div>
+            </section>
+
+            <section class="profile-form-section">
+                <div class="profile-form-heading">
+                    <span class="profile-form-number">03</span>
+
+                    <div>
+                        <h2>Description publique</h2>
+                        <p>Présente-toi brièvement aux autres joueurs.</p>
+                    </div>
+                </div>
+
+                <div class="profile-field profile-field--full">
+                    {{ profile_form.description.label_tag }}
+                    {{ profile_form.description }}
+                    {{ profile_form.description.errors }}
+
+                    <div class="profile-description-footer">
+                        <span>
+                            Cette description sera visible sur ton profil public.
+                        </span>
+
+                        <span>
+                            <strong id="description-count">
+                                {{ profile.description|length }}
+                            </strong>/500
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="profile-form-actions">
+                <a class="btn btn-ghost" href="{% url 'my_profile' %}">
+                    Annuler
+                </a>
+
+                <button type="submit" class="btn btn-primary">
+                    Enregistrer les modifications
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<script>
+    const avatarInput = document.getElementById("id_avatar");
+    const avatarFileName = document.getElementById("avatar-file-name");
+    const avatarPreviewImage = document.getElementById("avatar-preview-image");
+    const avatarPreviewFallback = document.getElementById("avatar-preview-fallback");
+
+    avatarInput?.addEventListener("change", () => {
+        const file = avatarInput.files[0];
+
+        if (!file) {
+            avatarFileName.textContent = "Aucun nouveau fichier sélectionné";
+            return;
+        }
+
+        avatarFileName.textContent = file.name;
+
+        const imageUrl = URL.createObjectURL(file);
+
+        avatarPreviewImage.src = imageUrl;
+        avatarPreviewImage.classList.remove("is-hidden");
+        avatarPreviewFallback?.classList.add("is-hidden");
+
+        const editorImage = document.getElementById("avatar-editor-image");
+        const editorFallback = document.getElementById("avatar-editor-fallback");
+
+        if (editorImage) {
+            editorImage.src = imageUrl;
+        } else if (editorFallback) {
+            const newImage = document.createElement("img");
+            newImage.id = "avatar-editor-image";
+            newImage.src = imageUrl;
+            newImage.alt = "Aperçu de la nouvelle photo";
+            editorFallback.replaceWith(newImage);
+        }
+    });
+
+    const descriptionField = document.getElementById("id_description");
+    const descriptionCount = document.getElementById("description-count");
+    const descriptionPreview = document.getElementById("description-preview");
+
+    descriptionField?.addEventListener("input", () => {
+        const value = descriptionField.value;
+
+        descriptionCount.textContent = value.length;
+        descriptionPreview.textContent =
+            value.trim() || "Ta description apparaîtra ici.";
+    });
+</script>
+{% endblock %}

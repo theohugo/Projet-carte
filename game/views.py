@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import HttpResponseForbidden
@@ -9,9 +10,9 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from game.api import get_lobby_state, invalidate_game_state_cache
-from game.forms import SignUpForm
+from game.forms import AccountForm, ProfileForm, SignUpForm
 from game.game_engine import GameEngine, GameEngineError, close_stale_games
-from game.models import Game, GameCard
+from game.models import Game, GameCard, Profile
 from game.pokemon_types import POKEMON_TYPES
 
 OPPONENT_CARD_BACK_LIMIT = 10
@@ -175,5 +176,81 @@ def game_detail(request, game_id):
             "opponents": opponents,
             "game_types": game_state.get("game_types", []) if game_state else [],
             "all_types": [pokemon_type.as_dict() for pokemon_type in POKEMON_TYPES],
+        },
+    )
+
+@login_required
+def my_profile(request):
+    """Affiche le profil de l'utilisateur connecté."""
+
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    return render(
+        request,
+        "game/profile/detail.html",
+        {
+            "profile_user": request.user,
+            "profile": profile,
+            "is_owner": True,
+        },
+    )
+
+
+@login_required
+def public_profile(request, username):
+    """Affiche le profil public d'un joueur."""
+
+    profile_user = get_object_or_404(User, username=username)
+    profile, _ = Profile.objects.get_or_create(user=profile_user)
+
+    return render(
+        request,
+        "game/profile/detail.html",
+        {
+            "profile_user": profile_user,
+            "profile": profile,
+            "is_owner": profile_user.pk == request.user.pk,
+        },
+    )
+
+
+@login_required
+@transaction.atomic
+def edit_profile(request):
+    """Permet de modifier le compte et le profil connecté."""
+
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        account_form = AccountForm(
+            request.POST,
+            instance=request.user,
+        )
+        profile_form = ProfileForm(
+            request.POST,
+            request.FILES,
+            instance=profile,
+        )
+
+        if account_form.is_valid() and profile_form.is_valid():
+            account_form.save()
+            profile_form.save()
+
+            messages.success(
+                request,
+                "Ton profil a bien été mis à jour.",
+            )
+            return redirect("my_profile")
+    else:
+        account_form = AccountForm(instance=request.user)
+        profile_form = ProfileForm(instance=profile)
+
+    return render(
+        request,
+        "game/profile/edit.html",
+        {
+            "account_form": account_form,
+            "profile_form": profile_form,
+            "profile": profile,
         },
     )
