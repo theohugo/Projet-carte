@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Mes amis — PokéTable{% endblock %}
+
+{% block content %}
+<section
+    class="friends-page"
+    aria-labelledby="friends-page-title"
+>
+    <header class="friends-header">
+        <div>
+            <p class="section-kicker">Espace social</p>
+
+            <h1 id="friends-page-title">
+                Mes amis
+            </h1>
+
+            <p>
+                Retrouve tes amis et gère les demandes reçues
+                ou envoyées.
+            </p>
+        </div>
+
+        <a
+            class="btn btn-primary"
+            href="{% url 'player_search' %}"
+        >
+            Rechercher un joueur
+        </a>
+    </header>
+
+    {% if received_requests %}
+        <section
+            class="friends-section"
+            aria-labelledby="received-requests-title"
+        >
+            <div class="friends-section-heading">
+                <h2 id="received-requests-title">
+                    Demandes reçues
+                </h2>
+
+                <span
+                    class="friends-count"
+                    aria-label="{{ received_requests|length }} demande{{ received_requests|length|pluralize }}"
+                >
+                    {{ received_requests|length }}
+                </span>
+            </div>
+
+            <div class="friends-list">
+                {% for friendship in received_requests %}
+                    <article class="friend-row">
+                        <a
+                            class="friend-identity"
+                            href="{% url 'public_profile' friendship.requester.username %}"
+                            aria-label="Voir le profil de {{ friendship.requester.username }}"
+                        >
+                            {% if friendship.requester.profile.avatar %}
+                                <img
+                                    class="friend-avatar"
+                                    src="{{ friendship.requester.profile.avatar.url }}"
+                                    alt="Photo de profil de {{ friendship.requester.username }}"
+                                >
+                            {% else %}
+                                <span
+                                    class="friend-avatar friend-avatar--fallback"
+                                    aria-hidden="true"
+                                >
+                                    {{ friendship.requester.username|first|upper }}
+                                </span>
+                            {% endif %}
+
+                            <span>
+                                <strong>
+                                    {{ friendship.requester.username }}
+                                </strong>
+
+                                {% if friendship.requester.get_full_name %}
+                                    <small>
+                                        {{ friendship.requester.get_full_name }}
+                                    </small>
+                                {% else %}
+                                    <small>
+                                        Souhaite devenir ton ami
+                                    </small>
+                                {% endif %}
+                            </span>
+                        </a>
+
+                        <div class="friend-actions">
+                            <form
+                                method="post"
+                                action="{% url 'reject_friend_request' friendship.id %}"
+                            >
+                                {% csrf_token %}
+
+                                <button
+                                    class="btn btn-ghost"
+                                    type="submit"
+                                >
+                                    Refuser
+                                </button>
+                            </form>
+
+                            <form
+                                method="post"
+                                action="{% url 'accept_friend_request' friendship.id %}"
+                            >
+                                {% csrf_token %}
+
+                                <button
+                                    class="btn btn-primary"
+                                    type="submit"
+                                >
+                                    Accepter
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    <section
+        class="friends-section"
+        aria-labelledby="friends-list-title"
+    >
+        <div class="friends-section-heading">
+            <h2 id="friends-list-title">
+                Liste d’amis
+            </h2>
+
+            <span
+                class="friends-count"
+                aria-label="{{ friend_entries|length }} ami{{ friend_entries|length|pluralize }}"
+            >
+                {{ friend_entries|length }}
+            </span>
+        </div>
+
+        {% if friend_entries %}
+            <div class="player-grid">
+                {% for entry in friend_entries %}
+                    <article class="player-card">
+                        <a
+                            href="{% url 'public_profile' entry.user.username %}"
+                            aria-label="Voir le profil de {{ entry.user.username }}"
+                        >
+                            {% if entry.profile.avatar %}
+                                <img
+                                    class="player-card-avatar"
+                                    src="{{ entry.profile.avatar.url }}"
+                                    alt="Photo de profil de {{ entry.user.username }}"
+                                >
+                            {% else %}
+                                <span
+                                    class="player-card-avatar player-card-avatar--fallback"
+                                    aria-hidden="true"
+                                >
+                                    {{ entry.user.username|first|upper }}
+                                </span>
+                            {% endif %}
+
+                            <h3>
+                                {{ entry.user.username }}
+                            </h3>
+
+                            {% if entry.user.get_full_name %}
+                                <p>
+                                    {{ entry.user.get_full_name }}
+                                </p>
+                            {% else %}
+                                <p>
+                                    Ami PokéTable
+                                </p>
+                            {% endif %}
+                        </a>
+
+                        <form
+                            method="post"
+                            action="{% url 'remove_friend' entry.friendship.id %}"
+                        >
+                            {% csrf_token %}
+
+                            <button
+                                class="btn btn-ghost btn-block"
+                                type="submit"
+                            >
+                                Retirer de mes amis
+                            </button>
+                        </form>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="friends-empty">
+                <h3>
+                    Ta liste d’amis est encore vide
+                </h3>
+
+                <p>
+                    Recherche un joueur pour lui envoyer
+                    une demande d’ami.
+                </p>
+
+                <a
+                    class="btn btn-primary"
+                    href="{% url 'player_search' %}"
+                >
+                    Trouver des joueurs
+                </a>
+            </div>
+        {% endif %}
+    </section>
+
+    {% if sent_requests %}
+        <section
+            class="friends-section"
+            aria-labelledby="sent-requests-title"
+        >
+            <div class="friends-section-heading">
+                <h2 id="sent-requests-title">
+                    Demandes envoyées
+                </h2>
+
+                <span
+                    class="friends-count"
+                    aria-label="{{ sent_requests|length }} demande{{ sent_requests|length|pluralize }} envoyée{{ sent_requests|length|pluralize }}"
+                >
+                    {{ sent_requests|length }}
+                </span>
+            </div>
+
+            <div class="friends-list">
+                {% for friendship in sent_requests %}
+                    <article class="friend-row">
+                        <a
+                            class="friend-identity"
+                            href="{% url 'public_profile' friendship.addressee.username %}"
+                            aria-label="Voir le profil de {{ friendship.addressee.username }}"
+                        >
+                            {% if friendship.addressee.profile.avatar %}
+                                <img
+                                    class="friend-avatar"
+                                    src="{{ friendship.addressee.profile.avatar.url }}"
+                                    alt="Photo de profil de {{ friendship.addressee.username }}"
+                                >
+                            {% else %}
+                                <span
+                                    class="friend-avatar friend-avatar--fallback"
+                                    aria-hidden="true"
+                                >
+                                    {{ friendship.addressee.username|first|upper }}
+                                </span>
+                            {% endif %}
+
+                            <span>
+                                <strong>
+                                    {{ friendship.addressee.username }}
+                                </strong>
+
+                                {% if friendship.addressee.get_full_name %}
+                                    <small>
+                                        {{ friendship.addressee.get_full_name }}
+                                        · Demande en attente
+                                    </small>
+                                {% else %}
+                                    <small>
+                                        Demande en attente
+                                    </small>
+                                {% endif %}
+                            </span>
+                        </a>
+
+                        <form
+                            method="post"
+                            action="{% url 'cancel_friend_request' friendship.id %}"
+                        >
+                            {% csrf_token %}
+
+                            <button
+                                class="btn btn-ghost"
+                                type="submit"
+                            >
+                                Annuler
+                            </button>
+                        </form>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</section>
+{% endblock %}
