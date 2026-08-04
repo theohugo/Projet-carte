@@ -3,7 +3,10 @@
 {% block title %}Profil de {{ profile_user.username }} — PokéTable{% endblock %}
 
 {% block content %}
-<section class="profile-page" aria-labelledby="profile-title">
+<section
+    class="profile-page"
+    aria-labelledby="profile-title"
+>
     <div class="profile-shell">
         <article class="profile-hero-card">
             <div class="profile-hero-top">
@@ -14,30 +17,45 @@
                         alt="Photo de profil de {{ profile_user.username }}"
                     >
                 {% else %}
-                    <div class="profile-avatar profile-avatar--fallback" aria-hidden="true">
+                    <div
+                        class="profile-avatar profile-avatar--fallback"
+                        aria-hidden="true"
+                    >
                         {{ profile_user.username|first|upper }}
                     </div>
                 {% endif %}
 
                 <div class="profile-hero-copy">
-                    <p class="section-kicker">Profil joueur</p>
-                    <h1 id="profile-title">{{ profile_user.username }}</h1>
+                    <p class="section-kicker">
+                        Profil joueur
+                    </p>
+
+                    <h1 id="profile-title">
+                        {{ profile_user.username }}
+                    </h1>
 
                     {% if profile_user.get_full_name %}
-                        <p class="profile-fullname">{{ profile_user.get_full_name }}</p>
+                        <p class="profile-fullname">
+                            {{ profile_user.get_full_name }}
+                        </p>
                     {% endif %}
 
                     <span class="profile-meta">
-                        Membre depuis {{ profile_user.date_joined|date:"F Y" }}
+                        Membre depuis
+                        {{ profile_user.date_joined|date:"F Y" }}
                     </span>
                 </div>
             </div>
 
             <div class="profile-bio-card">
-                <p class="profile-card-kicker">À propos</p>
+                <p class="profile-card-kicker">
+                    À propos
+                </p>
 
                 {% if profile.description %}
-                    <p class="profile-bio">{{ profile.description|linebreaksbr }}</p>
+                    <p class="profile-bio">
+                        {{ profile.description|linebreaksbr }}
+                    </p>
                 {% else %}
                     <p class="profile-empty">
                         Ce joueur n’a pas encore ajouté de description.
@@ -47,17 +65,30 @@
 
             <div class="profile-stats-grid">
                 <div class="profile-stat-card">
-                    <p class="profile-stat-label">Parties jouées</p>
-                    <strong class="profile-stat-value">{{ profile.total_games_played }}</strong>
+                    <p class="profile-stat-label">
+                        Parties jouées
+                    </p>
+
+                    <strong class="profile-stat-value">
+                        {{ profile.total_games_played }}
+                    </strong>
                 </div>
 
                 <div class="profile-stat-card">
-                    <p class="profile-stat-label">Victoires</p>
-                    <strong class="profile-stat-value">{{ profile.total_games_won }}</strong>
+                    <p class="profile-stat-label">
+                        Victoires
+                    </p>
+
+                    <strong class="profile-stat-value">
+                        {{ profile.total_games_won }}
+                    </strong>
                 </div>
 
                 <div class="profile-stat-card">
-                    <p class="profile-stat-label">Ratio de victoire</p>
+                    <p class="profile-stat-label">
+                        Ratio de victoire
+                    </p>
+
                     <strong class="profile-stat-value">
                         {% if profile.total_games_played > 0 %}
                             {% widthratio profile.total_games_won profile.total_games_played 100 %}%
@@ -70,17 +101,30 @@
         </article>
 
         <aside class="profile-panel">
-            <p class="section-kicker">Informations</p>
-            <h2>Compte joueur</h2>
+            <p class="section-kicker">
+                Informations
+            </p>
+
+            <h2>
+                Compte joueur
+            </h2>
 
             <div class="profile-info-list">
                 <div class="profile-info-item">
-                    <span class="profile-info-label">Nom d’utilisateur</span>
-                    <strong>{{ profile_user.username }}</strong>
+                    <span class="profile-info-label">
+                        Nom d’utilisateur
+                    </span>
+
+                    <strong>
+                        {{ profile_user.username }}
+                    </strong>
                 </div>
 
                 <div class="profile-info-item">
-                    <span class="profile-info-label">Nom complet</span>
+                    <span class="profile-info-label">
+                        Nom complet
+                    </span>
+
                     <strong>
                         {% if profile_user.get_full_name %}
                             {{ profile_user.get_full_name }}
@@ -92,7 +136,10 @@
 
                 {% if is_owner %}
                     <div class="profile-info-item">
-                        <span class="profile-info-label">Adresse e-mail</span>
+                        <span class="profile-info-label">
+                            Adresse e-mail
+                        </span>
+
                         <strong>
                             {% if profile_user.email %}
                                 {{ profile_user.email }}
@@ -104,13 +151,115 @@
                 {% endif %}
             </div>
 
-            {% if is_owner %}
-                <div class="profile-actions">
-                    <a class="btn btn-primary btn-block" href="{% url 'edit_profile' %}">
+            <div class="profile-actions">
+                {% if is_owner %}
+                    <a
+                        class="btn btn-primary btn-block"
+                        href="{% url 'edit_profile' %}"
+                    >
                         Modifier mon profil
                     </a>
-                </div>
-            {% endif %}
+
+                    <a
+                        class="btn btn-ghost btn-block"
+                        href="{% url 'friends' %}"
+                    >
+                        Voir mes amis
+                    </a>
+
+                {% elif friendship_status == "friends" %}
+                    <span class="friend-status">
+                        Vous êtes amis
+                    </span>
+
+                    {% if friendship %}
+                        <form
+                            method="post"
+                            action="{% url 'remove_friend' friendship.id %}"
+                        >
+                            {% csrf_token %}
+
+                            <button
+                                class="btn btn-ghost btn-block"
+                                type="submit"
+                            >
+                                Retirer de mes amis
+                            </button>
+                        </form>
+                    {% endif %}
+
+                {% elif friendship_status == "sent" %}
+                    <span class="friend-status">
+                        Demande envoyée
+                    </span>
+
+                    {% if friendship %}
+                        <form
+                            method="post"
+                            action="{% url 'cancel_friend_request' friendship.id %}"
+                        >
+                            {% csrf_token %}
+
+                            <button
+                                class="btn btn-ghost btn-block"
+                                type="submit"
+                            >
+                                Annuler la demande
+                            </button>
+                        </form>
+                    {% endif %}
+
+                {% elif friendship_status == "received" %}
+                    <span class="friend-status">
+                        Ce joueur souhaite devenir ton ami
+                    </span>
+
+                    {% if friendship %}
+                        <form
+                            method="post"
+                            action="{% url 'accept_friend_request' friendship.id %}"
+                        >
+                            {% csrf_token %}
+
+                            <button
+                                class="btn btn-primary btn-block"
+                                type="submit"
+                            >
+                                Accepter la demande
+                            </button>
+                        </form>
+
+                        <form
+                            method="post"
+                            action="{% url 'reject_friend_request' friendship.id %}"
+                        >
+                            {% csrf_token %}
+
+                            <button
+                                class="btn btn-ghost btn-block"
+                                type="submit"
+                            >
+                                Refuser la demande
+                            </button>
+                        </form>
+                    {% endif %}
+
+                {% else %}
+                    <form
+                        method="post"
+                        action="{% url 'send_friend_request' profile_user.username %}"
+                    >
+                        {% csrf_token %}
+
+                        <button
+                            class="btn btn-primary btn-block"
+                            type="submit"
+                        >
+                            Ajouter en ami
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
         </aside>
     </div>
 </section>
