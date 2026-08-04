@@ -75,16 +75,10 @@ class AccountForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
 
-        email_already_used = (
-            User.objects.filter(email__iexact=email)
-            .exclude(pk=self.instance.pk)
-            .exists()
-        )
+        email_already_used = User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists()
 
         if email_already_used:
-            raise ValidationError(
-                "Cette adresse e-mail est déjà utilisée par un autre compte."
-            )
+            raise ValidationError("Cette adresse e-mail est déjà utilisée par un autre compte.")
 
         return email
 
@@ -109,9 +103,7 @@ class ProfileForm(forms.ModelForm):
                 attrs={
                     "rows": 5,
                     "maxlength": 500,
-                    "placeholder": (
-                        "Présente-toi aux autres joueurs en quelques mots..."
-                    ),
+                    "placeholder": ("Présente-toi aux autres joueurs en quelques mots..."),
                 }
             ),
         }
@@ -127,9 +119,7 @@ class ProfileForm(forms.ModelForm):
             return avatar
 
         if avatar.size > 5 * 1024 * 1024:
-            raise ValidationError(
-                "La photo de profil ne doit pas dépasser 5 Mo."
-            )
+            raise ValidationError("La photo de profil ne doit pas dépasser 5 Mo.")
 
         content_type = getattr(avatar, "content_type", "")
         allowed_types = {
@@ -139,8 +129,6 @@ class ProfileForm(forms.ModelForm):
         }
 
         if content_type and content_type not in allowed_types:
-            raise ValidationError(
-                "Utilise une image au format JPG, PNG ou WebP."
-            )
+            raise ValidationError("Utilise une image au format JPG, PNG ou WebP.")
 
         return avatar

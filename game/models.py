@@ -102,10 +102,7 @@ class Game(models.Model):
         PokemonType,
         related_name="games",
         blank=True,
-        help_text=(
-            "Les types tirés au sort au démarrage : "
-            "la pioche n'en contient pas d'autres."
-        ),
+        help_text=("Les types tirés au sort au démarrage : " "la pioche n'en contient pas d'autres."),
     )
 
     active_type = models.ForeignKey(
@@ -125,10 +122,7 @@ class Game(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return (
-            f"Partie {self.id} "
-            f"({self.get_status_display()})"
-        )
+        return f"Partie {self.id} " f"({self.get_status_display()})"
 
     def next_card_sequence(self):
         self.card_sequence_counter += 1
@@ -273,10 +267,7 @@ class GameCard(models.Model):
         ]
 
     def __str__(self):
-        return (
-            f"{self.pokemon_card.name_fr} "
-            f"[{self.location}]"
-        )
+        return f"{self.pokemon_card.name_fr} " f"[{self.location}]"
 
 
 class MoveLog(models.Model):
@@ -457,17 +448,10 @@ class Friendship(models.Model):
         if user.pk == self.addressee_id:
             return self.requester
 
-        raise ValueError(
-            "Cet utilisateur ne fait pas partie "
-            "de cette relation."
-        )
+        raise ValueError("Cet utilisateur ne fait pas partie " "de cette relation.")
 
     def __str__(self):
-        return (
-            f"{self.requester} → "
-            f"{self.addressee} "
-            f"({self.get_status_display()})"
-        )
+        return f"{self.requester} → " f"{self.addressee} " f"({self.get_status_display()})"
 
 
 class GameInvitation(models.Model):
@@ -564,7 +548,6 @@ class GameInvitation(models.Model):
                 ),
                 name="game_invitation_users_must_be_different",
             ),
-
             # Une invitation doit pointer vers un seul type de salon.
             models.CheckConstraint(
                 condition=(
@@ -599,7 +582,6 @@ class GameInvitation(models.Model):
                 ),
                 name="game_invitation_has_one_valid_room",
             ),
-
             # Une seule invitation en attente par joueur et salon Poké-Uno.
             models.UniqueConstraint(
                 fields=[
@@ -612,7 +594,6 @@ class GameInvitation(models.Model):
                 ),
                 name="unique_pending_game_invitation",
             ),
-
             # Une seule invitation en attente par joueur et salon Qui est-ce.
             models.UniqueConstraint(
                 fields=[
@@ -625,7 +606,6 @@ class GameInvitation(models.Model):
                 ),
                 name="unique_pending_guesswho_invitation",
             ),
-
             # Une seule invitation en attente par joueur et salon Silhouette.
             models.UniqueConstraint(
                 fields=[
@@ -638,7 +618,6 @@ class GameInvitation(models.Model):
                 ),
                 name="unique_pending_silhouette_invitation",
             ),
-
             # Une seule invitation en attente par joueur et salon Pictionary.
             models.UniqueConstraint(
                 fields=[

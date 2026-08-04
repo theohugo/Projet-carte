@@ -16,7 +16,6 @@ from game.game_engine import GameEngine, GameEngineError, close_stale_games
 from game.models import Friendship, Game, GameCard, Profile
 from game.pokemon_types import POKEMON_TYPES
 
-
 OPPONENT_CARD_BACK_LIMIT = 10
 
 
@@ -46,10 +45,7 @@ def _get_relationship(current_user, other_user):
         )
     ).first()
 
-    if (
-        friendship is None
-        or friendship.status == Friendship.Status.REJECTED
-    ):
+    if friendship is None or friendship.status == Friendship.Status.REJECTED:
         return friendship, "none"
 
     if friendship.status == Friendship.Status.ACCEPTED:
@@ -62,11 +58,7 @@ def _get_relationship(current_user, other_user):
 
 
 def signup(request):
-    next_url = (
-        request.POST.get("next")
-        or request.GET.get("next")
-        or ""
-    )
+    next_url = request.POST.get("next") or request.GET.get("next") or ""
 
     if request.method == "POST":
         form = SignUpForm(request.POST)
@@ -75,13 +67,10 @@ def signup(request):
             user = form.save()
             login(request, user)
 
-            if (
-                next_url
-                and url_has_allowed_host_and_scheme(
-                    next_url,
-                    allowed_hosts={request.get_host()},
-                    require_https=request.is_secure(),
-                )
+            if next_url and url_has_allowed_host_and_scheme(
+                next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
             ):
                 return redirect(next_url)
 
@@ -175,9 +164,7 @@ def start_game_view(request, game_id):
     )
 
     if game.created_by_id != request.user.id:
-        return HttpResponseForbidden(
-            "Seul le créateur de la partie peut la démarrer."
-        )
+        return HttpResponseForbidden("Seul le créateur de la partie peut la démarrer.")
 
     try:
         GameEngine(game).start_game()
@@ -205,9 +192,7 @@ def add_bot_view(request, game_id):
     )
 
     if game.created_by_id != request.user.id:
-        return HttpResponseForbidden(
-            "Seul le créateur peut ajouter une IA."
-        )
+        return HttpResponseForbidden("Seul le créateur peut ajouter une IA.")
 
     try:
         GameEngine(game).add_bot()
@@ -235,9 +220,7 @@ def remove_bot_view(request, game_id, player_id):
     )
 
     if game.created_by_id != request.user.id:
-        return HttpResponseForbidden(
-            "Seul le créateur peut retirer une IA."
-        )
+        return HttpResponseForbidden("Seul le créateur peut retirer une IA.")
 
     try:
         GameEngine(game).remove_bot(player_id)
@@ -271,19 +254,14 @@ def game_detail(request, game_id):
     if game_player is None:
         player_count = game.players.count()
 
-        can_join = (
-            game.status == Game.Status.EN_ATTENTE
-            and player_count < game.max_players
-        )
+        can_join = game.status == Game.Status.EN_ATTENTE and player_count < game.max_players
 
         return render(
             request,
             "join_invitation.html",
             {
                 "mode_name": "Poké-Uno",
-                "mode_kicker": (
-                    "Défausse · pouvoirs · types Pokémon"
-                ),
+                "mode_kicker": ("Défausse · pouvoirs · types Pokémon"),
                 "host_name": game.created_by.get_username(),
                 "player_count": player_count,
                 "max_players": game.max_players,
@@ -305,18 +283,11 @@ def game_detail(request, game_id):
 
     players_state = game_state["players"]
 
-    my_index = next(
-        index
-        for index, player in enumerate(players_state)
-        if "hand" in player
-    )
+    my_index = next(index for index, player in enumerate(players_state) if "hand" in player)
 
     my_player = players_state[my_index]
 
-    seat_order = (
-        players_state[my_index + 1 :]
-        + players_state[:my_index]
-    )
+    seat_order = players_state[my_index + 1 :] + players_state[:my_index]
 
     opponents = [
         {
@@ -329,10 +300,7 @@ def game_detail(request, game_id):
             ),
             "hidden_card_count": max(
                 0,
-                (
-                    player["hand_count"]
-                    - OPPONENT_CARD_BACK_LIMIT
-                ),
+                (player["hand_count"] - OPPONENT_CARD_BACK_LIMIT),
             ),
         }
         for player in seat_order
@@ -359,22 +327,15 @@ def game_detail(request, game_id):
         }
 
         for card in my_player["hand"]:
-            card["is_playable"] = playable_by_id[
-                card["id"]
-            ]
+            card["is_playable"] = playable_by_id[card["id"]]
 
     return render(
         request,
         "game/detail.html",
         {
             "game": game,
-            "is_creator": (
-                game.created_by_id
-                == request.user.id
-            ),
-            "players": game.players.select_related(
-                "user"
-            ).all(),
+            "is_creator": (game.created_by_id == request.user.id),
+            "players": game.players.select_related("user").all(),
             "game_state": game_state,
             "my_player": my_player,
             "opponents": opponents,
@@ -386,10 +347,7 @@ def game_detail(request, game_id):
                 if game_state
                 else []
             ),
-            "all_types": [
-                pokemon_type.as_dict()
-                for pokemon_type in POKEMON_TYPES
-            ],
+            "all_types": [pokemon_type.as_dict() for pokemon_type in POKEMON_TYPES],
         },
     )
 
@@ -439,10 +397,7 @@ def public_profile(request, username):
         {
             "profile_user": profile_user,
             "profile": profile,
-            "is_owner": (
-                profile_user.pk
-                == request.user.pk
-            ),
+            "is_owner": (profile_user.pk == request.user.pk),
             "friendship": friendship,
             "friendship_status": friendship_status,
         },
@@ -470,10 +425,7 @@ def edit_profile(request):
             instance=profile,
         )
 
-        if (
-            account_form.is_valid()
-            and profile_form.is_valid()
-        ):
+        if account_form.is_valid() and profile_form.is_valid():
             account_form.save()
             profile_form.save()
 
@@ -509,10 +461,7 @@ def friends(request):
 
     accepted_friendships = (
         Friendship.objects.filter(
-            (
-                Q(requester=request.user)
-                | Q(addressee=request.user)
-            ),
+            (Q(requester=request.user) | Q(addressee=request.user)),
             status=Friendship.Status.ACCEPTED,
         )
         .select_related(
@@ -590,9 +539,7 @@ def player_search(request):
     if query:
         players = (
             User.objects.filter(
-                Q(username__icontains=query)
-                | Q(first_name__icontains=query)
-                | Q(last_name__icontains=query)
+                Q(username__icontains=query) | Q(first_name__icontains=query) | Q(last_name__icontains=query)
             )
             .exclude(pk=request.user.pk)
             .order_by("username")[:30]
@@ -651,11 +598,7 @@ def send_friend_request(request, username):
         target_user,
     )
 
-    friendship = (
-        Friendship.objects.select_for_update()
-        .filter(pair_key=pair_key)
-        .first()
-    )
+    friendship = Friendship.objects.select_for_update().filter(pair_key=pair_key).first()
 
     if friendship is None:
         Friendship.objects.create(
@@ -665,19 +608,13 @@ def send_friend_request(request, username):
 
         messages.success(
             request,
-            (
-                "Demande d’ami envoyée à "
-                f"{target_user.username}."
-            ),
+            ("Demande d’ami envoyée à " f"{target_user.username}."),
         )
 
     elif friendship.status == Friendship.Status.ACCEPTED:
         messages.info(
             request,
-            (
-                "Tu es déjà ami avec "
-                f"{target_user.username}."
-            ),
+            ("Tu es déjà ami avec " f"{target_user.username}."),
         )
 
     elif friendship.status == Friendship.Status.PENDING:
@@ -698,10 +635,7 @@ def send_friend_request(request, username):
 
             messages.success(
                 request,
-                (
-                    "Tu es maintenant ami avec "
-                    f"{target_user.username}."
-                ),
+                ("Tu es maintenant ami avec " f"{target_user.username}."),
             )
 
     else:
@@ -712,10 +646,7 @@ def send_friend_request(request, username):
 
         messages.success(
             request,
-            (
-                "Nouvelle demande envoyée à "
-                f"{target_user.username}."
-            ),
+            ("Nouvelle demande envoyée à " f"{target_user.username}."),
         )
 
     return redirect(
@@ -748,10 +679,7 @@ def accept_friend_request(request, friendship_id):
 
     messages.success(
         request,
-        (
-            "Tu es maintenant ami avec "
-            f"{friendship.requester.username}."
-        ),
+        ("Tu es maintenant ami avec " f"{friendship.requester.username}."),
     )
 
     return redirect("friends")
@@ -818,10 +746,7 @@ def remove_friend(request, friendship_id):
 
     friendship = get_object_or_404(
         Friendship.objects.select_for_update().filter(
-            (
-                Q(requester=request.user)
-                | Q(addressee=request.user)
-            ),
+            (Q(requester=request.user) | Q(addressee=request.user)),
             status=Friendship.Status.ACCEPTED,
         ),
         pk=friendship_id,
@@ -835,10 +760,7 @@ def remove_friend(request, friendship_id):
 
     messages.info(
         request,
-        (
-            f"{other_user.username} a été retiré "
-            "de ta liste d’amis."
-        ),
+        (f"{other_user.username} a été retiré " "de ta liste d’amis."),
     )
 
     return redirect("friends")

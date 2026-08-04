@@ -2,7 +2,6 @@ from django.urls import path
 
 from game import api, invitation_views, views
 
-
 urlpatterns = [
     # Accueil
     path(
@@ -10,21 +9,18 @@ urlpatterns = [
         views.hub,
         name="home",
     ),
-
     # Poké-Uno
     path(
         "uno/",
         views.lobby,
         name="lobby",
     ),
-
     # Authentification
     path(
         "signup/",
         views.signup,
         name="signup",
     ),
-
     # Profils
     path(
         "profil/",
@@ -41,7 +37,6 @@ urlpatterns = [
         views.public_profile,
         name="public_profile",
     ),
-
     # Amis
     path(
         "amis/",
@@ -78,7 +73,6 @@ urlpatterns = [
         views.remove_friend,
         name="remove_friend",
     ),
-
     # Invitations multi-jeux
     path(
         "invitations/",
@@ -110,7 +104,6 @@ urlpatterns = [
         invitation_views.cancel_game_invitation,
         name="cancel_game_invitation",
     ),
-
     # Parties Poké-Uno
     path(
         "games/<uuid:game_id>/",
@@ -137,7 +130,6 @@ urlpatterns = [
         views.remove_bot_view,
         name="remove_bot",
     ),
-
     # API Poké-Uno
     path(
         "api/lobby/state/",

@@ -23,7 +23,6 @@ from silhouette.models import (
     SilhouettePlayer,
 )
 
-
 User = get_user_model()
 
 
@@ -145,9 +144,7 @@ class GameInvitationTests(TestCase):
 
             return room
 
-        raise ValueError(
-            f"Mode de test inconnu : {mode}"
-        )
+        raise ValueError(f"Mode de test inconnu : {mode}")
 
     def _create_invitation(
         self,
@@ -173,9 +170,7 @@ class GameInvitationTests(TestCase):
             mode_data["field"]: room,
         }
 
-        return GameInvitation.objects.create(
-            **values
-        )
+        return GameInvitation.objects.create(**values)
 
     def _invite_page_url(
         self,
@@ -220,9 +215,7 @@ class GameInvitationTests(TestCase):
         )
 
     def test_invitations_page_requires_authentication(self):
-        response = self.client.get(
-            reverse("game_invitations")
-        )
+        response = self.client.get(reverse("game_invitations"))
 
         self.assertEqual(
             response.status_code,
@@ -234,9 +227,7 @@ class GameInvitationTests(TestCase):
         )
 
     def test_host_can_open_friend_selection_page(self):
-        room = self._create_room(
-            GameInvitation.Mode.POKE_UNO
-        )
+        room = self._create_room(GameInvitation.Mode.POKE_UNO)
 
         self.client.force_login(self.host)
 
@@ -265,9 +256,7 @@ class GameInvitationTests(TestCase):
         )
 
     def test_non_host_cannot_open_friend_selection_page(self):
-        room = self._create_room(
-            GameInvitation.Mode.POKE_UNO
-        )
+        room = self._create_room(GameInvitation.Mode.POKE_UNO)
 
         self.client.force_login(self.friend)
 
@@ -302,14 +291,10 @@ class GameInvitationTests(TestCase):
                     302,
                 )
 
-                invitation = (
-                    GameInvitation.objects.get(
-                        mode=mode,
-                        recipient=self.friend,
-                        status=(
-                            GameInvitation.Status.PENDING
-                        ),
-                    )
+                invitation = GameInvitation.objects.get(
+                    mode=mode,
+                    recipient=self.friend,
+                    status=(GameInvitation.Status.PENDING),
                 )
 
                 self.assertEqual(
@@ -322,9 +307,7 @@ class GameInvitationTests(TestCase):
                 )
 
     def test_non_friend_cannot_be_invited(self):
-        room = self._create_room(
-            GameInvitation.Mode.POKE_UNO
-        )
+        room = self._create_room(GameInvitation.Mode.POKE_UNO)
 
         self.client.force_login(self.host)
 
@@ -390,9 +373,7 @@ class GameInvitationTests(TestCase):
 
         started_room = self._create_room(mode)
         started_room.status = Game.Status.EN_COURS
-        started_room.save(
-            update_fields=["status"]
-        )
+        started_room.save(update_fields=["status"])
 
         full_room = self._create_room(
             mode,
@@ -464,9 +445,7 @@ class GameInvitationTests(TestCase):
             invitation.status,
             GameInvitation.Status.CANCELLED,
         )
-        self.assertIsNotNone(
-            invitation.responded_at
-        )
+        self.assertIsNotNone(invitation.responded_at)
 
     def test_recipient_can_decline_invitation(self):
         mode = GameInvitation.Mode.PICTIONARY
@@ -499,9 +478,7 @@ class GameInvitationTests(TestCase):
             invitation.status,
             GameInvitation.Status.DECLINED,
         )
-        self.assertIsNotNone(
-            invitation.responded_at
-        )
+        self.assertIsNotNone(invitation.responded_at)
 
     def test_only_authorized_user_can_respond_to_invitation(
         self,
@@ -587,9 +564,7 @@ class GameInvitationTests(TestCase):
                     reverse(
                         "accept_game_invitation",
                         kwargs={
-                            "invitation_id": (
-                                invitation.pk
-                            ),
+                            "invitation_id": (invitation.pk),
                         },
                     )
                 )
@@ -612,9 +587,7 @@ class GameInvitationTests(TestCase):
                     invitation.status,
                     GameInvitation.Status.ACCEPTED,
                 )
-                self.assertIsNotNone(
-                    invitation.responded_at
-                )
+                self.assertIsNotNone(invitation.responded_at)
 
                 self.assertTrue(
                     room.players.filter(
@@ -678,9 +651,7 @@ class GameInvitationTests(TestCase):
         )
 
         room.status = SilhouetteGame.Status.EN_COURS
-        room.save(
-            update_fields=["status"]
-        )
+        room.save(update_fields=["status"])
 
         self.client.force_login(self.friend)
 
@@ -769,24 +740,18 @@ class GameInvitationTests(TestCase):
         )
 
         room.status = PictionaryGame.Status.EN_COURS
-        room.save(
-            update_fields=["status"]
-        )
+        room.save(update_fields=["status"])
 
         self.client.force_login(self.friend)
 
-        response = self.client.get(
-            reverse("game_invitations")
-        )
+        response = self.client.get(reverse("game_invitations"))
 
         self.assertEqual(
             response.status_code,
             200,
         )
         self.assertEqual(
-            response.context[
-                "received_invitations"
-            ],
+            response.context["received_invitations"],
             [],
         )
 
@@ -800,24 +765,17 @@ class GameInvitationTests(TestCase):
     def test_invitation_must_reference_exactly_one_valid_room(
         self,
     ):
-        poke_uno_room = self._create_room(
-            GameInvitation.Mode.POKE_UNO
-        )
-        silhouette_room = self._create_room(
-            GameInvitation.Mode.SILHOUETTE
-        )
+        poke_uno_room = self._create_room(GameInvitation.Mode.POKE_UNO)
+        silhouette_room = self._create_room(GameInvitation.Mode.SILHOUETTE)
 
-        with self.assertRaises(IntegrityError):
-            with transaction.atomic():
-                GameInvitation.objects.create(
-                    mode=(
-                        GameInvitation.Mode.POKE_UNO
-                    ),
-                    game=poke_uno_room,
-                    silhouette_game=silhouette_room,
-                    sender=self.host,
-                    recipient=self.friend,
-                )
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            GameInvitation.objects.create(
+                mode=(GameInvitation.Mode.POKE_UNO),
+                game=poke_uno_room,
+                silhouette_game=silhouette_room,
+                sender=self.host,
+                recipient=self.friend,
+            )
 
     def test_database_blocks_duplicate_pending_invitation(
         self,
@@ -830,19 +788,14 @@ class GameInvitationTests(TestCase):
             room,
         )
 
-        with self.assertRaises(IntegrityError):
-            with transaction.atomic():
-                self._create_invitation(
-                    mode,
-                    room,
-                )
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            self._create_invitation(
+                mode,
+                room,
+            )
 
-        first_invitation.status = (
-            GameInvitation.Status.ACCEPTED
-        )
-        first_invitation.save(
-            update_fields=["status"]
-        )
+        first_invitation.status = GameInvitation.Status.ACCEPTED
+        first_invitation.save(update_fields=["status"])
 
         second_invitation = self._create_invitation(
             mode,

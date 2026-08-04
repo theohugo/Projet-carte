@@ -126,10 +126,7 @@ class ProfileViewTests(TestCase):
                 "first_name": "Alice",
                 "last_name": "Martin",
                 "email": "alice.updated@example.com",
-                "description": (
-                    "Passionnée par les cartes Pokémon "
-                    "et les jeux multijoueurs."
-                ),
+                "description": ("Passionnée par les cartes Pokémon " "et les jeux multijoueurs."),
             },
         )
 
@@ -153,10 +150,7 @@ class ProfileViewTests(TestCase):
 
         self.assertEqual(
             self.profile.description,
-            (
-                "Passionnée par les cartes Pokémon "
-                "et les jeux multijoueurs."
-            ),
+            ("Passionnée par les cartes Pokémon " "et les jeux multijoueurs."),
         )
 
     def test_email_must_be_unique(self):
@@ -209,10 +203,7 @@ class ProfileViewTests(TestCase):
             "bobby",
         )
 
-        usernames = [
-            result["user"].username
-            for result in response.context["search_results"]
-        ]
+        usernames = [result["user"].username for result in response.context["search_results"]]
 
         self.assertIn(
             "bobby",

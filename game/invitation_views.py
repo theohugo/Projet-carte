@@ -20,19 +20,24 @@ from game.models import (
 from guesswho.models import GuessWhoGame
 from guesswho.services import (
     GuessWhoError,
+)
+from guesswho.services import (
     join_game as join_guesswho_game,
 )
 from pictionary.models import PictionaryGame
 from pictionary.services import (
     PictionaryError,
+)
+from pictionary.services import (
     join_game as join_pictionary_game,
 )
 from silhouette.models import SilhouetteGame
 from silhouette.services import (
     SilhouetteError,
+)
+from silhouette.services import (
     join_game as join_silhouette_game,
 )
-
 
 User = get_user_model()
 
@@ -106,10 +111,7 @@ MODE_CONFIG = {
 }
 
 
-MODE_BY_SLUG = {
-    config["slug"]: mode
-    for mode, config in MODE_CONFIG.items()
-}
+MODE_BY_SLUG = {config["slug"]: mode for mode, config in MODE_CONFIG.items()}
 
 
 INVITATION_SELECT_RELATED = (
@@ -169,9 +171,7 @@ def _get_config_from_invitation(invitation):
     config = MODE_CONFIG.get(invitation.mode)
 
     if config is None:
-        raise Http404(
-            "Le mode de cette invitation n’existe plus."
-        )
+        raise Http404("Le mode de cette invitation n’existe plus.")
 
     return config
 
@@ -259,9 +259,7 @@ def _decorate_invitation(invitation):
     room = invitation.room
 
     invitation.mode_slug_value = config["slug"]
-    invitation.mode_label_value = (
-        invitation.get_mode_display()
-    )
+    invitation.mode_label_value = invitation.get_mode_display()
 
     if room is None:
         invitation.detail_url = ""
@@ -279,11 +277,7 @@ def _decorate_invitation(invitation):
 
     max_players = _room_max_players(room)
 
-    invitation.max_players_display = (
-        max_players
-        if max_players is not None
-        else "∞"
-    )
+    invitation.max_players_display = max_players if max_players is not None else "∞"
 
     return invitation
 
@@ -326,9 +320,7 @@ def _active_pending_invitations(queryset):
             _expire_invitation(invitation)
             continue
 
-        active_invitations.append(
-            _decorate_invitation(invitation)
-        )
+        active_invitations.append(_decorate_invitation(invitation))
 
     return active_invitations
 
@@ -342,9 +334,7 @@ def game_invitations(request):
             recipient=request.user,
             status=GameInvitation.Status.PENDING,
         )
-        .select_related(
-            *INVITATION_SELECT_RELATED
-        )
+        .select_related(*INVITATION_SELECT_RELATED)
         .order_by("-created_at")
     )
 
@@ -353,31 +343,19 @@ def game_invitations(request):
             sender=request.user,
             status=GameInvitation.Status.PENDING,
         )
-        .select_related(
-            *INVITATION_SELECT_RELATED
-        )
+        .select_related(*INVITATION_SELECT_RELATED)
         .order_by("-created_at")
     )
 
-    received_invitations = (
-        _active_pending_invitations(
-            received_queryset
-        )
-    )
+    received_invitations = _active_pending_invitations(received_queryset)
 
-    sent_invitations = (
-        _active_pending_invitations(
-            sent_queryset
-        )
-    )
+    sent_invitations = _active_pending_invitations(sent_queryset)
 
     return render(
         request,
         "game/invitations/list.html",
         {
-            "received_invitations": (
-                received_invitations
-            ),
+            "received_invitations": (received_invitations),
             "sent_invitations": sent_invitations,
         },
     )
@@ -391,9 +369,7 @@ def invite_friends_to_game(
 ):
     """Affiche les amis pouvant être invités dans un salon."""
 
-    mode_value, config = _get_mode_and_config(
-        mode
-    )
+    mode_value, config = _get_mode_and_config(mode)
 
     room = _get_room(
         config,
@@ -401,9 +377,7 @@ def invite_friends_to_game(
     )
 
     if room.created_by_id != request.user.id:
-        return HttpResponseForbidden(
-            "Seul le créateur du salon peut inviter des amis."
-        )
+        return HttpResponseForbidden("Seul le créateur du salon peut inviter des amis.")
 
     if not _room_is_waiting(
         config,
@@ -411,10 +385,7 @@ def invite_friends_to_game(
     ):
         messages.error(
             request,
-            (
-                "Cette partie n’accepte plus "
-                "de nouvelles invitations."
-            ),
+            ("Cette partie n’accepte plus " "de nouvelles invitations."),
         )
 
         return redirect(
@@ -426,8 +397,7 @@ def invite_friends_to_game(
 
     accepted_friendships = (
         Friendship.objects.filter(
-            Q(requester=request.user)
-            | Q(addressee=request.user),
+            Q(requester=request.user) | Q(addressee=request.user),
             status=Friendship.Status.ACCEPTED,
         )
         .select_related(
@@ -481,9 +451,7 @@ def invite_friends_to_game(
         elif friend_user.pk in pending_invitations:
             invitation_status = "pending"
 
-            invitation = pending_invitations[
-                friend_user.pk
-            ]
+            invitation = pending_invitations[friend_user.pk]
 
         else:
             invitation_status = "available"
@@ -506,9 +474,7 @@ def invite_friends_to_game(
         {
             "room": room,
             "mode_slug": config["slug"],
-            "mode_label": dict(
-                GameInvitation.Mode.choices
-            )[mode_value],
+            "mode_label": dict(GameInvitation.Mode.choices)[mode_value],
             "room_detail_url": _room_detail_url(
                 config,
                 room,
@@ -516,11 +482,7 @@ def invite_friends_to_game(
             "friend_entries": friend_entries,
             "game_is_full": _room_is_full(room),
             "player_count": room.players.count(),
-            "max_players": (
-                max_players
-                if max_players is not None
-                else "∞"
-            ),
+            "max_players": (max_players if max_players is not None else "∞"),
         },
     )
 
@@ -536,9 +498,7 @@ def send_game_invitation(
 ):
     """Envoie une invitation pour le jeu choisi."""
 
-    mode_value, config = _get_mode_and_config(
-        mode
-    )
+    mode_value, config = _get_mode_and_config(mode)
 
     room = _get_room(
         config,
@@ -547,9 +507,7 @@ def send_game_invitation(
     )
 
     if room.created_by_id != request.user.id:
-        return HttpResponseForbidden(
-            "Seul le créateur du salon peut inviter des amis."
-        )
+        return HttpResponseForbidden("Seul le créateur du salon peut inviter des amis.")
 
     if not _room_is_waiting(
         config,
@@ -557,10 +515,7 @@ def send_game_invitation(
     ):
         messages.error(
             request,
-            (
-                "Cette partie a déjà commencé "
-                "ou est terminée."
-            ),
+            ("Cette partie a déjà commencé " "ou est terminée."),
         )
 
         return redirect(
@@ -603,12 +558,7 @@ def send_game_invitation(
         request.user,
         recipient,
     ):
-        return HttpResponseForbidden(
-            (
-                "Tu ne peux inviter que les joueurs "
-                "présents dans ta liste d’amis."
-            )
-        )
+        return HttpResponseForbidden("Tu ne peux inviter que les joueurs " "présents dans ta liste d’amis.")
 
     if _room_has_player(
         room,
@@ -616,10 +566,7 @@ def send_game_invitation(
     ):
         messages.info(
             request,
-            (
-                f"{recipient.username} est déjà "
-                "dans le salon."
-            ),
+            (f"{recipient.username} est déjà " "dans le salon."),
         )
 
         return redirect(
@@ -647,10 +594,7 @@ def send_game_invitation(
     if existing_invitation:
         messages.info(
             request,
-            (
-                "Une invitation est déjà en attente "
-                f"pour {recipient.username}."
-            ),
+            ("Une invitation est déjà en attente " f"pour {recipient.username}."),
         )
 
         return redirect(
@@ -666,20 +610,13 @@ def send_game_invitation(
         config["room_field"]: room,
     }
 
-    GameInvitation.objects.create(
-        **invitation_values
-    )
+    GameInvitation.objects.create(**invitation_values)
 
-    mode_label = dict(
-        GameInvitation.Mode.choices
-    )[mode_value]
+    mode_label = dict(GameInvitation.Mode.choices)[mode_value]
 
     messages.success(
         request,
-        (
-            f"Invitation {mode_label} envoyée "
-            f"à {recipient.username}."
-        ),
+        (f"Invitation {mode_label} envoyée " f"à {recipient.username}."),
     )
 
     return redirect(
@@ -742,10 +679,7 @@ def accept_game_invitation(
 
         messages.error(
             request,
-            (
-                "Cette invitation a expiré : "
-                "la partie a déjà commencé."
-            ),
+            ("Cette invitation a expiré : " "la partie a déjà commencé."),
         )
 
         return redirect("game_invitations")
@@ -754,9 +688,7 @@ def accept_game_invitation(
         room,
         request.user,
     ):
-        invitation.status = (
-            GameInvitation.Status.ACCEPTED
-        )
+        invitation.status = GameInvitation.Status.ACCEPTED
         invitation.responded_at = timezone.now()
 
         invitation.save(
@@ -784,10 +716,7 @@ def accept_game_invitation(
 
         messages.error(
             request,
-            (
-                "Cette invitation a expiré : "
-                "le salon est complet."
-            ),
+            ("Cette invitation a expiré : " "le salon est complet."),
         )
 
         return redirect("game_invitations")
@@ -806,9 +735,7 @@ def accept_game_invitation(
 
         return redirect("game_invitations")
 
-    invitation.status = (
-        GameInvitation.Status.ACCEPTED
-    )
+    invitation.status = GameInvitation.Status.ACCEPTED
     invitation.responded_at = timezone.now()
 
     invitation.save(
@@ -852,9 +779,7 @@ def decline_game_invitation(
         status=GameInvitation.Status.PENDING,
     )
 
-    invitation.status = (
-        GameInvitation.Status.DECLINED
-    )
+    invitation.status = GameInvitation.Status.DECLINED
     invitation.responded_at = timezone.now()
 
     invitation.save(
@@ -897,9 +822,7 @@ def cancel_game_invitation(
 
     room = invitation.room
 
-    invitation.status = (
-        GameInvitation.Status.CANCELLED
-    )
+    invitation.status = GameInvitation.Status.CANCELLED
     invitation.responded_at = timezone.now()
 
     invitation.save(
@@ -915,12 +838,9 @@ def cancel_game_invitation(
         "L’invitation a été annulée.",
     )
 
-    if (
-        room is not None
-        and _room_is_waiting(
-            config,
-            room,
-        )
+    if room is not None and _room_is_waiting(
+        config,
+        room,
     ):
         return redirect(
             "invite_friends_to_game",
