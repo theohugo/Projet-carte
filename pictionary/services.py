@@ -13,6 +13,7 @@ from django.utils import timezone
 
 from game.models import PokemonCard
 from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID, name_matches
+from game.quests import EVENT_PICTIONARY_DRAWN, EVENT_PICTIONARY_FOUND, record_event
 from pictionary.models import (
     PictionaryGame,
     PictionaryGuess,
@@ -285,6 +286,8 @@ def submit_guess(game_id, user, text: str, expected_revision=None) -> dict:
         drawer = round_obj.drawer
         drawer.score += DRAWER_POINTS_PER_FINDER
         drawer.save(update_fields=["score"])
+        record_event(player.user, EVENT_PICTIONARY_FOUND)
+        record_event(drawer.user, EVENT_PICTIONARY_DRAWN)
         if _round_is_over(game, round_obj, now):
             round_obj.ended_at = now
             round_obj.save(update_fields=["ended_at"])

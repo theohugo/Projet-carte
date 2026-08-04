@@ -17,6 +17,7 @@ from game.card_actions import assign_actions
 from game.deck_builder import draw_game_types, select_species, species_type_slugs
 from game.models import Game, GameCard, GamePlayer, MoveLog, PokemonCard, PokemonType, Profile
 from game.pokemon_types import get_pokemon_type
+from game.quests import EVENT_GAME_PLAYED, EVENT_GAME_WON, record_event
 
 HAND_SIZE = 7
 DECK_COPIES_PER_CARD = 2
@@ -451,6 +452,9 @@ class GameEngine:
             if game_player.pk == winner.pk:
                 increments["total_games_won"] = F("total_games_won") + 1
             Profile.objects.filter(pk=profile.pk).update(**increments)
+            record_event(game_player.user, EVENT_GAME_PLAYED)
+            if game_player.pk == winner.pk:
+                record_event(game_player.user, EVENT_GAME_WON)
 
         MoveLog.objects.create(game=self.game, player=winner, move_type=MoveLog.MoveType.FIN_PARTIE)
 

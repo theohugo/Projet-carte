@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -21,9 +21,12 @@ from game.guests import (
     safe_next_url,
     start_guest_session,
 )
-from game.models import Friendship, Game, GameCard, PokemonCard, Profile
+from game.models import CollectionCard, Friendship, Game, GameCard, PokemonCard, Profile
 from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID
 from game.pokemon_types import POKEMON_TYPES
+from game.quests import QuestError, claim_reward, quest_board
+from game.shop import BOOSTERS, ShopError, open_booster, rarity_of
+from game.tcg_card_images import get_tcg_image_url
 
 OPPONENT_CARD_BACK_LIMIT = 10
 
@@ -130,16 +133,39 @@ def hub(request):
     "Les 151 cartes de la première génération, débloquées au fil de tes quêtes.",
 )
 def collection(request):
-    """Affiche les 151 premières cartes du Pokédex (génération 1)."""
+    """Les 151 cartes de la première édition, débloquées par les boosters."""
 
-    cards = PokemonCard.objects.filter(
+    owned = {row.pokemon_card_id: row.copies for row in CollectionCard.objects.filter(user=request.user)}
+
+    cards = []
+    for card in PokemonCard.objects.filter(
         pokedex_id__lte=GEN_ONE_MAX_POKEDEX_ID,
-    ).order_by("pokedex_id")
+    ).order_by("pokedex_id"):
+        copies = owned.get(card.pk, 0)
+        cards.append(
+            {
+                "pokedex_id": card.pokedex_id,
+                "name_fr": card.name_fr,
+                "sprite_url": card.sprite_url,
+                "image_url": get_tcg_image_url(card.pokedex_id),
+                "rarity": rarity_of(card),
+                "copies": copies,
+                "owned": copies > 0,
+            }
+        )
+
+    owned_count = sum(1 for card in cards if card["owned"])
 
     return render(
         request,
         "game/collection.html",
-        {"cards": cards},
+        {
+            "cards": cards,
+            "owned_count": owned_count,
+            "total_count": len(cards),
+            "completion": round(100 * owned_count / len(cards)) if cards else 0,
+            "points": request.user.profile.points,
+        },
     )
 
 
@@ -149,38 +175,86 @@ def collection(request):
     "Des objectifs quotidiens et hebdomadaires qui font grandir ta collection.",
 )
 def quests(request):
-    """Affiche les quêtes quotidiennes et hebdomadaires du joueur."""
+    """Quêtes du jour et de la semaine, avec récupération des points."""
 
-    daily_quests = [
-        {
-            "title": f"Quête quotidienne {index}",
-            "description": "Objectif à venir.",
-            "reward": "50 points",
-            "progress": 0,
-            "target": 1,
-        }
-        for index in range(1, 4)
-    ]
-
-    weekly_quests = [
-        {
-            "title": f"Quête hebdomadaire {index}",
-            "description": "Objectif à venir.",
-            "reward": "150 points",
-            "progress": 0,
-            "target": 1,
-        }
-        for index in range(1, 4)
-    ]
+    board = quest_board(request.user)
 
     return render(
         request,
         "game/quests.html",
         {
-            "daily_quests": daily_quests,
-            "weekly_quests": weekly_quests,
+            "daily_quests": board["daily"],
+            "weekly_quests": board["weekly"],
+            "claimable": board["claimable"],
+            "points": request.user.profile.points,
         },
     )
+
+
+@members_only
+@require_POST
+def claim_quest(request, quest_key):
+    """Encaisse la récompense d'une quête terminée."""
+
+    try:
+        reward = claim_reward(request.user, quest_key)
+    except QuestError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, f"Quête accomplie : +{reward} points.")
+
+    return redirect("quests")
+
+
+@members_only
+@member_feature(
+    "La boutique",
+    "Dépense tes points en boosters et complète ta collection de première édition.",
+)
+def shop(request):
+    """Boutique de boosters, payés avec les points gagnés en quêtes."""
+
+    points = request.user.profile.points
+
+    return render(
+        request,
+        "game/shop.html",
+        {
+            "boosters": [
+                {
+                    "key": booster.key,
+                    "label": booster.label,
+                    "description": booster.description,
+                    "price": booster.price,
+                    "card_count": booster.card_count,
+                    "affordable": points >= booster.price,
+                    "missing": max(0, booster.price - points),
+                    "odds": [
+                        {"rarity": rarity, "percent": round(100 * odds)} for rarity, odds in booster.odds
+                    ],
+                    "guaranteed": booster.guaranteed,
+                }
+                for booster in BOOSTERS
+            ],
+            "points": points,
+        },
+    )
+
+
+@members_only
+@require_POST
+def api_open_booster(request, booster_key):
+    """Ouvre un booster : le tirage et le débit se font ici, pas dans le navigateur."""
+
+    try:
+        result = open_booster(request.user, booster_key)
+    except ShopError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+
+    for card in result["cards"]:
+        card["image_url"] = get_tcg_image_url(card["pokedex_id"])
+
+    return JsonResponse(result)
 
 
 @guest_allowed

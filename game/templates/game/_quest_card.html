@@ -1,0 +1,28 @@
+{# Une ligne de quête : progression, récompense et bouton d'encaissement. #}
+<li class="quest-card {% if quest.claimed %}is-claimed{% elif quest.claimable %}is-claimable{% endif %}">
+    <div class="quest-copy">
+        <strong>{{ quest.label }}</strong>
+        <span>{{ quest.description }}</span>
+    </div>
+
+    <div class="quest-progress">
+        <div class="quest-bar" role="progressbar" aria-valuenow="{{ quest.progress }}" aria-valuemin="0" aria-valuemax="{{ quest.target }}" aria-label="Progression de « {{ quest.label }} »">
+            <span style="width: {{ quest.percent }}%"></span>
+        </div>
+        <small>{{ quest.progress }} / {{ quest.target }}</small>
+    </div>
+
+    <div class="quest-reward">
+        <span class="quest-reward-value">+{{ quest.reward }}</span>
+        {% if quest.claimed %}
+            <span class="quest-done">Récupérée</span>
+        {% elif quest.claimable %}
+            <form method="post" action="{% url 'claim_quest' quest_key=quest.key %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Récupérer</button>
+            </form>
+        {% else %}
+            <span class="quest-todo">En cours</span>
+        {% endif %}
+    </div>
+</li>

@@ -59,6 +59,23 @@ L'illustration passe par un proxy (`/qui-est-ce-pokemon/rounds/<id>/image/`) qui
 - Les autres écrivent leurs propositions. Un devineur marque de 600 à 100 points selon sa rapidité sur les 90 secondes, et le **dessinateur gagne 150 points par joueur qui trouve** : son intérêt est de dessiner vite et clair.
 - Les traits sont synchronisés par polling incrémental : chaque client ne redemande que les traits qu'il n'a pas encore (`?since=<sequence>`), ce qui évite de renvoyer tout le dessin à chaque tour.
 
+### Quêtes, boutique et collection
+
+- Les quatre jeux alimentent des **quêtes** quotidiennes et hebdomadaires (parties jouées, victoires, silhouettes reconnues, dessins devinés). Les moteurs déclenchent des évènements ; `game/quests.py` décide de ce qu'ils font avancer.
+- Une quête terminée se récupère à la main sur `/quetes/` et crédite des **points**. La remise à zéro est implicite : chaque progression est stockée avec sa période (jour ou semaine ISO), aucune tâche planifiée n'est nécessaire.
+- Les points s'échangent contre des **boosters** sur `/boutique/`. Le tirage, le débit et l'ajout à la collection se font côté serveur (`game/shop.py`) : le navigateur ne reçoit les cartes qu'une fois l'achat enregistré.
+- L'ouverture est mise en scène : le sachet se déchire en 3D, les cartes se retournent une à une, et la rareté se voit avant l'étiquette — liseré bleu et reflet holographique pour une rare, halo doré et éclair de scène pour un légendaire.
+- La **collection** affiche les 151 cartes du Set de Base avec leurs visuels de première édition (fixture `game/fixtures/tcg_card_images.json`, régénérable via `manage.py fetch_tcg_card_images`) : possédées en couleur, les autres au dos avec un cadenas.
+
+| Booster | Prix | Contenu |
+| --- | ---: | --- |
+| Set de Base | 150 pts | 5 cartes · 82 % commune, 15 % rare, 3 % légendaire |
+| Premium | 400 pts | 5 cartes · une rare garantie, 10 % de légendaire |
+
+### Jouer sans compte
+
+Les quatre jeux sont ouverts en **mode invité** : un compte temporaire (`Profile.is_guest`) est créé en un clic, ce qui évite de rendre le joueur nullable dans les quatre moteurs. L'invité joue comme un membre mais n'a accès ni à la collection, ni aux quêtes, ni à la boutique, ni aux amis : ces entrées portent un cadenas et mènent à une page qui explique ce que le compte débloque. S'inscrire depuis le mode invité conserve le compte et ses parties. `manage.py purge_guest_accounts` supprime les invités inactifs qui ne sont plus attendus dans un salon.
+
 ## Démarrage rapide
 
 ```bash

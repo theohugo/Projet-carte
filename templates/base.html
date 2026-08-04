@@ -264,6 +264,16 @@
                             </a>
 
                             <a
+                                href="{% url 'shop' %}"
+                                {% if request.resolver_match.url_name == "shop" %}
+                                    aria-current="page"
+                                {% endif %}
+                            >
+                                <span class="nav-panel-label">Boutique{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
+                                <small>Boosters à ouvrir</small>
+                            </a>
+
+                            <a
                                 href="{% url 'collection' %}"
                                 {% if request.resolver_match.url_name == "collection" %}
                                     aria-current="page"

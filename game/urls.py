@@ -26,6 +26,22 @@ urlpatterns = [
         views.play_as_guest,
         name="play_as_guest",
     ),
+    # Quêtes et boutique
+    path(
+        "quetes/<str:quest_key>/recuperer/",
+        views.claim_quest,
+        name="claim_quest",
+    ),
+    path(
+        "boutique/",
+        views.shop,
+        name="shop",
+    ),
+    path(
+        "boutique/<str:booster_key>/ouvrir/",
+        views.api_open_booster,
+        name="api_open_booster",
+    ),
     # Profils
     path(
         "profil/",

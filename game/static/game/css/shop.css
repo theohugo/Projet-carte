@@ -1,0 +1,786 @@
+/* Boutique et ouverture de boosters.
+   L'ouverture est le moment fort : le paquet se déchire en 3D, les cartes se
+   retournent une à une, et la rareté se voit avant même de lire l'étiquette. */
+
+.shop-page {
+    display: flex;
+    max-width: 1080px;
+    margin: 0 auto;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.shop-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.shop-header h1 {
+    margin: var(--space-2) 0;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+.shop-header p {
+    max-width: 54ch;
+    color: var(--color-text-muted);
+}
+
+/* Compteur de points, partagé avec la page des quêtes. */
+.points-badge {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: var(--space-3) var(--space-5);
+    border: 1px solid rgba(242, 206, 62, 0.42);
+    border-radius: var(--radius-lg);
+    background: rgba(242, 206, 62, 0.12);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.points-value {
+    font-size: 1.9rem;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.points-badge small {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.booster-list {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.booster-card {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: 120px minmax(0, 1fr);
+    align-items: center;
+    padding: var(--space-4);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(145deg, rgba(28, 44, 74, 0.94), rgba(9, 16, 30, 0.97));
+    box-shadow: var(--shadow-soft);
+    transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.booster-card:hover {
+    border-color: rgba(117, 216, 255, 0.4);
+    transform: translateY(-3px);
+}
+
+/* Sachet de booster : dégradé holographique et reflet qui balaie. */
+.booster-art {
+    position: relative;
+    display: grid;
+    height: 168px;
+    overflow: hidden;
+    place-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: var(--radius-md);
+    background:
+        linear-gradient(145deg, #2a3f8f, #6a2fb5 46%, #d2477f 78%, #f2a03d);
+    text-align: center;
+}
+
+.booster-art-shine {
+    position: absolute;
+    inset: -40%;
+    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.5) 50%, transparent 58%);
+    animation: booster-shine 4.5s ease-in-out infinite;
+}
+
+.booster-art-logo {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 900;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.booster-art-logo b {
+    color: #ffe9a8;
+}
+
+.booster-art-set {
+    color: rgba(255, 255, 255, 0.86);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+}
+
+@keyframes booster-shine {
+    0%, 100% { transform: translateX(-30%); }
+    50% { transform: translateX(30%); }
+}
+
+.booster-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.booster-copy strong {
+    font-size: var(--font-size-lg);
+}
+
+.booster-copy > span {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.booster-odds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--font-size-xs);
+    font-weight: 800;
+}
+
+.booster-odds li {
+    padding: 3px var(--space-2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.booster-odds li[data-rarity="RARE"] {
+    color: #0e1626;
+    background: #7fd7ff;
+}
+
+.booster-odds li[data-rarity="LEGENDAIRE"] {
+    color: #1a1204;
+    background: #f2ce3e;
+}
+
+.booster-guaranteed {
+    margin-top: var(--space-2);
+    color: var(--color-positive);
+    font-size: var(--font-size-xs);
+    font-weight: 800;
+}
+
+.booster-buy {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    grid-column: 1 / -1;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.booster-price {
+    font-size: var(--font-size-lg);
+    font-weight: 900;
+}
+
+.shop-note {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+/* ── Scène d'ouverture ─────────────────────────────────────────────────── */
+
+.opening {
+    position: fixed;
+    z-index: 900;
+    display: grid;
+    inset: 0;
+    place-items: center;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+
+.opening.is-open {
+    opacity: 1;
+}
+
+.opening-backdrop {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 40%, rgba(20, 46, 82, 0.92), rgba(3, 7, 14, 0.97));
+    backdrop-filter: blur(4px);
+}
+
+.opening-stage {
+    position: relative;
+    display: flex;
+    width: min(1000px, 94vw);
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-5);
+    perspective: 1200px;
+}
+
+body.has-opening {
+    overflow: hidden;
+}
+
+/* Le sachet : deux faces en 3D, déchiré par le haut au clic. */
+.opening-pack {
+    position: relative;
+    display: grid;
+    width: 240px;
+    height: 340px;
+    place-items: center;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transform-style: preserve-3d;
+    animation: pack-idle 3.4s ease-in-out infinite;
+}
+
+.opening-pack-face {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    align-content: center;
+    justify-items: center;
+    gap: var(--space-2);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    background:
+        radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.34), transparent 40%),
+        linear-gradient(155deg, #2a3f8f, #6a2fb5 45%, #d2477f 76%, #f2a03d);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55);
+    text-align: center;
+}
+
+.opening-pack-logo {
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.opening-pack-logo b {
+    color: #ffe9a8;
+}
+
+.opening-pack-set,
+.opening-pack-hint {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: var(--font-size-xs);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.opening-pack-hint {
+    margin-top: var(--space-4);
+    padding: 6px var(--space-3);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.32);
+}
+
+.opening-pack-tear {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 46px;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent);
+    transform-origin: top center;
+}
+
+.opening.is-torn .opening-pack {
+    animation: none;
+    transform: rotateX(12deg) scale(0.92);
+    opacity: 0;
+    transition: transform 560ms cubic-bezier(0.16, 1, 0.3, 1), opacity 460ms ease-in;
+}
+
+.opening.is-torn .opening-pack-tear {
+    transform: translateY(-70px) rotateX(70deg);
+    opacity: 0;
+    transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1), opacity 420ms linear;
+}
+
+@keyframes pack-idle {
+    0%, 100% { transform: translateY(-6px) rotateZ(-1.5deg); }
+    50% { transform: translateY(6px) rotateZ(1.5deg); }
+}
+
+.opening-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-3);
+}
+
+/* Chaque carte est un carton qui se retourne : dos puis face. */
+.pull-card {
+    width: clamp(130px, 16vw, 176px);
+    aspect-ratio: 5 / 7;
+    perspective: 900px;
+}
+
+.pull-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pull-card.is-flipped .pull-card-inner {
+    transform: rotateY(180deg);
+}
+
+.pull-card-face {
+    position: absolute;
+    display: grid;
+    inset: 0;
+    align-content: end;
+    justify-items: center;
+    gap: 2px;
+    overflow: hidden;
+    padding: var(--space-2);
+    border-radius: 12px;
+    backface-visibility: hidden;
+}
+
+.pull-card-back {
+    background:
+        repeating-linear-gradient(135deg, transparent 0 6px, rgba(255, 255, 255, 0.06) 6px 7px),
+        linear-gradient(150deg, #1a3d78, #0a1730);
+    box-shadow: inset 0 0 0 2px rgba(132, 224, 255, 0.5);
+}
+
+.pull-card-back-mark {
+    width: 46px;
+    height: 46px;
+    margin: auto;
+    border: 4px solid #0a1730;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #ef476f 50%, #f7fbff 50%);
+}
+
+.pull-card-front {
+    align-content: start;
+    background: linear-gradient(160deg, #f7f9fc, #d8e3f2);
+    color: #14243c;
+    transform: rotateY(180deg);
+}
+
+.pull-card-front img {
+    width: 100%;
+    height: 72%;
+    object-fit: contain;
+}
+
+.pull-card-name {
+    font-size: var(--font-size-xs);
+    font-weight: 900;
+}
+
+.pull-card-rarity {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.72;
+}
+
+/* Rare : liseré bleu et reflet holographique qui balaie la carte. */
+.pull-card.is-rare .pull-card-front {
+    box-shadow: 0 0 0 2px #4cc9f0, 0 14px 34px rgba(76, 201, 240, 0.34);
+}
+
+.pull-card.is-legendaire .pull-card-front {
+    box-shadow: 0 0 0 3px #f2ce3e, 0 18px 44px rgba(242, 206, 62, 0.42);
+}
+
+.pull-card-shine {
+    position: absolute;
+    inset: -50%;
+    background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.85) 50%, transparent 60%);
+    mix-blend-mode: screen;
+    animation: pull-shine 2.6s ease-in-out infinite;
+}
+
+.pull-card.is-legendaire .pull-card-shine {
+    background: linear-gradient(
+        115deg,
+        transparent 34%,
+        rgba(255, 236, 160, 0.95) 46%,
+        rgba(255, 255, 255, 0.9) 52%,
+        transparent 64%
+    );
+}
+
+.pull-card.is-flipped.is-legendaire {
+    animation: legendary-pop 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pull-shine {
+    0%, 100% { transform: translateX(-26%) rotate(2deg); }
+    50% { transform: translateX(26%) rotate(2deg); }
+}
+
+@keyframes legendary-pop {
+    0% { transform: scale(0.9); }
+    55% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+}
+
+/* La scène réagit aussi : halo coloré derrière les cartes. */
+.opening.is-rare-pull .opening-backdrop {
+    background: radial-gradient(circle at 50% 45%, rgba(76, 201, 240, 0.34), rgba(3, 7, 14, 0.97));
+}
+
+.opening.is-legendary-pull .opening-backdrop {
+    background: radial-gradient(circle at 50% 45%, rgba(242, 206, 62, 0.4), rgba(3, 7, 14, 0.97));
+    animation: legendary-flash 900ms ease-out;
+}
+
+@keyframes legendary-flash {
+    0% { filter: brightness(2.1); }
+    100% { filter: brightness(1); }
+}
+
+.opening-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+}
+
+.opening-summary {
+    width: 100%;
+    margin: 0;
+    color: var(--color-text);
+    font-size: var(--font-size-lg);
+    font-weight: 800;
+    text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .opening-pack,
+    .booster-art-shine,
+    .pull-card-shine,
+    .pull-card.is-flipped.is-legendaire,
+    .opening.is-legendary-pull .opening-backdrop {
+        animation: none;
+    }
+
+    .pull-card-inner,
+    .opening.is-torn .opening-pack,
+    .opening.is-torn .opening-pack-tear {
+        transition: none;
+    }
+}
+
+/* ── Collection ────────────────────────────────────────────────────────── */
+
+.collection-page {
+    display: flex;
+    max-width: 1160px;
+    margin: 0 auto;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.collection-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.collection-header h1 {
+    margin: var(--space-2) 0;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+.collection-header p {
+    max-width: 52ch;
+    color: var(--color-text-muted);
+}
+
+.collection-status {
+    display: flex;
+    min-width: 260px;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.collection-progress-value {
+    margin: 0;
+    font-size: var(--font-size-lg);
+}
+
+.collection-progress-value strong {
+    color: var(--color-brand);
+    font-size: 1.6rem;
+}
+
+.collection-progress {
+    height: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.collection-progress span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--color-brand-strong), var(--color-positive));
+    transition: width var(--transition-base);
+}
+
+.collection-grid {
+    display: grid;
+    gap: var(--space-3);
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+}
+
+.collection-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: rgba(4, 12, 23, 0.55);
+    transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.collection-card.is-owned:hover {
+    border-color: rgba(117, 216, 255, 0.5);
+    transform: translateY(-3px);
+}
+
+.collection-card-image {
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.collection-card.is-rare {
+    border-color: rgba(76, 201, 240, 0.6);
+}
+
+.collection-card.is-legendaire {
+    border-color: rgba(242, 206, 62, 0.7);
+    box-shadow: 0 0 22px rgba(242, 206, 62, 0.2);
+}
+
+.collection-card-back {
+    display: grid;
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    place-items: center;
+    gap: var(--space-2);
+    border-radius: 8px;
+    background:
+        repeating-linear-gradient(135deg, transparent 0 6px, rgba(255, 255, 255, 0.05) 6px 7px),
+        linear-gradient(150deg, #16294c, #08111f);
+    color: var(--color-text-muted);
+}
+
+.collection-card-back-mark {
+    width: 38px;
+    height: 38px;
+    border: 3px solid #08111f;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #55637c 50%, #aab6c8 50%);
+    opacity: 0.55;
+}
+
+.collection-card figcaption {
+    display: flex;
+    flex-direction: column;
+    font-size: var(--font-size-xs);
+}
+
+.collection-card figcaption small {
+    color: var(--color-text-muted);
+}
+
+.collection-copies {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    padding: 2px 8px;
+    border-radius: 999px;
+    color: #0d1726;
+    background: var(--color-brand);
+    font-size: var(--font-size-xs);
+    font-weight: 900;
+}
+
+/* ── Quêtes ────────────────────────────────────────────────────────────── */
+
+.quests-page {
+    display: flex;
+    max-width: 1040px;
+    margin: 0 auto;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.quests-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.quests-header h1 {
+    margin: var(--space-2) 0;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+.quests-header p {
+    max-width: 52ch;
+    color: var(--color-text-muted);
+}
+
+.quests-flash {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid rgba(98, 230, 166, 0.4);
+    border-radius: var(--radius-md);
+    background: rgba(98, 230, 166, 0.12);
+    color: var(--color-positive);
+    font-weight: 800;
+}
+
+.quests-section-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.quests-subtitle {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.quest-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.quest-card {
+    display: grid;
+    align-items: center;
+    gap: var(--space-4);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) auto;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: rgba(4, 12, 23, 0.5);
+}
+
+.quest-card.is-claimable {
+    border-color: rgba(98, 230, 166, 0.55);
+    background: rgba(98, 230, 166, 0.08);
+}
+
+.quest-card.is-claimed {
+    opacity: 0.62;
+}
+
+.quest-copy {
+    display: flex;
+    flex-direction: column;
+}
+
+.quest-copy span {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.quest-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.quest-progress small {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.quest-bar {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.quest-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--color-brand-strong), var(--color-brand));
+    transition: width var(--transition-base);
+}
+
+.quest-reward {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.quest-reward-value {
+    color: #f2ce3e;
+    font-size: var(--font-size-lg);
+    font-weight: 900;
+}
+
+.quest-reward form {
+    margin: 0;
+}
+
+.quest-done,
+.quest-todo {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.quest-done {
+    color: var(--color-positive);
+}
+
+@media (max-width: 720px) {
+    .quest-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .booster-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

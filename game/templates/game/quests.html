@@ -1,127 +1,52 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Quêtes — PokéTable{% endblock %}
 
 {% block content %}
-<section
-    class="quests-page"
-    aria-labelledby="quests-page-title"
->
+<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=1">
+
+<section class="quests-page" aria-labelledby="quests-page-title">
     <header class="quests-header">
-        <p class="section-kicker">
-            Progression
-        </p>
-
-        <h1 id="quests-page-title">
-            Quêtes
-        </h1>
-
-        <p>
-            Accomplis des quêtes quotidiennes et hebdomadaires pour
-            gagner des récompenses.
-        </p>
+        <div>
+            <p class="section-kicker">Progression</p>
+            <h1 id="quests-page-title">Quêtes</h1>
+            <p>Joue, accomplis tes objectifs, encaisse tes points — puis dépense-les en boosters.</p>
+        </div>
+        <a class="points-badge" href="{% url 'shop' %}">
+            <span class="points-value">{{ points }}</span>
+            <small>points · boutique</small>
+        </a>
     </header>
 
-    <section
-        class="quests-section"
-        aria-labelledby="daily-quests-title"
-    >
+    {% if claimable %}
+    <p class="quests-flash">{{ claimable }} récompense{{ claimable|pluralize }} à récupérer.</p>
+    {% endif %}
+
+    <section class="quests-section" aria-labelledby="daily-quests-title">
         <div class="quests-section-heading">
-            <h2 id="daily-quests-title">
-                Quêtes quotidiennes
-            </h2>
-
-            <span
-                class="quests-count"
-                aria-label="{{ daily_quests|length }} quête{{ daily_quests|length|pluralize }}"
-            >
-                {{ daily_quests|length }}
-            </span>
+            <h2 id="daily-quests-title">Quêtes du jour</h2>
+            <span class="quests-subtitle">Remises à zéro chaque nuit</span>
         </div>
 
-        <div class="quest-grid">
+        <ul class="quest-list">
             {% for quest in daily_quests %}
-                <article class="quest-card">
-                    <div class="quest-card-heading">
-                        <h3>
-                            {{ quest.title }}
-                        </h3>
-
-                        <span class="quest-reward">
-                            {{ quest.reward }}
-                        </span>
-                    </div>
-
-                    <p>
-                        {{ quest.description }}
-                    </p>
-
-                    <div class="quest-progress">
-                        <div class="quest-progress-track">
-                            <div
-                                class="quest-progress-fill"
-                                style="width: {% widthratio quest.progress quest.target 100 %}%"
-                            ></div>
-                        </div>
-
-                        <span class="quest-progress-label">
-                            {{ quest.progress }}/{{ quest.target }}
-                        </span>
-                    </div>
-                </article>
+            {% include "game/_quest_card.html" %}
             {% endfor %}
-        </div>
+        </ul>
     </section>
 
-    <section
-        class="quests-section"
-        aria-labelledby="weekly-quests-title"
-    >
+    <section class="quests-section" aria-labelledby="weekly-quests-title">
         <div class="quests-section-heading">
-            <h2 id="weekly-quests-title">
-                Quêtes hebdomadaires
-            </h2>
-
-            <span
-                class="quests-count"
-                aria-label="{{ weekly_quests|length }} quête{{ weekly_quests|length|pluralize }}"
-            >
-                {{ weekly_quests|length }}
-            </span>
+            <h2 id="weekly-quests-title">Quêtes de la semaine</h2>
+            <span class="quests-subtitle">Remises à zéro le lundi</span>
         </div>
 
-        <div class="quest-grid">
+        <ul class="quest-list">
             {% for quest in weekly_quests %}
-                <article class="quest-card quest-card--weekly">
-                    <div class="quest-card-heading">
-                        <h3>
-                            {{ quest.title }}
-                        </h3>
-
-                        <span class="quest-reward">
-                            {{ quest.reward }}
-                        </span>
-                    </div>
-
-                    <p>
-                        {{ quest.description }}
-                    </p>
-
-                    <div class="quest-progress">
-                        <div class="quest-progress-track">
-                            <div
-                                class="quest-progress-fill"
-                                style="width: {% widthratio quest.progress quest.target 100 %}%"
-                            ></div>
-                        </div>
-
-                        <span class="quest-progress-label">
-                            {{ quest.progress }}/{{ quest.target }}
-                        </span>
-                    </div>
-                </article>
+            {% include "game/_quest_card.html" %}
             {% endfor %}
-        </div>
+        </ul>
     </section>
 </section>
 {% endblock %}

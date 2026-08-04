@@ -19,6 +19,7 @@ from game.pokemon_names import (
     letter_hint,
     name_matches,
 )
+from game.quests import EVENT_SILHOUETTE_FOUND, record_event
 from silhouette.models import SilhouetteGame, SilhouetteGuess, SilhouettePlayer, SilhouetteRound
 
 ROUND_SECONDS = 30
@@ -216,6 +217,7 @@ def submit_guess(game_id, user, text: str, expected_revision=None) -> dict:
     if is_correct:
         player.score += points
         player.save(update_fields=["score"])
+        record_event(player.user, EVENT_SILHOUETTE_FOUND)
         if _round_is_over(game, round_obj, now):
             round_obj.revealed_at = now
             round_obj.save(update_fields=["revealed_at"])

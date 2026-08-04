@@ -6,6 +6,7 @@ from django.db.models import Count, Max
 from django.utils import timezone
 
 from game.models import PokemonCard
+from game.quests import EVENT_GAME_PLAYED, EVENT_GAME_WON, record_event
 
 from .models import (
     GuessWhoCandidateState,
@@ -244,6 +245,11 @@ def guess_pokemon(game_id, user, pokemon_card_id: int, expected_revision: int) -
     game.finished_at = timezone.now()
     game.current_turn = None
     _increment_revision(game, "winner", "status", "finished_at", "current_turn")
+
+    # Les deux joueurs ont joué une partie ; seul le gagnant marque la victoire.
+    for participant in game.players.select_related("user"):
+        record_event(participant.user, EVENT_GAME_PLAYED)
+    record_event(game.winner.user, EVENT_GAME_WON)
     return game
 
 

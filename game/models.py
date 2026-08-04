@@ -355,6 +355,11 @@ class Profile(models.Model):
         help_text="Compte temporaire créé pour jouer sans inscription.",
     )
 
+    points = models.PositiveIntegerField(
+        default=0,
+        help_text="Points gagnés en accomplissant des quêtes, dépensés en boosters.",
+    )
+
     total_games_played = models.PositiveIntegerField(
         default=0,
     )
@@ -702,3 +707,103 @@ class GameInvitation(models.Model):
             f"{self.sender} → {self.recipient} "
             f"({self.get_status_display()})"
         )
+
+
+class QuestProgress(models.Model):
+    """Avancement d'un joueur sur une quête, pour une période donnée.
+
+    Une ligne par joueur, quête et période (``2026-08-04`` pour une quotidienne,
+    ``2026-W32`` pour une hebdomadaire) : la remise à zéro est implicite, on
+    n'a aucune tâche planifiée à faire tourner pour changer de journée.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="quest_progress",
+    )
+
+    quest_key = models.CharField(max_length=40)
+
+    period_key = models.CharField(
+        max_length=12,
+        help_text="Jour (AAAA-MM-JJ) ou semaine ISO (AAAA-Wnn) concernée.",
+    )
+
+    progress = models.PositiveIntegerField(default=0)
+
+    claimed_at = models.DateTimeField(null=True, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["quest_key"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "quest_key", "period_key"],
+                name="unique_quest_progress_per_period",
+            ),
+        ]
+        indexes = [models.Index(fields=["user", "period_key"])]
+
+    def __str__(self):
+        return f"{self.user_id} · {self.quest_key} · {self.period_key}"
+
+
+class CollectionCard(models.Model):
+    """Une carte possédée par un joueur, avec le nombre d'exemplaires."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="collection_cards",
+    )
+
+    pokemon_card = models.ForeignKey(
+        "game.PokemonCard",
+        on_delete=models.CASCADE,
+        related_name="collected_by",
+    )
+
+    copies = models.PositiveIntegerField(default=1)
+
+    obtained_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["pokemon_card__pokedex_id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "pokemon_card"],
+                name="unique_collection_card_per_user",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} · #{self.pokemon_card_id} ×{self.copies}"
+
+
+class BoosterOpening(models.Model):
+    """Achat et ouverture d'un booster : trace ce qui a été payé et obtenu."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="booster_openings",
+    )
+
+    booster_key = models.CharField(max_length=30)
+
+    price = models.PositiveIntegerField()
+
+    cards = models.ManyToManyField(
+        "game.PokemonCard",
+        related_name="booster_openings",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user_id} · {self.booster_key}"

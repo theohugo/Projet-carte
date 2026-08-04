@@ -1,60 +1,49 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Collection — PokéTable{% endblock %}
 
 {% block content %}
-<section
-    class="collection-page"
-    aria-labelledby="collection-page-title"
->
+<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=1">
+
+<section class="collection-page" aria-labelledby="collection-page-title">
     <header class="collection-header">
-        <p class="section-kicker">
-            Pokédex
-        </p>
+        <div>
+            <p class="section-kicker">Première édition</p>
+            <h1 id="collection-page-title">Collection</h1>
+            <p>Les 151 cartes du Set de Base. Ouvre des boosters pour les débloquer une à une.</p>
+        </div>
 
-        <h1 id="collection-page-title">
-            Collection
-        </h1>
-
-        <p>
-            Les {{ cards|length }} premières espèces du Pokédex,
-            génération 1. Termine des quêtes pour débloquer leur carte.
-        </p>
+        <div class="collection-status">
+            <p class="collection-progress-value"><strong>{{ owned_count }}</strong> / {{ total_count }}</p>
+            <div class="collection-progress" role="progressbar" aria-valuenow="{{ owned_count }}" aria-valuemin="0" aria-valuemax="{{ total_count }}" aria-label="Cartes débloquées">
+                <span style="width: {{ completion }}%"></span>
+            </div>
+            <a class="btn btn-primary" href="{% url 'shop' %}">Ouvrir un booster · {{ points }} pts</a>
+        </div>
     </header>
 
-    <div
-        class="collection-grid"
-        role="list"
-    >
+    <div class="collection-grid" role="list">
         {% for card in cards %}
-            <figure
-                class="collection-card"
-                role="listitem"
-            >
-                <div
-                    class="collection-card-frame collection-card-locked"
-                    aria-label="Carte non débloquée"
-                >
-                    <img
-                        class="collection-card-locked-back"
-                        src="https://i0.wp.com/blog.myplanner.fr/source/web-pixs/02-anniversaires/2-2-enfants/pokemon/Dos-carte-pokemon-icone.png?resize=222%2C310"
-                        alt=""
-                        loading="lazy"
-                    >
-
-                    <span class="collection-card-locked-label">
-                        Verrouillé
-                    </span>
-
-                    <span class="collection-card-locked-number">
-                        #{{ card.pokedex_id }}
-                    </span>
-                </div>
-
+        <figure class="collection-card {% if card.owned %}is-owned is-{{ card.rarity|lower }}{% else %}is-locked{% endif %}" role="listitem">
+            {% if card.owned %}
+                <img class="collection-card-image" src="{{ card.image_url|default:card.sprite_url }}" alt="{{ card.name_fr }}" loading="lazy">
+                {% if card.copies > 1 %}<span class="collection-copies">×{{ card.copies }}</span>{% endif %}
                 <figcaption>
-                    {{ card.name_fr }}
+                    <strong>{{ card.name_fr }}</strong>
+                    <small>#{{ card.pokedex_id }}</small>
                 </figcaption>
-            </figure>
+            {% else %}
+                <div class="collection-card-back" aria-hidden="true">
+                    <span class="collection-card-back-mark"></span>
+                    <span class="lock-glyph"></span>
+                </div>
+                <figcaption>
+                    <strong>#{{ card.pokedex_id }}</strong>
+                    <small>À débloquer</small>
+                </figcaption>
+            {% endif %}
+        </figure>
         {% endfor %}
     </div>
 </section>
