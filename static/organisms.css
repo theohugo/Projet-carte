@@ -141,12 +141,15 @@
     left: auto;
 }
 
+/* Une colonne d'icônes alignées, puis le libellé : l'œil descend la liste
+   par les pictogrammes avant même de lire. */
 .nav-panel a,
 .nav-panel-action {
-    display: flex;
+    display: grid;
     min-height: 44px;
-    flex-direction: column;
-    justify-content: center;
+    align-items: center;
+    gap: var(--space-3);
+    grid-template-columns: 20px minmax(0, 1fr);
     padding: var(--space-2) var(--space-3);
     border: 0;
     border-radius: var(--radius-sm);
@@ -160,10 +163,21 @@
     transition: background var(--transition-fast);
 }
 
+.nav-panel-text {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+}
+
 .nav-panel a small {
     color: var(--color-text-muted);
     font-size: var(--font-size-xs);
     font-weight: 600;
+}
+
+/* Solde de points : la ligne d'entrée du menu compte, teintée or. */
+.nav-panel-balance .nav-panel-label {
+    color: #f2ce3e;
 }
 
 .nav-panel a:hover,

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static icons %}
 
 {% block title %}Qui est-ce ? Pokémon — PokéTable{% endblock %}
 {% block body_class %}guesswho-lobby-shell{% endblock %}
@@ -10,7 +10,7 @@
 <div id="guesswho-lobby" class="gw-lobby" data-state-url="{% url 'guesswho:api_lobby_state' %}">
     <section class="gw-lobby-hero" aria-labelledby="guesswho-title">
         <div class="gw-lobby-copy">
-            <a class="gw-back-link" href="{% url 'home' %}"><span aria-hidden="true">←</span> Tous les jeux</a>
+            <a class="gw-back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} Tous les jeux</a>
             <p class="gw-eyebrow"><span class="gw-live-dot" aria-hidden="true"></span> PokéTable présente</p>
             <h1 id="guesswho-title">Qui est-ce ?<br><span>Version Pokémon.</span></h1>
             <p class="gw-lobby-lead">Pose les bonnes questions, rabats les mauvais candidats et démasque le Pokémon secret de ton adversaire.</p>

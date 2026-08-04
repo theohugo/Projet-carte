@@ -100,10 +100,37 @@ h3 {
 }
 
 /* Contrôles */
+/* Icônes SVG en ligne ({% icon %}) : elles suivent la couleur du texte et
+   restent en retrait pour que le mot garde le premier rôle. */
+.icon {
+    flex: none;
+    opacity: 0.82;
+}
+
+.icon-coin {
+    color: #f2ce3e;
+    opacity: 1;
+}
+
+.icon-lock {
+    color: var(--color-text-muted);
+}
+
+.icon-sm {
+    width: 16px;
+    height: 16px;
+}
+
+.icon-lg {
+    width: 26px;
+    height: 26px;
+}
+
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: var(--space-2);
     min-height: 44px;
     padding: 9px var(--space-4);
     border: 1px solid rgba(255, 255, 255, 0.15);

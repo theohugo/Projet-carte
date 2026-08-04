@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static icons %}
 
 {% block title %}Qui est ce Pokémon ? — partie{% endblock %}
 
@@ -19,7 +19,7 @@
                 href="{% url 'silhouette:lobby' %}"
                 data-reload-focus-key="back"
             >
-                <span aria-hidden="true">←</span>
+                {% icon "back" "icon-sm" %}
                 Retour au lobby
             </a>
 

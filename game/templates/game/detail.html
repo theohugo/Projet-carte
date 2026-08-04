@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static icons %}
 {% block title %}Partie de {{ game.created_by.username }} — Poké-Uno{% endblock %}
 {% block html_class %}{% if game.status == "EN_COURS" %}game-document{% endif %}{% endblock %}
 {% block body_class %}game-shell{% if game.status == "EN_COURS" %} game-shell--active{% endif %}{% endblock %}
@@ -7,7 +7,7 @@
 <div class="game-page">
     <header class="game-page-heading">
         <div>
-            <a class="back-link" href="{% url 'lobby' %}" data-reload-focus-key="game-back"><span aria-hidden="true">←</span> Retour au lobby</a>
+            <a class="back-link" href="{% url 'lobby' %}" data-reload-focus-key="game-back">{% icon "back" "icon-sm" %} Retour au lobby</a>
             <p class="section-kicker">Salon de {{ game.created_by.username }}</p>
             <h1>Table de jeu <span class="status-badge" data-status="{{ game.status|lower }}">{{ game.get_status_display }}</span></h1>
         </div>
@@ -223,7 +223,7 @@
                 <thead><tr><th>Joueur</th><th>Score</th></tr></thead>
                 <tbody>{% for player in game_state.players %}<tr><td>{{ player.username }}</td><td>{{ player.score }}</td></tr>{% endfor %}</tbody>
             </table>
-            <a class="btn btn-primary" href="{% url 'lobby' %}" data-reload-focus-key="results-back">Retourner au lobby</a>
+            <a class="btn btn-primary" href="{% url 'lobby' %}" data-reload-focus-key="results-back">{% icon "back" %}Retourner au lobby</a>
         </section>
         {% endif %}
     </div>

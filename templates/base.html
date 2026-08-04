@@ -1,4 +1,4 @@
-{% load static %}
+{% load static icons %}
 <!DOCTYPE html>
 <html
     lang="fr"
@@ -40,7 +40,7 @@
 
     <link
         rel="stylesheet"
-        href="{% static 'atoms.css' %}?v=11"
+        href="{% static 'atoms.css' %}?v=12"
     >
 
     <link
@@ -50,7 +50,7 @@
 
     <link
         rel="stylesheet"
-        href="{% static 'organisms.css' %}?v=28"
+        href="{% static 'organisms.css' %}?v=29"
     >
 
     <script
@@ -99,6 +99,18 @@
                         data-nav-menu
                     >
                         <summary class="nav-trigger">
+                            {% if request.resolver_match.namespace == "guesswho" %}
+                                {% icon "guesswho" %}
+                            {% elif request.resolver_match.namespace == "silhouette" %}
+                                {% icon "silhouette" %}
+                            {% elif request.resolver_match.namespace == "pictionary" %}
+                                {% icon "brush" %}
+                            {% elif request.resolver_match.url_name == "lobby" or request.resolver_match.url_name == "game_detail" %}
+                                {% icon "cards" %}
+                            {% else %}
+                                {% icon "dice" %}
+                            {% endif %}
+
                             <span class="nav-trigger-label">
                                 {% if request.resolver_match.namespace == "guesswho" %}
                                     Qui est-ce ?
@@ -126,8 +138,12 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                Tous les jeux
-                                <small>Retour au salon</small>
+                                {% icon "home" %}
+
+                                <span class="nav-panel-text">
+                                    <span class="nav-panel-label">Tous les jeux</span>
+                                    <small>Retour au salon</small>
+                                </span>
                             </a>
 
                             <a
@@ -136,8 +152,12 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                Poké-Uno
-                                <small>2 à 6 joueurs · IA</small>
+                                {% icon "cards" %}
+
+                                <span class="nav-panel-text">
+                                    <span class="nav-panel-label">Poké-Uno</span>
+                                    <small>2 à 6 joueurs · IA</small>
+                                </span>
                             </a>
 
                             <a
@@ -146,8 +166,12 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                Qui est-ce ?
-                                <small>Duel de déduction</small>
+                                {% icon "guesswho" %}
+
+                                <span class="nav-panel-text">
+                                    <span class="nav-panel-label">Qui est-ce ?</span>
+                                    <small>Duel de déduction</small>
+                                </span>
                             </a>
 
                             <a
@@ -156,8 +180,12 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                Qui est ce Pokémon ?
-                                <small>Silhouette chronométrée</small>
+                                {% icon "silhouette" %}
+
+                                <span class="nav-panel-text">
+                                    <span class="nav-panel-label">Qui est ce Pokémon ?</span>
+                                    <small>Silhouette chronométrée</small>
+                                </span>
                             </a>
 
                             <a
@@ -166,8 +194,12 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                Pictionary
-                                <small>Dessin et devinette</small>
+                                {% icon "brush" %}
+
+                                <span class="nav-panel-text">
+                                    <span class="nav-panel-label">Pictionary</span>
+                                    <small>Dessin et devinette</small>
+                                </span>
                             </a>
                         </div>
                     </details>
@@ -218,8 +250,24 @@
                                     class="nav-panel-upsell"
                                     href="{% url 'signup' %}"
                                 >
-                                    Créer mon compte
-                                    <small>Garde tes parties et débloque tout</small>
+                                    {% icon "signup" %}
+
+                                    <span class="nav-panel-text">
+                                        <span class="nav-panel-label">Créer mon compte</span>
+                                        <small>Garde tes parties et débloque tout</small>
+                                    </span>
+                                </a>
+                            {% else %}
+                                <a
+                                    class="nav-panel-balance"
+                                    href="{% url 'shop' %}"
+                                >
+                                    {% icon "coin" %}
+
+                                    <span class="nav-panel-text">
+                                        <span class="nav-panel-label">{{ user.profile.points }} points</span>
+                                        <small>À dépenser en boosters</small>
+                                    </span>
                                 </a>
                             {% endif %}
 
@@ -229,8 +277,12 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                <span class="nav-panel-label">Mon profil{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                <small>Avatar et description</small>
+                                {% icon "user" %}
+
+                                <span class="nav-panel-text">
+                                    <span class="nav-panel-label">Mon profil{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
+                                    <small>Avatar et description</small>
+                                </span>
                             </a>
 
                             <a
@@ -239,8 +291,12 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                <span class="nav-panel-label">Amis{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                <small>Demandes et recherche</small>
+                                {% icon "friends" %}
+
+                                <span class="nav-panel-text">
+                                    <span class="nav-panel-label">Amis{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
+                                    <small>Demandes et recherche</small>
+                                </span>
                             </a>
 
                             <a
@@ -249,8 +305,12 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                <span class="nav-panel-label">Invitations{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                <small>Parties auxquelles on te convie</small>
+                                {% icon "mail" %}
+
+                                <span class="nav-panel-text">
+                                    <span class="nav-panel-label">Invitations{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
+                                    <small>Parties auxquelles on te convie</small>
+                                </span>
                             </a>
 
                             <a
@@ -259,8 +319,12 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                <span class="nav-panel-label">Quêtes{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                <small>Objectifs en cours</small>
+                                {% icon "quest" %}
+
+                                <span class="nav-panel-text">
+                                    <span class="nav-panel-label">Quêtes{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
+                                    <small>Objectifs en cours</small>
+                                </span>
                             </a>
 
                             <a
@@ -269,8 +333,12 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                <span class="nav-panel-label">Boutique{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                <small>Boosters à ouvrir</small>
+                                {% icon "shop" %}
+
+                                <span class="nav-panel-text">
+                                    <span class="nav-panel-label">Boutique{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
+                                    <small>Boosters à ouvrir</small>
+                                </span>
                             </a>
 
                             <a
@@ -279,8 +347,12 @@
                                     aria-current="page"
                                 {% endif %}
                             >
-                                <span class="nav-panel-label">Collection{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                <small>Cartes débloquées</small>
+                                {% icon "collection" %}
+
+                                <span class="nav-panel-text">
+                                    <span class="nav-panel-label">Collection{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
+                                    <small>Cartes débloquées</small>
+                                </span>
                             </a>
 
                             <form
@@ -293,7 +365,11 @@
                                     type="submit"
                                     class="nav-panel-action"
                                 >
-                                    {% if is_guest %}Quitter le mode invité{% else %}Se déconnecter{% endif %}
+                                    {% icon "logout" %}
+
+                                    <span class="nav-panel-text">
+                                        {% if is_guest %}Quitter le mode invité{% else %}Se déconnecter{% endif %}
+                                    </span>
                                 </button>
                             </form>
                         </div>
@@ -316,6 +392,7 @@
                             type="submit"
                             class="btn btn-ghost"
                         >
+                            {% icon "play" %}
                             Jouer en invité
                         </button>
                     </form>
@@ -324,6 +401,7 @@
                         class="btn btn-ghost"
                         href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}"
                     >
+                        {% icon "login" %}
                         Se connecter
                     </a>
 
@@ -331,6 +409,7 @@
                         class="btn btn-primary"
                         href="{% url 'signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}"
                     >
+                        {% icon "signup" %}
                         Créer un compte
                     </a>
                 {% endif %}

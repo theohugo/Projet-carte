@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static icons %}
 
 {% block title %}Table Qui est-ce ? — PokéTable{% endblock %}
 {% block html_class %}guesswho-document{% endblock %}
@@ -11,7 +11,7 @@
 <div class="gw-game-page">
     <header class="gw-game-header">
         <div class="gw-game-heading">
-            <a class="gw-back-link" href="{% url 'guesswho:lobby' %}"><span aria-hidden="true">←</span> Quitter la table</a>
+            <a class="gw-back-link" href="{% url 'guesswho:lobby' %}">{% icon "back" "icon-sm" %} Quitter la table</a>
             <span class="gw-heading-divider" aria-hidden="true"></span>
             <div class="gw-game-title">
                 <p>Qui est-ce ? Pokémon</p>
@@ -175,9 +175,9 @@
             <div class="gw-result-actions">
                 <form method="post" action="{% url 'guesswho:create_game' %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary">Nouvelle partie</button>
+                    <button type="submit" class="btn btn-primary">{% icon "play" %}Nouvelle partie</button>
                 </form>
-                <a class="btn btn-ghost" href="{% url 'guesswho:lobby' %}">Retour au salon</a>
+                <a class="btn btn-ghost" href="{% url 'guesswho:lobby' %}">{% icon "back" %}Retour au salon</a>
             </div>
         </section>
     </div>

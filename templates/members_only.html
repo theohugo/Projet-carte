@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load icons %}
 
 {% block title %}{% if feature %}{{ feature.label }}{% else %}Réservé aux membres{% endif %} — PokéTable{% endblock %}
 
@@ -25,7 +26,7 @@
             <li><span class="gate-perk-mark" aria-hidden="true"></span><strong>Ton profil</strong>Avatar, description et statistiques conservées.</li>
         </ul>
 
-        <p class="gate-switch"><a href="{% url 'home' %}">Retourner aux jeux</a></p>
+        <p class="gate-switch"><a href="{% url 'home' %}">{% icon "back" "icon-sm" %}Retourner aux jeux</a></p>
     </div>
 </section>
 {% endblock %}

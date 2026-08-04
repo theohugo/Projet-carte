@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static icons %}
 
 {% block title %}Collection — PokéTable{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=2">
 
 <section class="collection-page" aria-labelledby="collection-page-title">
     <header class="collection-header">
@@ -19,7 +19,7 @@
             <div class="collection-progress" role="progressbar" aria-valuenow="{{ owned_count }}" aria-valuemin="0" aria-valuemax="{{ total_count }}" aria-label="Cartes débloquées">
                 <span style="width: {{ completion }}%"></span>
             </div>
-            <a class="btn btn-primary" href="{% url 'shop' %}">Ouvrir un booster · {{ points }} pts</a>
+            <a class="btn btn-primary" href="{% url 'shop' %}">{% icon "pack" %}Ouvrir un booster · {% icon "coin" "icon-sm" %}{{ points }}</a>
         </div>
     </header>
 

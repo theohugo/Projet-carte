@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load icons %}
 
 {% block title %}Modifier mon profil — PokéTable{% endblock %}
 
@@ -16,6 +17,7 @@
         </div>
 
         <a class="btn btn-ghost" href="{% url 'my_profile' %}">
+            {% icon "back" %}
             Retour au profil
         </a>
     </header>

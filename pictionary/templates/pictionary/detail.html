@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static icons %}
 
 {% block title %}Pictionary Pokémon — partie{% endblock %}
 
@@ -13,7 +13,7 @@
     <header class="room-header">
         <div>
             <a class="back-link" href="{% url 'pictionary:lobby' %}" data-reload-focus-key="back">
-                <span aria-hidden="true">←</span>
+                {% icon "back" "icon-sm" %}
                 Retour au lobby
             </a>
 

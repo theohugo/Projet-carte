@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static icons %}
 
 {% block title %}Qui est ce Pokémon ? — PokéTable{% endblock %}
 
@@ -9,7 +9,7 @@
 <div id="silhouette-lobby" class="sil-lobby" data-state-url="{% url 'silhouette:api_lobby_state' %}">
     <section class="sil-hero" aria-labelledby="silhouette-title">
         <div>
-            <a class="back-link" href="{% url 'home' %}"><span aria-hidden="true">←</span> Tous les jeux</a>
+            <a class="back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} Tous les jeux</a>
             <p class="section-kicker">Réflexe · déduction</p>
             <h1 id="silhouette-title">Qui est ce Pokémon ?</h1>
             <p class="sil-lead">Une silhouette apparaît, tout le monde répond en même temps. Plus tu trouves tôt, plus la manche rapporte.</p>

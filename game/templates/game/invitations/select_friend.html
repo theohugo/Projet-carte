@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load icons %}
 
 {% block title %}Inviter un ami — {{ mode_label }} — PokéTable{% endblock %}
 
@@ -38,6 +39,7 @@
             class="btn btn-ghost"
             href="{{ room_detail_url }}"
         >
+            {% icon "back" %}
             Retour au salon
         </a>
     </header>
@@ -71,6 +73,7 @@
                     class="btn btn-primary"
                     href="{{ room_detail_url }}"
                 >
+                    {% icon "back" %}
                     Retourner au salon
                 </a>
             </div>
