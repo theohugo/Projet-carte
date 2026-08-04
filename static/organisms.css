@@ -3062,3 +3062,237 @@ body.has-type-draw {
     flex: 1;
   }
 }
+
+/* =========================
+   QUÊTES
+========================= */
+
+.quests-page {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.quests-header {
+  margin-bottom: 28px;
+}
+
+.quests-header h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+}
+
+.quests-header p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.quests-section {
+  margin-top: 24px;
+  padding: 26px;
+  border: 1px solid rgba(157, 216, 255, 0.13);
+  border-radius: 28px;
+  background: linear-gradient(
+    180deg,
+    rgba(21, 35, 64, 0.96),
+    rgba(7, 15, 31, 0.96)
+  );
+}
+
+.quests-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.quests-section-heading h2 {
+  margin: 0;
+}
+
+.quests-count {
+  display: grid;
+  min-width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #a9e0ff;
+  background: rgba(157, 216, 255, 0.1);
+}
+
+.quest-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.quest-card {
+  --quest-accent: var(--color-brand);
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid rgba(157, 216, 255, 0.11);
+  border-left: 3px solid var(--quest-accent);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top, rgba(110, 197, 255, 0.1), transparent 42%),
+    rgba(4, 11, 25, 0.46);
+}
+
+.quest-card--weekly {
+  --quest-accent: var(--color-accent);
+}
+
+.quest-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.quest-card-heading h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.quest-reward {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid rgba(157, 216, 255, 0.18);
+  border-radius: 999px;
+  color: #b8e7ff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: rgba(157, 216, 255, 0.09);
+}
+
+.quest-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.quest-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.quest-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(157, 216, 255, 0.1);
+}
+
+.quest-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--quest-accent);
+  transition: width var(--transition-base);
+}
+
+.quest-progress-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+@media (max-width: 850px) {
+  .quest-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .quests-section {
+    padding: 20px;
+  }
+
+  .quest-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================
+   COLLECTION
+========================= */
+
+.collection-page {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.collection-header {
+  margin-bottom: 28px;
+}
+
+.collection-header h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+}
+
+.collection-header p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 14px;
+}
+
+.collection-card {
+  --type-accent: var(--color-border);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 14px 8px 10px;
+  border: 2px solid var(--type-accent);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 30% 0%, rgba(255, 255, 255, 0.5), transparent 55%),
+    var(--color-card-face);
+  box-shadow: var(--shadow-soft);
+}
+
+.collection-card-number {
+  align-self: flex-start;
+  margin-bottom: 2px;
+  color: rgba(20, 34, 56, 0.55);
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
+
+.collection-card img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 4px rgba(18, 38, 62, 0.22));
+}
+
+.collection-card figcaption {
+  margin: 8px 0 0;
+  color: var(--color-card-text);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+}
+
+@media (max-width: 620px) {
+  .collection-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+  }
+}

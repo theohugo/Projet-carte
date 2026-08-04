@@ -13,8 +13,9 @@ from django.views.decorators.http import require_POST
 from game.api import get_lobby_state, invalidate_game_state_cache
 from game.forms import AccountForm, ProfileForm, SignUpForm
 from game.game_engine import GameEngine, GameEngineError, close_stale_games
-from game.models import Friendship, Game, GameCard, Profile
-from game.pokemon_types import POKEMON_TYPES
+from game.models import Friendship, Game, GameCard, PokemonCard, Profile
+from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID
+from game.pokemon_types import POKEMON_TYPES, type_color
 
 OPPONENT_CARD_BACK_LIMIT = 10
 
@@ -91,6 +92,69 @@ def signup(request):
 @login_required
 def hub(request):
     return render(request, "hub.html")
+
+
+@login_required
+def collection(request):
+    """Affiche les 151 premières cartes du Pokédex (génération 1)."""
+
+    cards = (
+        PokemonCard.objects.filter(
+            pokedex_id__lte=GEN_ONE_MAX_POKEDEX_ID,
+        )
+        .select_related("primary_type")
+        .order_by("pokedex_id")
+    )
+
+    entries = [
+        {
+            "card": card,
+            "accent": type_color(card.primary_type.slug),
+        }
+        for card in cards
+    ]
+
+    return render(
+        request,
+        "game/collection.html",
+        {"entries": entries},
+    )
+
+
+@login_required
+def quests(request):
+    """Affiche les quêtes quotidiennes et hebdomadaires du joueur."""
+
+    daily_quests = [
+        {
+            "title": f"Quête quotidienne {index}",
+            "description": "Objectif à venir.",
+            "reward": "50 points",
+            "progress": 0,
+            "target": 1,
+        }
+        for index in range(1, 4)
+    ]
+
+    weekly_quests = [
+        {
+            "title": f"Quête hebdomadaire {index}",
+            "description": "Objectif à venir.",
+            "reward": "150 points",
+            "progress": 0,
+            "target": 1,
+        }
+        for index in range(1, 4)
+    ]
+
+    return render(
+        request,
+        "game/quests.html",
+        {
+            "daily_quests": daily_quests,
+            "weekly_quests": weekly_quests,
+        },
+    )
 
 
 @login_required

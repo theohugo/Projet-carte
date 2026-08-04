@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Collection — PokéTable{% endblock %}
+
+{% block content %}
+<section
+    class="collection-page"
+    aria-labelledby="collection-page-title"
+>
+    <header class="collection-header">
+        <p class="section-kicker">
+            Pokédex
+        </p>
+
+        <h1 id="collection-page-title">
+            Collection
+        </h1>
+
+        <p>
+            Les {{ entries|length }} premières espèces du Pokédex,
+            génération 1.
+        </p>
+    </header>
+
+    <div
+        class="collection-grid"
+        role="list"
+    >
+        {% for entry in entries %}
+            <figure
+                class="collection-card"
+                role="listitem"
+                style="--type-accent: {{ entry.accent }}"
+            >
+                <span class="collection-card-number">
+                    #{{ entry.card.pokedex_id }}
+                </span>
+
+                <img
+                    src="{{ entry.card.sprite_url }}"
+                    alt=""
+                    width="72"
+                    height="72"
+                    loading="lazy"
+                >
+
+                <figcaption>
+                    {{ entry.card.name_fr }}
+                </figcaption>
+            </figure>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -37,6 +37,18 @@ urlpatterns = [
         views.public_profile,
         name="public_profile",
     ),
+    # Collection
+    path(
+        "collection/",
+        views.collection,
+        name="collection",
+    ),
+    # Quêtes
+    path(
+        "quetes/",
+        views.quests,
+        name="quests",
+    ),
     # Amis
     path(
         "amis/",

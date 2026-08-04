@@ -50,7 +50,7 @@
 
     <link
         rel="stylesheet"
-        href="{% static 'organisms.css' %}?v=17"
+        href="{% static 'organisms.css' %}?v=19"
     >
 </head>
 
@@ -149,6 +149,24 @@
                             {% endif %}
                         >
                             Pictionary
+                        </a>
+
+                        <a
+                            href="{% url 'quests' %}"
+                            {% if request.resolver_match.url_name == "quests" %}
+                                aria-current="page"
+                            {% endif %}
+                        >
+                            Quêtes
+                        </a>
+
+                        <a
+                            href="{% url 'collection' %}"
+                            {% if request.resolver_match.url_name == "collection" %}
+                                aria-current="page"
+                            {% endif %}
+                        >
+                            Collection
                         </a>
                     </span>
 
