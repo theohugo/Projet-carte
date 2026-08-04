@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Pictionary Pokémon — PokéTable{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'pictionary/css/pictionary.css' %}?v=1">
+
+<div id="pictionary-lobby" class="pic-lobby" data-state-url="{% url 'pictionary:api_lobby_state' %}">
+    <section class="pic-hero" aria-labelledby="pictionary-title">
+        <div>
+            <a class="back-link" href="{% url 'home' %}"><span aria-hidden="true">←</span> Tous les jeux</a>
+            <p class="section-kicker">Dessin · devinette</p>
+            <h1 id="pictionary-title">Pictionary Pokémon</h1>
+            <p class="pic-lead">À chaque manche, un joueur reçoit un Pokémon de la première génération et le dessine. Les autres écrivent leur réponse : plus on trouve tôt, plus on marque — et le dessinateur gagne des points à chaque joueur qui devine.</p>
+
+            <form method="post" action="{% url 'pictionary:create_game' %}" class="pic-create">
+                {% csrf_token %}
+                <fieldset>
+                    <legend class="section-kicker">Longueur de la partie</legend>
+                    <div class="pic-round-choices">
+                        {% for value, label in round_choices %}
+                        <label class="pic-round-choice">
+                            <input type="radio" name="round_count" value="{{ value }}" {% if value == 6 %}checked{% endif %}>
+                            <span>{{ label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="create-game">Ouvrir un salon</button>
+            </form>
+        </div>
+
+        <div class="pic-hero-visual" aria-hidden="true">
+            <span class="pic-hero-pen"></span>
+            <span class="pic-hero-scribble"></span>
+        </div>
+    </section>
+
+    <section class="pic-section" aria-labelledby="pic-open-title">
+        <h2 id="pic-open-title">Salons ouverts</h2>
+        <ul class="game-list" data-open-games>
+            {% for game in lobby_state.open_games %}
+            <li class="game-list-item">
+                <span class="game-list-copy">
+                    <strong>Salon de {{ game.host }}</strong>
+                    <span>{{ game.player_count }} joueur{{ game.player_count|pluralize }} · {{ game.round_count }} manches</span>
+                </span>
+                <form method="post" action="{% url 'pictionary:join_game' game_id=game.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary" data-reload-focus-key="join-{{ game.id }}">{% if game.is_mine %}Rejoindre mon salon{% else %}Rejoindre{% endif %}</button>
+                </form>
+            </li>
+            {% empty %}
+            <li class="empty-state">Aucun salon ouvert pour l’instant. Ouvre le tien !</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    {% if my_games %}
+    <section class="pic-section" aria-labelledby="pic-mine-title">
+        <h2 id="pic-mine-title">Mes parties</h2>
+        <ul class="game-list">
+            {% for game in my_games %}
+            <li class="game-list-item">
+                <span class="game-list-copy">
+                    <strong>Salon de {{ game.created_by.username }}</strong>
+                    <span>{{ game.get_status_display }} · {{ game.round_count }} manches</span>
+                </span>
+                <a class="btn btn-ghost" href="{% url 'pictionary:game_detail' game_id=game.id %}">Ouvrir</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

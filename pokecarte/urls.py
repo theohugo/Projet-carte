@@ -22,5 +22,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
     path("qui-est-ce/", include("guesswho.urls")),
+    path("qui-est-ce-pokemon/", include("silhouette.urls")),
+    path("pictionary/", include("pictionary.urls")),
     path("", include("game.urls")),
 ]

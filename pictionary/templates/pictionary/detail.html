@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Pictionary Pokémon — partie{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'pictionary/css/pictionary.css' %}?v=1">
+
+<div id="pictionary-game" class="pic-game"
+     data-state-url="{% url 'pictionary:api_state' game_id=game.id %}"
+     data-stroke-url="{% url 'pictionary:api_stroke' game_id=game.id %}"
+     data-guess-url="{% url 'pictionary:api_guess' game_id=game.id %}">
+    <header class="pic-game-heading">
+        <a class="back-link" href="{% url 'pictionary:lobby' %}"><span aria-hidden="true">←</span> Retour au lobby</a>
+        <h1>Pictionary <span class="status-badge" data-status="{{ game.status|lower }}">{{ game.get_status_display }}</span></h1>
+    </header>
+
+    <p id="pic-feedback" class="message message-error" hidden role="alert"></p>
+    <p id="pic-announcer" class="visually-hidden" aria-live="polite"></p>
+
+    <section class="pic-waiting" data-waiting {% if game_state.status != "EN_ATTENTE" %}hidden{% endif %}>
+        <p class="section-kicker">Salon ouvert</p>
+        <h2>En attente des joueurs</h2>
+        <p>Partage le lien de cette page. Il faut au moins {{ game_state.min_players }} joueurs, et la partie compte <strong>{{ game.round_count }} manches</strong>.</p>
+        {% if game_state.is_host %}
+        <form method="post" action="{% url 'pictionary:start_game' game_id=game.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="start">Lancer la partie</button>
+        </form>
+        {% else %}
+        <p>L’hôte lancera la partie quand tout le monde sera là.</p>
+        {% endif %}
+    </section>
+
+    <section class="pic-stage" data-stage hidden>
+        <div class="pic-status-row">
+            <p class="pic-round-label"><span data-round-number>—</span></p>
+            <p class="pic-turn" data-turn>—</p>
+            <p class="pic-timer"><span data-timer>—</span> s</p>
+        </div>
+
+        <div class="pic-board">
+            <canvas data-canvas width="960" height="640" aria-label="Zone de dessin"></canvas>
+            <p class="pic-word" data-word hidden></p>
+        </div>
+
+        <div class="pic-tools" data-tools hidden>
+            <span class="pic-tool-label">Ton Pokémon : <strong data-secret-word>—</strong></span>
+            <span class="pic-colors" role="group" aria-label="Couleur du trait">
+                <button type="button" class="pic-color is-active" data-color="#f6f9ff" style="--pen: #f6f9ff" aria-label="Blanc"></button>
+                <button type="button" class="pic-color" data-color="#ffd166" style="--pen: #ffd166" aria-label="Jaune"></button>
+                <button type="button" class="pic-color" data-color="#ef476f" style="--pen: #ef476f" aria-label="Rouge"></button>
+                <button type="button" class="pic-color" data-color="#06d6a0" style="--pen: #06d6a0" aria-label="Vert"></button>
+                <button type="button" class="pic-color" data-color="#4cc9f0" style="--pen: #4cc9f0" aria-label="Bleu"></button>
+            </span>
+            <label class="pic-width">Épaisseur
+                <input type="range" min="2" max="24" value="5" data-width>
+            </label>
+            <button type="button" class="btn btn-ghost" data-clear>Tout effacer</button>
+        </div>
+
+        <form class="pic-guess-form" data-guess-form hidden>
+            <label class="visually-hidden" for="pic-guess">Ta proposition</label>
+            <input type="text" id="pic-guess" autocomplete="off" spellcheck="false" maxlength="60" placeholder="C’est quel Pokémon ?" data-guess-input>
+            <button type="submit" class="btn btn-primary" data-guess-submit>Proposer</button>
+        </form>
+
+        <ul class="pic-guess-feed" data-my-guesses aria-label="Mes propositions"></ul>
+        <ul class="pic-found" data-found aria-label="Joueurs ayant trouvé"></ul>
+    </section>
+
+    <section class="pic-scores" aria-labelledby="pic-scores-title">
+        <h2 id="pic-scores-title" class="section-kicker">Scores</h2>
+        <ol class="pic-score-list" data-scores></ol>
+    </section>
+</div>
+
+{{ game_state|json_script:"pictionary-initial-state" }}
+<script src="{% static 'pictionary/js/game.js' %}?v=1"></script>
+{% endblock %}

@@ -1,6 +1,6 @@
 # PokéTable
 
-PokéTable est une plateforme Django de jeux de société Pokémon multijoueurs. Elle réunit actuellement **Poké‑Uno**, un jeu de défausse jouable de 2 à 6 participants avec des adversaires IA, et **Qui est-ce ? Pokémon**, un duel de déduction à 2 joueurs avec questions/réponses intégrées.
+PokéTable est une plateforme Django de jeux de société Pokémon multijoueurs. Elle réunit quatre jeux : **Poké‑Uno**, un jeu de défausse de 2 à 6 participants avec des adversaires IA ; **Qui est-ce ? Pokémon**, un duel de déduction à 2 joueurs ; **Qui est ce Pokémon ?**, une course à la silhouette ouverte à autant de joueurs qu'on veut ; et **Pictionary Pokémon**, où un joueur dessine pendant que les autres devinent.
 
 **Auteurs :** Hugo Raguin, Amine Taleb, Rizlene Berrag
 
@@ -41,6 +41,23 @@ Références officielles : [règles françaises du JCC Pokémon](https://www.pok
 - Chaque plateau est privé : cliquer une carte la rabat ou la relève sans modifier celui de l’adversaire.
 - À la place d’une question, le joueur peut proposer un Pokémon. Une bonne proposition gagne immédiatement ; une mauvaise donne la victoire à l’adversaire.
 - L’historique des questions, réponses et propositions sert de conversation intégrée et se synchronise automatiquement.
+
+### Qui est ce Pokémon ?
+
+- L'hôte choisit la longueur de la partie : **5, 10 ou 15 manches**. Le nombre de joueurs est libre.
+- Chaque manche affiche la **silhouette** d'un Pokémon de la première génération. Tout le monde répond en même temps, au clavier.
+- Deux indices tombent tout seuls : le **type** après 5 secondes, puis le **nombre de lettres avec la première et la dernière** après 10 secondes.
+- Le score décroît avec le temps : 1000 points à la seconde 0, 100 au bout des 30 secondes de la manche. Chaque joueur marque selon *sa* rapidité, la manche ne s'arrête donc pas au premier trouvé.
+- La manche se révèle quand tout le monde a trouvé ou que le temps est écoulé, puis la suivante démarre après 5 secondes.
+
+L'illustration passe par un proxy (`/qui-est-ce-pokemon/rounds/<id>/image/`) qui renvoie une **vraie silhouette calculée côté serveur** : ni le Pokédex ID, ni le nom, ni l'URL du sprite ne quittent le serveur avant la révélation, et un filtre CSS retiré depuis le navigateur ne révèle rien.
+
+### Pictionary Pokémon
+
+- L'hôte choisit **3, 6 ou 9 manches**, et il faut au moins 2 joueurs.
+- À chaque manche, le crayon passe au joueur suivant : lui seul reçoit le nom du Pokémon à faire deviner (Gen 1) et peut tracer sur la toile.
+- Les autres écrivent leurs propositions. Un devineur marque de 600 à 100 points selon sa rapidité sur les 90 secondes, et le **dessinateur gagne 150 points par joueur qui trouve** : son intérêt est de dessiner vite et clair.
+- Les traits sont synchronisés par polling incrémental : chaque client ne redemande que les traits qu'il n'a pas encore (`?since=<sequence>`), ce qui évite de renvoyer tout le dessin à chaque tour.
 
 ## Démarrage rapide
 
@@ -121,7 +138,11 @@ Les deux moteurs métier sont séparés des vues :
 
 - `game/game_engine.py` gère la pioche, les coups, pouvoirs, tours et scores de Poké‑Uno ;
 - `game/bot_player.py` contient la stratégie déterministe des IA ;
-- `guesswho/services.py` gère le roster, les secrets, la conversation, les plateaux privés et la victoire du Qui est-ce.
+- `guesswho/services.py` gère le roster, les secrets, la conversation, les plateaux privés et la victoire du Qui est-ce ;
+- `silhouette/services.py` tient l'horloge des manches, les indices minutés et le score dégressif de « Qui est ce Pokémon ? » ;
+- `pictionary/services.py` gère la rotation du crayon, les traits et la notation du Pictionary.
+
+Les deux jeux de devinette partagent `game/pokemon_names.py`, qui compare une saisie clavier au nom français ou anglais d'une espèce en ignorant casse, accents et ponctuation.
 
 L’inscription affiche la liste des critères que le mot de passe doit remplir. `game/password_rules.py` dérive cette liste de `AUTH_PASSWORD_VALIDATORS`, puis marque chaque critère respecté ou manquant à partir des erreurs renvoyées par le serveur ; `game/static/game/js/signup.js` met les mêmes critères à jour pendant la frappe, en reproduisant les calculs des validateurs Django. Le serveur reste seul juge : le critère « mot de passe trop courant » n’est vérifié qu’à l’envoi.
 

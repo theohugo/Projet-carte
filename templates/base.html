@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="{% static 'tokens.css' %}?v=7">
     <link rel="stylesheet" href="{% static 'atoms.css' %}?v=11">
     <link rel="stylesheet" href="{% static 'molecules.css' %}?v=13">
-    <link rel="stylesheet" href="{% static 'organisms.css' %}?v=12">
+    <link rel="stylesheet" href="{% static 'organisms.css' %}?v=13">
 </head>
 <body class="{% block body_class %}{% endblock %}">
     <a class="skip-link" href="#main-content">Aller au contenu</a>
@@ -23,7 +23,7 @@
             </a>
             <nav class="site-actions" aria-label="Navigation principale">
                 {% if user.is_authenticated %}
-                    <span class="site-nav"><a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %}>Jeux</a><a href="{% url 'lobby' %}"{% if request.resolver_match.url_name == 'lobby' and request.resolver_match.namespace != 'guesswho' %} aria-current="page"{% endif %}>Poké-Uno</a><a href="{% url 'guesswho:lobby' %}"{% if request.resolver_match.namespace == 'guesswho' %} aria-current="page"{% endif %}>Qui est-ce ?</a></span>
+                    <span class="site-nav"><a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %}>Jeux</a><a href="{% url 'lobby' %}"{% if request.resolver_match.url_name == 'lobby' and not request.resolver_match.namespace %} aria-current="page"{% endif %}>Poké-Uno</a><a href="{% url 'guesswho:lobby' %}"{% if request.resolver_match.namespace == 'guesswho' %} aria-current="page"{% endif %}>Qui est-ce ?</a><a href="{% url 'silhouette:lobby' %}"{% if request.resolver_match.namespace == 'silhouette' %} aria-current="page"{% endif %}>Silhouette</a><a href="{% url 'pictionary:lobby' %}"{% if request.resolver_match.namespace == 'pictionary' %} aria-current="page"{% endif %}>Pictionary</a></span>
                     <span class="site-user"><span class="user-avatar" aria-hidden="true">{{ user.username|first|upper }}</span><span class="site-user-copy"><small>Joueur connecté</small>{{ user.username }}</span></span>
                     <form action="{% url 'logout' %}" method="post" class="inline-form">
                         {% csrf_token %}

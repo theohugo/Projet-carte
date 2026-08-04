@@ -9,6 +9,7 @@ dependencies = [
     "django-environ>=0.14.0",
     "django-redis>=7.0.0",
     "gunicorn>=26.0.0",
+    "pillow>=12.3.0",
     "psycopg[binary]>=3.3.4",
     "requests>=2.34.2",
     "whitenoise>=6.12.0",

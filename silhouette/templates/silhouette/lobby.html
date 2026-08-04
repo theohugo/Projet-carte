@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Qui est ce Pokémon ? — PokéTable{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'silhouette/css/silhouette.css' %}?v=1">
+
+<div id="silhouette-lobby" class="sil-lobby" data-state-url="{% url 'silhouette:api_lobby_state' %}">
+    <section class="sil-hero" aria-labelledby="silhouette-title">
+        <div>
+            <a class="back-link" href="{% url 'home' %}"><span aria-hidden="true">←</span> Tous les jeux</a>
+            <p class="section-kicker">Réflexe · déduction</p>
+            <h1 id="silhouette-title">Qui est ce Pokémon ?</h1>
+            <p class="sil-lead">Une silhouette apparaît. Écris son nom le plus vite possible : plus tu réponds tôt, plus tu marques. Un indice de type tombe après 5 secondes, puis les initiales après 10.</p>
+
+            <form method="post" action="{% url 'silhouette:create_game' %}" class="sil-create">
+                {% csrf_token %}
+                <fieldset>
+                    <legend class="section-kicker">Longueur de la partie</legend>
+                    <div class="sil-round-choices">
+                        {% for value, label in round_choices %}
+                        <label class="sil-round-choice">
+                            <input type="radio" name="round_count" value="{{ value }}" {% if value == 10 %}checked{% endif %}>
+                            <span>{{ label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="create-game">Ouvrir un salon</button>
+            </form>
+        </div>
+
+        <div class="sil-hero-visual" aria-hidden="true">
+            <span class="sil-hero-shape"></span>
+            <span class="sil-hero-flash">?</span>
+        </div>
+    </section>
+
+    <section class="sil-section" aria-labelledby="sil-open-title">
+        <h2 id="sil-open-title">Salons ouverts</h2>
+        <ul class="game-list" data-open-games>
+            {% for game in lobby_state.open_games %}
+            <li class="game-list-item">
+                <span class="game-list-copy">
+                    <strong>Salon de {{ game.host }}</strong>
+                    <span>{{ game.player_count }} joueur{{ game.player_count|pluralize }} · {{ game.round_count }} manches</span>
+                </span>
+                <form method="post" action="{% url 'silhouette:join_game' game_id=game.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary" data-reload-focus-key="join-{{ game.id }}">{% if game.is_mine %}Rejoindre mon salon{% else %}Rejoindre{% endif %}</button>
+                </form>
+            </li>
+            {% empty %}
+            <li class="empty-state">Aucun salon ouvert pour l’instant. Ouvre le tien !</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    {% if my_games %}
+    <section class="sil-section" aria-labelledby="sil-mine-title">
+        <h2 id="sil-mine-title">Mes parties</h2>
+        <ul class="game-list">
+            {% for game in my_games %}
+            <li class="game-list-item">
+                <span class="game-list-copy">
+                    <strong>Salon de {{ game.created_by.username }}</strong>
+                    <span>{{ game.get_status_display }} · {{ game.round_count }} manches</span>
+                </span>
+                <a class="btn btn-ghost" href="{% url 'silhouette:game_detail' game_id=game.id %}">Ouvrir</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</div>
+<script src="{% static 'silhouette/js/lobby.js' %}?v=1"></script>
+{% endblock %}

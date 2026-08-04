@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "game",
     "guesswho",
+    "silhouette",
+    "pictionary",
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,238 @@
+/* Qui est ce Pokémon ? — silhouette, indices et scores. */
+
+.sil-lobby,
+.sil-game {
+    display: flex;
+    max-width: 1080px;
+    margin: 0 auto;
+    flex-direction: column;
+    gap: var(--space-6);
+    padding: var(--space-5);
+}
+
+.sil-hero {
+    display: grid;
+    align-items: center;
+    gap: var(--space-6);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    padding: var(--space-6);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(145deg, rgba(28, 48, 78, 0.92), rgba(10, 20, 36, 0.96));
+    box-shadow: var(--shadow-raised);
+}
+
+.sil-lead {
+    max-width: 52ch;
+    color: var(--color-text-muted);
+}
+
+.sil-create {
+    margin-top: var(--space-5);
+}
+
+.sil-create fieldset {
+    margin: 0 0 var(--space-4);
+    padding: 0;
+    border: 0;
+}
+
+.sil-round-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+
+.sil-round-choice {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-weight: 750;
+}
+
+.sil-round-choice input {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+}
+
+.sil-round-choice:has(input:checked) {
+    border-color: var(--color-brand);
+    background: rgba(117, 216, 255, 0.14);
+}
+
+.sil-hero-visual {
+    position: relative;
+    display: grid;
+    aspect-ratio: 1;
+    place-items: center;
+}
+
+.sil-hero-shape {
+    width: 62%;
+    height: 62%;
+    border-radius: 42% 58% 55% 45% / 52% 44% 56% 48%;
+    background: linear-gradient(160deg, #0d1422, #1b2f4d);
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
+    animation: sil-float 6s ease-in-out infinite;
+}
+
+.sil-hero-flash {
+    position: absolute;
+    color: var(--color-brand);
+    font-size: 4rem;
+    font-weight: 900;
+}
+
+@keyframes sil-float {
+    0%, 100% { transform: translateY(-6px) rotate(-2deg); }
+    50% { transform: translateY(6px) rotate(2deg); }
+}
+
+.sil-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    background: radial-gradient(circle at 50% 30%, rgba(24, 58, 96, 0.92), rgba(6, 13, 24, 0.97));
+    box-shadow: var(--shadow-raised);
+    text-align: center;
+}
+
+.sil-round-label {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.sil-frame {
+    display: grid;
+    width: min(340px, 100%);
+    aspect-ratio: 1;
+    place-items: center;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sil-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform var(--transition-base);
+}
+
+.sil-frame img.is-revealed {
+    transform: scale(1.04);
+}
+
+.sil-answer {
+    margin: 0;
+    color: var(--color-positive);
+    font-size: var(--font-size-lg);
+    font-weight: 900;
+}
+
+.sil-hints {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sil-hints li {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 999px;
+    background: rgba(4, 12, 23, 0.55);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.sil-guess-form {
+    display: flex;
+    width: min(420px, 100%);
+    gap: var(--space-2);
+}
+
+.sil-guess-form input {
+    flex: 1;
+}
+
+.sil-guess-feed,
+.sil-found,
+.sil-score-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--font-size-sm);
+}
+
+.sil-guess-feed li.is-correct {
+    color: var(--color-positive);
+    font-weight: 800;
+}
+
+.sil-guess-feed li.is-wrong {
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+}
+
+.sil-found li {
+    color: var(--color-brand);
+}
+
+.sil-scores,
+.sil-waiting,
+.sil-section {
+    padding: var(--space-5);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-glass);
+}
+
+.sil-score-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.sil-score-list li.is-me {
+    color: var(--color-brand);
+    font-weight: 800;
+}
+
+.sil-game-heading h1 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+}
+
+@media (max-width: 760px) {
+    .sil-hero {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .sil-hero-visual {
+        display: none;
+    }
+}

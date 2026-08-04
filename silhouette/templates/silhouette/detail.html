@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Qui est ce Pokémon ? — partie{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'silhouette/css/silhouette.css' %}?v=1">
+
+<div id="silhouette-game" class="sil-game"
+     data-state-url="{% url 'silhouette:api_state' game_id=game.id %}"
+     data-guess-url="{% url 'silhouette:api_guess' game_id=game.id %}">
+    <header class="sil-game-heading">
+        <a class="back-link" href="{% url 'silhouette:lobby' %}"><span aria-hidden="true">←</span> Retour au lobby</a>
+        <h1>Qui est ce Pokémon ? <span class="status-badge" data-status="{{ game.status|lower }}">{{ game.get_status_display }}</span></h1>
+    </header>
+
+    <p id="sil-feedback" class="message message-error" hidden role="alert"></p>
+    <p id="sil-announcer" class="visually-hidden" aria-live="polite"></p>
+
+    <section class="sil-stage" data-stage hidden>
+        <p class="sil-round-label"><span data-round-number>—</span> · <span data-timer>—</span> s</p>
+        <div class="sil-frame">
+            <img data-silhouette alt="Silhouette du Pokémon à deviner" width="320" height="320">
+            <p class="sil-answer" data-answer hidden></p>
+        </div>
+        <ul class="sil-hints" aria-live="polite">
+            <li data-hint="type" hidden></li>
+            <li data-hint="letters" hidden></li>
+        </ul>
+        <form class="sil-guess-form" data-guess-form>
+            <label class="visually-hidden" for="sil-guess">Nom du Pokémon</label>
+            <input type="text" id="sil-guess" name="guess" autocomplete="off" spellcheck="false" maxlength="60" placeholder="Son nom…" data-guess-input>
+            <button type="submit" class="btn btn-primary" data-guess-submit>Proposer</button>
+        </form>
+        <ul class="sil-guess-feed" data-my-guesses aria-label="Mes propositions"></ul>
+        <ul class="sil-found" data-found aria-label="Joueurs ayant trouvé"></ul>
+    </section>
+
+    <section class="sil-waiting" data-waiting {% if game_state.status != "EN_ATTENTE" %}hidden{% endif %}>
+        <p class="section-kicker">Salon ouvert</p>
+        <h2>En attente des joueurs</h2>
+        <p>Partage le lien de cette page. La partie compte <strong>{{ game.round_count }} manches</strong>.</p>
+        {% if game_state.is_host %}
+        <form method="post" action="{% url 'silhouette:start_game' game_id=game.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="start">Lancer la partie</button>
+        </form>
+        {% else %}
+        <p class="sil-waiting-help">L’hôte lancera la partie quand tout le monde sera là.</p>
+        {% endif %}
+    </section>
+
+    <section class="sil-scores" aria-labelledby="sil-scores-title">
+        <h2 id="sil-scores-title" class="section-kicker">Scores</h2>
+        <ol class="sil-score-list" data-scores></ol>
+    </section>
+</div>
+
+{{ game_state|json_script:"silhouette-initial-state" }}
+<script src="{% static 'silhouette/js/game.js' %}?v=1"></script>
+{% endblock %}

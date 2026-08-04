@@ -48,6 +48,33 @@
                 <a class="btn btn-primary" href="{% url 'guesswho:lobby' %}">Lancer une enquête</a>
             </div>
         </article>
+        <article class="game-mode-card game-mode-card--silhouette">
+            <div class="game-mode-art silhouette-mode-art" aria-hidden="true">
+                <span class="silhouette-shape"></span>
+                <span class="silhouette-flash">?</span>
+            </div>
+            <div class="game-mode-copy">
+                <span class="game-mode-status"><i></i> Nouveau</span>
+                <p class="section-kicker">Autant de joueurs qu’on veut · 5 à 15 manches</p>
+                <h2>Qui est ce Pokémon ?</h2>
+                <p>Une silhouette, un chrono. Réponds avant les autres : le type tombe à 5 secondes, les initiales à 10.</p>
+                <a class="btn btn-primary" href="{% url 'silhouette:lobby' %}">Ouvrir un salon</a>
+            </div>
+        </article>
+
+        <article class="game-mode-card game-mode-card--pictionary">
+            <div class="game-mode-art pictionary-mode-art" aria-hidden="true">
+                <span class="pictionary-scribble"></span>
+                <span class="pictionary-pen"></span>
+            </div>
+            <div class="game-mode-copy">
+                <span class="game-mode-status"><i></i> Nouveau</span>
+                <p class="section-kicker">2 joueurs et plus · 3 à 9 manches</p>
+                <h2>Pictionary Pokémon</h2>
+                <p>Un joueur dessine son Pokémon, les autres devinent au clavier. Le dessinateur marque à chaque bonne réponse.</p>
+                <a class="btn btn-primary" href="{% url 'pictionary:lobby' %}">Prendre le crayon</a>
+            </div>
+        </article>
     </section>
 </div>
 {% endblock %}
