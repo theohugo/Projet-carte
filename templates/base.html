@@ -50,7 +50,7 @@
 
     <link
         rel="stylesheet"
-        href="{% static 'organisms.css' %}?v=26"
+        href="{% static 'organisms.css' %}?v=27"
     >
 </head>
 
@@ -87,138 +87,191 @@
                 aria-label="Navigation principale"
             >
                 {% if user.is_authenticated %}
-                    <span class="site-nav">
-                        <a
-                            href="{% url 'home' %}"
-                            {% if request.resolver_match.url_name == "home" %}
-                                aria-current="page"
-                            {% endif %}
-                        >
-                            Jeux
-                        </a>
-
-                        <a
-                            href="{% url 'friends' %}"
-                            {% if request.resolver_match.url_name == "friends" or request.resolver_match.url_name == "player_search" %}
-                                aria-current="page"
-                            {% endif %}
-                        >
-                            Amis
-                        </a>
-
-                        <a
-                            href="{% url 'game_invitations' %}"
-                            {% if request.resolver_match.url_name == "game_invitations" or request.resolver_match.url_name == "invite_friends_to_game" %}
-                                aria-current="page"
-                            {% endif %}
-                        >
-                            Invitations
-                        </a>
-
-                        <a
-                            href="{% url 'lobby' %}"
-                            {% if request.resolver_match.url_name == "lobby" and not request.resolver_match.namespace %}
-                                aria-current="page"
-                            {% endif %}
-                        >
-                            Poké-Uno
-                        </a>
-
-                        <a
-                            href="{% url 'guesswho:lobby' %}"
-                            {% if request.resolver_match.namespace == "guesswho" %}
-                                aria-current="page"
-                            {% endif %}
-                        >
-                            Qui est-ce ?
-                        </a>
-
-                        <a
-                            href="{% url 'silhouette:lobby' %}"
-                            {% if request.resolver_match.namespace == "silhouette" %}
-                                aria-current="page"
-                            {% endif %}
-                        >
-                            Silhouette
-                        </a>
-
-                        <a
-                            href="{% url 'pictionary:lobby' %}"
-                            {% if request.resolver_match.namespace == "pictionary" %}
-                                aria-current="page"
-                            {% endif %}
-                        >
-                            Pictionary
-                        </a>
-
-                        <a
-                            href="{% url 'quests' %}"
-                            {% if request.resolver_match.url_name == "quests" %}
-                                aria-current="page"
-                            {% endif %}
-                        >
-                            Quêtes
-                        </a>
-
-                        <a
-                            href="{% url 'collection' %}"
-                            {% if request.resolver_match.url_name == "collection" %}
-                                aria-current="page"
-                            {% endif %}
-                        >
-                            Collection
-                        </a>
-                    </span>
-
-                    <a
-                        class="site-user"
-                        href="{% url 'my_profile' %}"
-                        aria-label="Voir mon profil"
-                        {% if request.resolver_match.url_name == "my_profile" or request.resolver_match.url_name == "edit_profile" %}
-                            aria-current="page"
-                        {% endif %}
+                    {# Deux menus au lieu de neuf liens : les jeux d'un côté, le compte de l'autre. #}
+                    <details
+                        class="nav-menu"
+                        data-nav-menu
                     >
-                        {% if user.profile.avatar %}
-                            <img
-                                class="user-avatar"
-                                src="{{ user.profile.avatar.url }}"
-                                alt=""
-                                width="42"
-                                height="42"
-                                style="object-fit: cover;"
-                            >
-                        {% else %}
-                            <span
-                                class="user-avatar"
-                                aria-hidden="true"
-                            >
-                                {{ user.username|first|upper }}
+                        <summary class="nav-trigger">
+                            <span class="nav-trigger-label">
+                                {% if request.resolver_match.namespace == "guesswho" %}
+                                    Qui est-ce ?
+                                {% elif request.resolver_match.namespace == "silhouette" %}
+                                    Qui est ce Pokémon ?
+                                {% elif request.resolver_match.namespace == "pictionary" %}
+                                    Pictionary
+                                {% elif request.resolver_match.url_name == "lobby" or request.resolver_match.url_name == "game_detail" %}
+                                    Poké-Uno
+                                {% else %}
+                                    Jeux
+                                {% endif %}
                             </span>
-                        {% endif %}
 
-                        <span class="site-user-copy">
-                            <small>
-                                Joueur connecté
-                            </small>
+                            <span
+                                class="nav-caret"
+                                aria-hidden="true"
+                            ></span>
+                        </summary>
 
-                            {{ user.username }}
-                        </span>
-                    </a>
+                        <div class="nav-panel">
+                            <a
+                                href="{% url 'home' %}"
+                                {% if request.resolver_match.url_name == "home" %}
+                                    aria-current="page"
+                                {% endif %}
+                            >
+                                Tous les jeux
+                                <small>Retour au salon</small>
+                            </a>
 
-                    <form
-                        action="{% url 'logout' %}"
-                        method="post"
-                        class="inline-form"
+                            <a
+                                href="{% url 'lobby' %}"
+                                {% if request.resolver_match.url_name == "lobby" and not request.resolver_match.namespace %}
+                                    aria-current="page"
+                                {% endif %}
+                            >
+                                Poké-Uno
+                                <small>2 à 6 joueurs · IA</small>
+                            </a>
+
+                            <a
+                                href="{% url 'guesswho:lobby' %}"
+                                {% if request.resolver_match.namespace == "guesswho" %}
+                                    aria-current="page"
+                                {% endif %}
+                            >
+                                Qui est-ce ?
+                                <small>Duel de déduction</small>
+                            </a>
+
+                            <a
+                                href="{% url 'silhouette:lobby' %}"
+                                {% if request.resolver_match.namespace == "silhouette" %}
+                                    aria-current="page"
+                                {% endif %}
+                            >
+                                Qui est ce Pokémon ?
+                                <small>Silhouette chronométrée</small>
+                            </a>
+
+                            <a
+                                href="{% url 'pictionary:lobby' %}"
+                                {% if request.resolver_match.namespace == "pictionary" %}
+                                    aria-current="page"
+                                {% endif %}
+                            >
+                                Pictionary
+                                <small>Dessin et devinette</small>
+                            </a>
+                        </div>
+                    </details>
+
+                    <details
+                        class="nav-menu nav-menu--end"
+                        data-nav-menu
                     >
-                        {% csrf_token %}
-
-                        <button
-                            type="submit"
-                            class="btn btn-ghost"
+                        <summary
+                            class="nav-trigger nav-trigger--user"
+                            aria-label="Compte de {{ user.username }}"
                         >
-                            Se déconnecter
-                        </button>
-                    </form>
+                            {% if user.profile.avatar %}
+                                <img
+                                    class="user-avatar"
+                                    src="{{ user.profile.avatar.url }}"
+                                    alt=""
+                                    width="42"
+                                    height="42"
+                                    style="object-fit: cover;"
+                                >
+                            {% else %}
+                                <span
+                                    class="user-avatar"
+                                    aria-hidden="true"
+                                >
+                                    {{ user.username|first|upper }}
+                                </span>
+                            {% endif %}
+
+                            <span class="site-user-copy">
+                                <small>
+                                    Joueur connecté
+                                </small>
+
+                                {{ user.username }}
+                            </span>
+
+                            <span
+                                class="nav-caret"
+                                aria-hidden="true"
+                            ></span>
+                        </summary>
+
+                        <div class="nav-panel">
+                            <a
+                                href="{% url 'my_profile' %}"
+                                {% if request.resolver_match.url_name == "my_profile" or request.resolver_match.url_name == "edit_profile" %}
+                                    aria-current="page"
+                                {% endif %}
+                            >
+                                Mon profil
+                                <small>Avatar et description</small>
+                            </a>
+
+                            <a
+                                href="{% url 'friends' %}"
+                                {% if request.resolver_match.url_name == "friends" or request.resolver_match.url_name == "player_search" %}
+                                    aria-current="page"
+                                {% endif %}
+                            >
+                                Amis
+                                <small>Demandes et recherche</small>
+                            </a>
+
+                            <a
+                                href="{% url 'game_invitations' %}"
+                                {% if request.resolver_match.url_name == "game_invitations" or request.resolver_match.url_name == "invite_friends_to_game" %}
+                                    aria-current="page"
+                                {% endif %}
+                            >
+                                Invitations
+                                <small>Parties auxquelles on te convie</small>
+                            </a>
+
+                            <a
+                                href="{% url 'quests' %}"
+                                {% if request.resolver_match.url_name == "quests" %}
+                                    aria-current="page"
+                                {% endif %}
+                            >
+                                Quêtes
+                                <small>Objectifs en cours</small>
+                            </a>
+
+                            <a
+                                href="{% url 'collection' %}"
+                                {% if request.resolver_match.url_name == "collection" %}
+                                    aria-current="page"
+                                {% endif %}
+                            >
+                                Collection
+                                <small>Cartes débloquées</small>
+                            </a>
+
+                            <form
+                                action="{% url 'logout' %}"
+                                method="post"
+                            >
+                                {% csrf_token %}
+
+                                <button
+                                    type="submit"
+                                    class="nav-panel-action"
+                                >
+                                    Se déconnecter
+                                </button>
+                            </form>
+                        </div>
+                    </details>
                 {% else %}
                     <a
                         class="btn btn-ghost"
@@ -258,5 +311,6 @@
     >
         {% block content %}{% endblock %}
     </main>
+    <script src="{% static 'nav.js' %}?v=1"></script>
 </body>
 </html>

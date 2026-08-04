@@ -48,42 +48,152 @@
     margin-left: auto;
 }
 
-.site-nav {
+/* Menus de l'en-tête. Neuf liens alignés (quatre jeux, amis, invitations,
+   quêtes, collection, profil) saturaient la barre : deux déclencheurs les
+   regroupent, et celui des jeux rappelle le jeu courant.
+   Base <details> : la navigation reste utilisable sans JavaScript. */
+.nav-menu {
+    position: relative;
+}
+
+.nav-trigger {
     display: inline-flex;
+    min-height: 44px;
     align-items: center;
-    gap: var(--space-1);
-    padding: 4px;
+    gap: var(--space-2);
+    padding: 6px var(--space-3);
     border: 1px solid var(--color-border-soft);
     border-radius: 14px;
-    background: rgba(4, 13, 25, 0.58);
-}
-
-.site-nav a {
-    padding: 7px 10px;
-    border-radius: 10px;
-    color: var(--color-text-muted);
-    font-size: var(--font-size-xs);
-    font-weight: 800;
-    text-decoration: none;
-    transition: color var(--transition-fast), background var(--transition-fast);
-}
-
-.site-nav a:hover,
-.site-nav a:focus-visible {
     color: var(--color-text);
+    background: rgba(4, 13, 25, 0.58);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-weight: 800;
+    list-style: none;
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.nav-trigger::-webkit-details-marker {
+    display: none;
+}
+
+.nav-trigger:hover {
+    border-color: rgba(117, 216, 255, 0.42);
     background: rgba(117, 216, 255, 0.1);
 }
 
-.site-nav a[aria-current="page"] {
+.nav-trigger:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+}
+
+.nav-trigger--user {
+    padding: 4px var(--space-3) 4px 4px;
+}
+
+.nav-trigger-label {
+    overflow: hidden;
+    max-width: 22ch;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Chevron en CSS pur : pas d'emoji ni d'icône chargée pour un simple repère. */
+.nav-caret {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    opacity: 0.65;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform var(--transition-fast);
+}
+
+.nav-menu[open] > .nav-trigger {
+    border-color: var(--color-brand);
+    background: rgba(117, 216, 255, 0.14);
+}
+
+.nav-menu[open] .nav-caret {
+    transform: translateY(1px) rotate(-135deg);
+}
+
+.nav-panel {
+    position: absolute;
+    z-index: 60;
+    top: calc(100% + var(--space-2));
+    left: 0;
+    display: flex;
+    min-width: 240px;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: rgba(10, 20, 35, 0.98);
+    box-shadow: var(--shadow-raised);
+    animation: nav-panel-in 160ms ease-out;
+}
+
+.nav-menu--end .nav-panel {
+    right: 0;
+    left: auto;
+}
+
+.nav-panel a,
+.nav-panel-action {
+    display: flex;
+    min-height: 44px;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    background: transparent;
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-weight: 800;
+    text-align: left;
+    text-decoration: none;
+    transition: background var(--transition-fast);
+}
+
+.nav-panel a small {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+}
+
+.nav-panel a:hover,
+.nav-panel a:focus-visible,
+.nav-panel-action:hover,
+.nav-panel-action:focus-visible {
+    background: rgba(117, 216, 255, 0.14);
+}
+
+.nav-panel a[aria-current="page"] {
     color: #071a2d;
     background: var(--color-brand);
 }
 
-.site-user {
-    display: inline-flex;
-    min-width: 0;
-    align-items: center;
-    gap: var(--space-2);
+.nav-panel a[aria-current="page"] small {
+    color: rgba(7, 26, 45, 0.72);
+}
+
+.nav-panel form {
+    margin: 0;
+}
+
+.nav-panel-action {
+    width: 100%;
+    color: var(--color-danger);
+}
+
+@keyframes nav-panel-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
 }
 
 .user-avatar {
@@ -1287,10 +1397,8 @@
         display: none;
     }
 
-    .site-nav {
-        order: 3;
-        width: 100%;
-        justify-content: center;
+    .nav-trigger-label {
+        max-width: 12ch;
     }
 
     .hub-hero {
@@ -1471,13 +1579,9 @@
 }
 
 .game-shell--active .site-title .brand-mark,
-.game-shell--active .site-user .user-avatar {
+.game-shell--active .nav-trigger .user-avatar {
     width: 34px;
     height: 34px;
-}
-
-.game-shell--active .site-nav {
-    display: none;
 }
 
 .game-shell--active .site-actions .btn {
