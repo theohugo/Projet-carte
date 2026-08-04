@@ -6,7 +6,7 @@ from django.urls import reverse
 
 from game.bot_player import perform_bot_turn
 from game.game_engine import GameEngine
-from game.models import Game, GameCard, MoveLog, PokemonCard, Profile
+from game.models import Game, GameCard, MoveLog, Profile
 from game.tests.factories import make_cards, make_game, make_types, make_users
 
 User = get_user_model()
@@ -29,12 +29,13 @@ class BotGameTestCase(TestCase):
         self.game.turn_revision = turn_revision
         self.game.save(update_fields=["status", "current_turn_number", "turn_revision"])
 
-    def put_card(self, pokemon_card, *, location, owner=None):
+    def put_card(self, pokemon_card, *, location, owner=None, action=GameCard.Action.NORMAL):
         card = GameCard.objects.create(
             game=self.game,
             pokemon_card=pokemon_card,
             location=location,
             owner=owner,
+            action=action,
             order_index=self.game.next_card_sequence(),
         )
         self.game.save(update_fields=["card_sequence_counter"])
@@ -108,8 +109,11 @@ class BotDecisionTests(BotGameTestCase):
         self.assertEqual(self.game.current_turn_number, self.human.turn_order)
         self.assertEqual(self.game.turn_revision, 2)
 
-    def test_wild_card_declares_the_most_common_remaining_tcg_type(self):
+    def test_wild_card_declares_the_most_common_remaining_type(self):
         self.set_running()
+        self.game.selected_types.set(
+            [self.types["fire"], self.types["water"], self.types["grass"], self.types["flying"]]
+        )
         self.put_card(self.cards["charmander"], location=GameCard.Location.DEFAUSSE)
         wild = self.put_card(self.cards["zapdos"], location=GameCard.Location.MAIN, owner=self.bot)
         self.put_card(self.cards["bulbasaur"], location=GameCard.Location.MAIN, owner=self.bot)
@@ -127,9 +131,9 @@ class BotDecisionTests(BotGameTestCase):
         )
         self.assertEqual(decision.kind, "play")
         self.assertEqual(decision.card_id, wild.id)
-        self.assertEqual(decision.declared_tcg_type, "grass")
-        self.assertEqual(self.game.active_tcg_type, "grass")
-        self.assertEqual(move.declared_tcg_type, "grass")
+        self.assertEqual(decision.declared_type, "grass")
+        self.assertEqual(self.game.active_type, self.types["grass"])
+        self.assertEqual(move.declared_type, self.types["grass"])
 
     def test_bot_can_win_without_creating_a_profile(self):
         self.set_running()
@@ -160,11 +164,13 @@ class BotDecisionTests(BotGameTestCase):
 class BotApiTests(BotGameTestCase):
     def test_bot_turn_endpoint_is_idempotent_for_a_stale_revision(self):
         self.set_running(turn_revision=9)
-        draw_two = self.cards["charmander"]
-        draw_two.action = PokemonCard.Action.DRAW_TWO
-        draw_two.save(update_fields=["action"])
         self.put_card(self.cards["charmander_evo"], location=GameCard.Location.DEFAUSSE)
-        played_card = self.put_card(draw_two, location=GameCard.Location.MAIN, owner=self.bot)
+        played_card = self.put_card(
+            self.cards["charmander"],
+            location=GameCard.Location.MAIN,
+            owner=self.bot,
+            action=GameCard.Action.DRAW_TWO,
+        )
         private_card = self.put_card(
             self.cards["charmander_evo"], location=GameCard.Location.MAIN, owner=self.bot
         )

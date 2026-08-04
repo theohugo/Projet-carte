@@ -12,7 +12,7 @@ from game.api import get_lobby_state, invalidate_game_state_cache
 from game.forms import SignUpForm
 from game.game_engine import GameEngine, GameEngineError, close_stale_games
 from game.models import Game, GameCard
-from game.tcg_types import TCG_TYPES
+from game.pokemon_types import POKEMON_TYPES
 
 OPPONENT_CARD_BACK_LIMIT = 10
 
@@ -129,7 +129,7 @@ def game_detail(request, game_id):
             "join_invitation.html",
             {
                 "mode_name": "Poké-Uno",
-                "mode_kicker": "Défausse · pouvoirs · types JCC",
+                "mode_kicker": "Défausse · pouvoirs · types Pokémon",
                 "host_name": game.created_by.get_username(),
                 "player_count": player_count,
                 "max_players": game.max_players,
@@ -173,6 +173,7 @@ def game_detail(request, game_id):
             "game_state": game_state,
             "my_player": my_player,
             "opponents": opponents,
-            "declared_tcg_types": TCG_TYPES,
+            "game_types": game_state.get("game_types", []) if game_state else [],
+            "all_types": [pokemon_type.as_dict() for pokemon_type in POKEMON_TYPES],
         },
     )

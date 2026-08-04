@@ -1883,23 +1883,15 @@
         margin-top: 9px;
     }
 
-    .game-shell--active .center-row .card-unit-type {
-        top: 5px;
-        width: 23px;
-        height: 23px;
+    .game-shell--active .center-row .card-unit-types {
+        top: 4px;
+        left: 4px;
+        gap: 2px;
     }
 
-    .game-shell--active .center-row .card-unit-type.primary {
-        left: 5px;
-    }
-
-    .game-shell--active .center-row .card-unit-type.secondary {
-        right: 5px;
-    }
-
-    .game-shell--active .center-row .tcg-energy-icon {
-        width: 13px;
-        height: 13px;
+    .game-shell--active .center-row .type-pill {
+        padding: 1px 4px;
+        font-size: 0.5rem;
     }
 
     .game-shell--active .center-row .card-action {
@@ -1984,5 +1976,99 @@
     .game-shell--active .my-hand-row .card-unit img {
         width: 58px;
         height: 58px;
+    }
+}
+
+
+/* Rideau de tirage des types, joué au démarrage d'une partie. */
+.type-draw {
+    position: fixed;
+    z-index: 900;
+    display: grid;
+    inset: 0;
+    padding: var(--space-5);
+    place-items: center;
+    background: radial-gradient(circle at 50% 35%, rgba(18, 60, 101, 0.94), rgba(4, 9, 18, 0.97));
+    backdrop-filter: blur(3px);
+    animation: type-draw-in var(--transition-base);
+}
+
+.type-draw.is-leaving {
+    opacity: 0;
+    transition: opacity 380ms ease-out;
+}
+
+.type-draw-panel {
+    width: min(560px, 100%);
+    padding: var(--space-6);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    background: var(--color-surface-glass);
+    box-shadow: var(--shadow-raised);
+    text-align: center;
+}
+
+.type-draw-title {
+    margin: var(--space-2) 0 var(--space-5);
+    font-size: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.type-draw-slots {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    list-style: none;
+}
+
+.type-draw-slot {
+    display: grid;
+    min-height: 74px;
+    padding: var(--space-3);
+    border: 2px solid rgba(255, 255, 255, 0.16);
+    border-radius: var(--radius-md);
+    background: var(--type-accent, rgba(255, 255, 255, 0.08));
+    place-items: center;
+    color: #0d1726;
+    font-weight: 900;
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.type-draw-slot:not(.is-revealed):not(.is-spinning) {
+    color: var(--color-text-muted);
+}
+
+.type-draw-slot.is-spinning {
+    transform: scale(0.96);
+    filter: saturate(0.85);
+}
+
+.type-draw-slot.is-revealed {
+    border-color: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.38);
+    transform: translateY(-4px);
+}
+
+.type-draw-help {
+    margin: var(--space-5) 0 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+body.has-type-draw {
+    overflow: hidden;
+}
+
+@keyframes type-draw-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .type-draw,
+    .type-draw-slot {
+        animation: none;
+        transition: none;
     }
 }

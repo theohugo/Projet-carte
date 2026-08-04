@@ -118,12 +118,9 @@ def api_play_card(request, game_id):
     if not isinstance(payload, dict):
         return JsonResponse({"error": "La requête doit être un objet JSON."}, status=400)
 
-    declared_tcg_type = payload.get("declared_tcg_type")
-    legacy_declared_family = payload.get("declared_family")
-    if declared_tcg_type is not None and not isinstance(declared_tcg_type, str):
-        return JsonResponse({"error": "Type JCC déclaré invalide."}, status=400)
-    if legacy_declared_family is not None and not isinstance(legacy_declared_family, str):
-        return JsonResponse({"error": "Ancienne famille déclarée invalide."}, status=400)
+    declared_type = payload.get("declared_type")
+    if declared_type is not None and not isinstance(declared_type, str):
+        return JsonResponse({"error": "Type déclaré invalide."}, status=400)
 
     game_card_id = payload.get("game_card_id")
     if isinstance(game_card_id, bool) or not isinstance(game_card_id, int) or game_card_id <= 0:
@@ -135,12 +132,7 @@ def api_play_card(request, game_id):
 
     engine = GameEngine(game)
     try:
-        engine.play_card(
-            game_player,
-            game_card,
-            declared_tcg_type=declared_tcg_type,
-            declared_family=legacy_declared_family,
-        )
+        engine.play_card(game_player, game_card, declared_type_slug=declared_type)
     except GameEngineError as exc:
         return JsonResponse({"error": str(exc)}, status=400)
 

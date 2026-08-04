@@ -265,7 +265,7 @@ class GuessWhoServiceTests(TestCase):
         self.assertEqual(raised.exception.actual, game.turn_revision)
         self.assertEqual(GuessWhoTurn.objects.count(), 1)
 
-    def test_serialized_contract_contains_tcg_type_and_complete_history(self):
+    def test_serialized_contract_contains_types_and_complete_history(self):
         game = self.make_started_game()
         game = ask_question(game.id, self.host, "Est-il grand ?", game.turn_revision)
         game = answer_question(game.id, self.guest, True, game.turn_revision)
@@ -290,7 +290,7 @@ class GuessWhoServiceTests(TestCase):
                 "history",
             },
         )
-        self.assertEqual(state["roster"][0]["tcg_type"], "grass")
+        self.assertEqual(state["roster"][0]["primary_type"], "normal")
         self.assertEqual(state["history"][0]["answer"], True)
         self.assertEqual(state["history"][0]["responder"]["username"], self.guest.username)
 

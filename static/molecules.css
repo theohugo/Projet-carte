@@ -596,21 +596,21 @@
     transform: translateY(-2px);
 }
 
-.tcg-type-choice {
-    min-height: 58px;
-    flex-direction: column;
-    align-items: center;
+.type-choice {
+    min-height: 52px;
     justify-content: center;
     text-transform: none;
 }
 
-.tcg-type-choice .tcg-energy-icon {
-    width: 30px;
-    height: 30px;
-    border: 2px solid rgba(255, 255, 255, 0.78);
-    border-radius: 50%;
-    background-color: var(--type-accent);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.24);
+/* Les types tirés pour la partie, rappelés en permanence sur la table. */
+.game-types {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-1);
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    list-style: none;
 }
 
 .bot-label {

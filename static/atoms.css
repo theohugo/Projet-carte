@@ -396,40 +396,31 @@ a:focus-visible {
     backdrop-filter: blur(5px);
 }
 
-.card-unit-type {
+/* Les types du Pokémon : un badge par type, la couleur porte l'information. */
+.card-unit-types {
     position: absolute;
-    top: 7px;
-    display: grid;
-    width: 27px;
-    height: 27px;
-    place-items: center;
-    border: 2px solid rgba(255, 255, 255, 0.82);
-    border-radius: 50%;
+    top: 6px;
+    left: 6px;
+    z-index: 3;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    max-width: calc(100% - 12px);
+}
+
+.type-pill {
+    padding: 2px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    color: #0d1726;
     background: var(--type-accent);
-    box-shadow: 0 3px 7px rgba(10, 21, 35, 0.3);
-    font-size: 0;
+    box-shadow: 0 2px 6px rgba(10, 21, 35, 0.28);
+    font-size: 0.625rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
 }
-
-.card-unit-type.primary {
-    left: 7px;
-}
-
-.card-unit-type.secondary {
-    right: 7px;
-}
-
-.tcg-energy-icon {
-    display: block;
-    width: 20px;
-    height: 20px;
-    background: center / contain no-repeat;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.42));
-}
-
-.tcg-energy-icon[data-tcg-type="grass"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/grass.png"); }
-.tcg-energy-icon[data-tcg-type="fire"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/fire.png"); }
-.tcg-energy-icon[data-tcg-type="water"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/water.png"); }
-.tcg-energy-icon[data-tcg-type="lightning"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/lightning.png"); }
 
 .card-unit-lock {
     position: absolute;
@@ -512,21 +503,16 @@ a:focus-visible {
     transform: translateX(-50%) rotate(38deg) scale(1.08);
 }
 
-/* La couleur du type pilote le liseré et les composants associés. */
-[data-tcg-type="grass"] { --type-accent: var(--color-tcg-grass); }
-[data-tcg-type="fire"] { --type-accent: var(--color-tcg-fire); }
-[data-tcg-type="water"] { --type-accent: var(--color-tcg-water); }
-[data-tcg-type="lightning"] { --type-accent: var(--color-tcg-lightning); }
-
-.card-unit[data-tcg-type],
-.card-unit-type[data-tcg-type] {
+/* La couleur du type, fournie par le serveur en style inline, pilote le liseré
+   de la carte et les composants associés. */
+.card-unit[style*="--type-accent"] {
     border-color: var(--type-accent);
 }
 
-.card-unit-type[data-tcg-type],
-.type-choice[data-tcg-type],
-.active-type[data-tcg-type] {
+.type-choice[style*="--type-accent"],
+.active-type[style*="--type-accent"] {
     background-color: var(--type-accent);
+    color: #0d1726;
 }
 
 .btn-icon {

@@ -38,7 +38,6 @@ def make_catalog(count=ROSTER_SIZE, start=1):
                 name_fr=f"Pokémon {index}",
                 name_en=f"Pokemon {index}",
                 primary_type=normal_type,
-                tcg_type="grass",
                 sprite_url=f"https://example.com/{index}.png",
             )
         )

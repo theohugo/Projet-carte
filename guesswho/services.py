@@ -299,7 +299,6 @@ def _serialize_card(pokemon_card: PokemonCard) -> dict:
         "name_fr": pokemon_card.name_fr,
         "name_en": pokemon_card.name_en,
         "sprite_url": pokemon_card.sprite_url,
-        "tcg_type": pokemon_card.tcg_type,
         "primary_type": pokemon_card.primary_type.slug,
         "secondary_type": pokemon_card.secondary_type.slug if pokemon_card.secondary_type else None,
     }

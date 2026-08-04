@@ -3,8 +3,6 @@ import uuid
 from django.conf import settings
 from django.db import models
 
-from game.tcg_types import TCG_TYPE_CHOICES
-
 
 class PokemonType(models.Model):
     """Un des 18 types des jeux vidéo, conservé comme donnée source."""
@@ -23,13 +21,6 @@ class PokemonType(models.Model):
 class PokemonCard(models.Model):
     """Carte maîtresse du catalogue, partagée entre toutes les parties."""
 
-    class Action(models.TextChoices):
-        NORMAL = "NORMAL", "Aucun effet"
-        DRAW_TWO = "DRAW_TWO", "+2"
-        DRAW_FOUR = "DRAW_FOUR", "+4"
-        REVERSE = "REVERSE", "Inversion"
-        SHIELD = "SHIELD", "Protection"
-
     pokedex_id = models.PositiveIntegerField(unique=True)
     slug = models.SlugField(unique=True)
     name_fr = models.CharField(max_length=50)
@@ -44,8 +35,6 @@ class PokemonCard(models.Model):
     )
     sprite_url = models.URLField()
     is_legendary = models.BooleanField(default=False)
-    action = models.CharField(max_length=10, choices=Action.choices, default=Action.NORMAL)
-    tcg_type = models.CharField(max_length=12, choices=TCG_TYPE_CHOICES, default="grass")
     in_current_deck = models.BooleanField(
         default=True,
         help_text="Inclure cette espèce dans les nouvelles parties.",
@@ -80,11 +69,19 @@ class Game(models.Model):
     current_turn_number = models.PositiveSmallIntegerField(default=0)
     turn_revision = models.PositiveBigIntegerField(default=0)
     card_sequence_counter = models.PositiveIntegerField(default=0)
-    active_tcg_type = models.CharField(
-        max_length=12,
-        choices=TCG_TYPE_CHOICES,
+    selected_types = models.ManyToManyField(
+        PokemonType,
+        related_name="games",
         blank=True,
-        default="",
+        help_text="Les types tirés au sort au démarrage : la pioche n'en contient pas d'autres.",
+    )
+    active_type = models.ForeignKey(
+        PokemonType,
+        on_delete=models.PROTECT,
+        related_name="active_games",
+        null=True,
+        blank=True,
+        help_text="Type déclaré par le dernier joker joué.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
@@ -157,9 +154,17 @@ class GameCard(models.Model):
         MAIN = "MAIN", "Main"
         DEFAUSSE = "DEFAUSSE", "Défausse"
 
+    class Action(models.TextChoices):
+        NORMAL = "NORMAL", "Aucun effet"
+        DRAW_TWO = "DRAW_TWO", "+2"
+        DRAW_FOUR = "DRAW_FOUR", "+4"
+        REVERSE = "REVERSE", "Inversion"
+        SHIELD = "SHIELD", "Protection"
+
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="cards")
     pokemon_card = models.ForeignKey(PokemonCard, on_delete=models.PROTECT, related_name="instances")
     location = models.CharField(max_length=10, choices=Location.choices, default=Location.PIOCHE)
+    action = models.CharField(max_length=10, choices=Action.choices, default=Action.NORMAL)
     owner = models.ForeignKey(
         GamePlayer, on_delete=models.CASCADE, related_name="hand_cards", null=True, blank=True
     )
@@ -190,11 +195,12 @@ class MoveLog(models.Model):
     )
     move_type = models.CharField(max_length=20, choices=MoveType.choices)
     game_card = models.ForeignKey(GameCard, on_delete=models.SET_NULL, null=True, blank=True)
-    declared_tcg_type = models.CharField(
-        max_length=12,
-        choices=TCG_TYPE_CHOICES,
+    declared_type = models.ForeignKey(
+        PokemonType,
+        on_delete=models.SET_NULL,
+        related_name="declarations",
+        null=True,
         blank=True,
-        default="",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -1,3 +1,4 @@
+from collections import Counter
 from unittest import mock
 
 from django.test import TestCase
@@ -12,14 +13,16 @@ from game.game_engine import (
     card_point_value,
 )
 from game.models import Game, GameCard, MoveLog, PokemonCard
-from game.tcg_types import TCG_TYPES
-from game.tests.factories import make_cards, make_game, make_types, make_users
+from game.tests.factories import make_cards, make_draft_catalogue, make_game, make_types, make_users
 
 
 class GameEngineTestCase(TestCase):
     def setUp(self):
         self.types = make_types()
         self.cards = make_cards(self.types)
+        # Le tirage exige quatre types assez fournis : sans ce catalogue,
+        # `start_game` échouerait avant même de distribuer les cartes.
+        make_draft_catalogue(self.types)
         self.users = make_users(3)
         self.game = make_game(self.users[0])
         self.engine = GameEngine(self.game)
@@ -88,24 +91,50 @@ class StartGameTests(GameEngineTestCase):
 
         self.assertEqual(GameCard.objects.filter(game=self.game).count(), card_count)
 
-    def test_build_deck_uses_two_copies_of_each_active_catalogue_card(self):
-        inactive_card = self.cards["charmander_evo"]
-        inactive_card.in_current_deck = False
-        inactive_card.save(update_fields=["in_current_deck"])
+    def test_build_deck_draws_four_types_and_two_copies_of_each_species(self):
+        from game.game_engine import DECK_COPIES_PER_CARD
+        from game.pokemon_types import GAME_TYPE_COUNT, SPECIES_PER_TYPE
+
+        selected_types = self.engine.build_deck()
+
+        self.assertEqual(len(selected_types), GAME_TYPE_COUNT)
+        self.assertEqual(self.game.selected_types.count(), GAME_TYPE_COUNT)
+
+        deck = GameCard.objects.filter(game=self.game).select_related(
+            "pokemon_card__primary_type", "pokemon_card__secondary_type"
+        )
+        copies = Counter(game_card.pokemon_card_id for game_card in deck)
+        self.assertEqual(set(copies.values()), {DECK_COPIES_PER_CARD})
+
+        species_per_type = Counter()
+        for pokemon_card_id in copies:
+            card = next(gc.pokemon_card for gc in deck if gc.pokemon_card_id == pokemon_card_id)
+            for pokemon_type in card.types:
+                species_per_type[pokemon_type.slug] += 1
+        for pokemon_type in selected_types:
+            self.assertGreaterEqual(species_per_type[pokemon_type.slug], SPECIES_PER_TYPE)
+
+    def test_build_deck_ignores_species_excluded_from_the_catalogue(self):
+        excluded = self.cards["charmander_evo"]
+        excluded.in_current_deck = False
+        excluded.save(update_fields=["in_current_deck"])
 
         self.engine.build_deck()
-        from game.game_engine import DECK_COPIES_PER_CARD
-        from game.models import PokemonCard
 
-        active_cards = PokemonCard.objects.filter(in_current_deck=True)
-        expected = active_cards.count() * DECK_COPIES_PER_CARD
-        self.assertEqual(GameCard.objects.filter(game=self.game).count(), expected)
-        for card in active_cards:
-            self.assertEqual(
-                GameCard.objects.filter(game=self.game, pokemon_card=card).count(),
-                DECK_COPIES_PER_CARD,
-            )
-        self.assertFalse(GameCard.objects.filter(game=self.game, pokemon_card=inactive_card).exists())
+        self.assertFalse(GameCard.objects.filter(game=self.game, pokemon_card=excluded).exists())
+
+    def test_build_deck_gives_the_deck_its_share_of_action_cards(self):
+        self.engine.build_deck()
+
+        deck = list(GameCard.objects.filter(game=self.game))
+        with_action = [card for card in deck if card.action != GameCard.Action.NORMAL]
+
+        self.assertGreater(len(with_action), 0)
+        # Une espèce garde le même pouvoir sur ses deux exemplaires.
+        actions_by_species = {}
+        for card in deck:
+            actions_by_species.setdefault(card.pokemon_card_id, set()).add(card.action)
+        self.assertTrue(all(len(actions) == 1 for actions in actions_by_species.values()))
 
 
 class MoveValidationTests(GameEngineTestCase):
@@ -143,14 +172,10 @@ class MoveValidationTests(GameEngineTestCase):
         ok, _ = self.engine.is_move_valid(self.current, foreign_card)
         self.assertFalse(ok)
 
-    def test_same_tcg_type_is_compatible_despite_different_source_types(self):
-        flying_card = self.cards["zapdos"]
-        flying_card.is_legendary = False
-        flying_card.tcg_type = "fire"
-        flying_card.save(update_fields=["is_legendary", "tcg_type"])
+    def test_a_shared_type_makes_the_card_playable(self):
         self._put_card(self.cards["charmander"], location=GameCard.Location.DEFAUSSE)
         candidate = self._put_card(
-            flying_card,
+            self.cards["charmander_evo"],
             location=GameCard.Location.MAIN,
             owner=self.current,
         )
@@ -159,13 +184,32 @@ class MoveValidationTests(GameEngineTestCase):
 
         self.assertTrue(ok, reason)
 
-    def test_same_source_type_does_not_match_when_tcg_types_differ(self):
-        candidate_card = self.cards["charmander_evo"]
-        candidate_card.tcg_type = "water"
-        candidate_card.save(update_fields=["tcg_type"])
+    def test_a_secondary_type_is_enough_to_bridge_two_cards(self):
+        # Bulbizarre est Plante/Poison : son second type suffit à l'enchaîner
+        # sur une carte Poison, même sans partager le type principal.
+        nidoran = PokemonCard.objects.create(
+            pokedex_id=29,
+            slug="nidoran-f",
+            name_fr="Nidoran♀",
+            name_en="Nidoran-F",
+            primary_type=self.types["poison"],
+            sprite_url="https://example.com/29.png",
+        )
+        self._put_card(nidoran, location=GameCard.Location.DEFAUSSE)
+        candidate = self._put_card(
+            self.cards["bulbasaur"],
+            location=GameCard.Location.MAIN,
+            owner=self.current,
+        )
+
+        ok, reason = self.engine.is_move_valid(self.current, candidate)
+
+        self.assertTrue(ok, reason)
+
+    def test_no_shared_type_and_another_species_is_refused(self):
         self._put_card(self.cards["charmander"], location=GameCard.Location.DEFAUSSE)
         candidate = self._put_card(
-            candidate_card,
+            self.cards["squirtle"],
             location=GameCard.Location.MAIN,
             owner=self.current,
         )
@@ -173,9 +217,9 @@ class MoveValidationTests(GameEngineTestCase):
         ok, reason = self.engine.is_move_valid(self.current, candidate)
 
         self.assertFalse(ok)
-        self.assertIn("type JCC", reason)
+        self.assertIn("aucun type", reason)
 
-    def test_active_tcg_type_overrides_the_top_card_type(self):
+    def test_active_type_overrides_the_top_card_type(self):
         self._put_card(self.cards["charmander"], location=GameCard.Location.DEFAUSSE)
         water_candidate = self._put_card(
             self.cards["squirtle"],
@@ -187,8 +231,8 @@ class MoveValidationTests(GameEngineTestCase):
             location=GameCard.Location.MAIN,
             owner=self.current,
         )
-        self.game.active_tcg_type = "water"
-        self.game.save(update_fields=["active_tcg_type"])
+        self.game.active_type = self.types["water"]
+        self.game.save(update_fields=["active_type"])
 
         water_ok, water_reason = self.engine.is_move_valid(self.current, water_candidate)
         grass_ok, _ = self.engine.is_move_valid(self.current, grass_candidate)
@@ -196,7 +240,9 @@ class MoveValidationTests(GameEngineTestCase):
         self.assertTrue(water_ok, water_reason)
         self.assertFalse(grass_ok)
 
-    def test_normal_card_discards_an_unexpected_declared_tcg_type(self):
+    def test_normal_card_clears_a_previously_imposed_type(self):
+        self.game.active_type = self.types["fire"]
+        self.game.save(update_fields=["active_type"])
         self._put_card(self.cards["charmander"], location=GameCard.Location.DEFAUSSE)
         candidate = self._put_card(
             self.cards["charmander_evo"],
@@ -204,12 +250,12 @@ class MoveValidationTests(GameEngineTestCase):
             owner=self.current,
         )
 
-        self.engine.play_card(self.current, candidate, declared_tcg_type="grass")
+        self.engine.play_card(self.current, candidate, declared_type_slug="grass")
 
         self.game.refresh_from_db()
         move = MoveLog.objects.get(game=self.game, game_card=candidate)
-        self.assertEqual(self.game.active_tcg_type, "")
-        self.assertEqual(move.declared_tcg_type, "")
+        self.assertIsNone(self.game.active_type)
+        self.assertIsNone(move.declared_type)
 
     def test_legendary_card_always_playable(self):
         # On force une carte légendaire dans la main du joueur courant.
@@ -223,73 +269,58 @@ class MoveValidationTests(GameEngineTestCase):
         ok, _ = self.engine.is_move_valid(self.current, legendary_instance)
         self.assertTrue(ok)
 
-    def test_legendary_play_requires_a_valid_declared_tcg_type(self):
-        legendary_instance = GameCard.objects.filter(
-            game=self.game, pokemon_card=self.cards["zapdos"]
-        ).first()
-        legendary_instance.location = GameCard.Location.MAIN
-        legendary_instance.owner = self.current
-        legendary_instance.save(update_fields=["location", "owner"])
-
-        with self.assertRaises(InvalidMoveError):
-            self.engine.play_card(self.current, legendary_instance, declared_tcg_type=None)
-
-        with self.assertRaises(InvalidMoveError):
-            self.engine.play_card(
-                self.current,
-                legendary_instance,
-                declared_tcg_type="poison",
-            )
-
-    def test_legendary_play_stores_the_normalized_tcg_type_slug(self):
-        legendary_instance = GameCard.objects.filter(
-            game=self.game, pokemon_card=self.cards["zapdos"]
-        ).first()
-        legendary_instance.location = GameCard.Location.MAIN
-        legendary_instance.owner = self.current
-        legendary_instance.save(update_fields=["location", "owner"])
-
-        self.engine.play_card(
-            self.current,
-            legendary_instance,
-            declared_tcg_type=" WATER ",
+    def test_legendary_play_requires_a_type_drawn_for_this_game(self):
+        legendary_instance = self._put_card(
+            self.cards["zapdos"],
+            location=GameCard.Location.MAIN,
+            owner=self.current,
         )
+
+        with self.assertRaises(InvalidMoveError):
+            self.engine.play_card(self.current, legendary_instance, declared_type_slug=None)
+
+        # Le Poison n'a pas été tiré pour cette partie : il ne peut pas être imposé.
+        with self.assertRaises(InvalidMoveError):
+            self.engine.play_card(self.current, legendary_instance, declared_type_slug="poison")
+
+    def test_legendary_play_imposes_the_declared_type(self):
+        legendary_instance = self._put_card(
+            self.cards["zapdos"],
+            location=GameCard.Location.MAIN,
+            owner=self.current,
+        )
+        declared = self.engine.get_selected_types().first()
+
+        self.engine.play_card(self.current, legendary_instance, declared_type_slug=declared.slug)
 
         self.game.refresh_from_db()
         move = MoveLog.objects.get(game=self.game, game_card=legendary_instance)
-        self.assertEqual(self.game.active_tcg_type, "water")
-        self.assertEqual(move.declared_tcg_type, "water")
+        self.assertEqual(self.game.active_type, declared)
+        self.assertEqual(move.declared_type, declared)
 
-    def test_state_exposes_exactly_the_four_tcg_choices_without_legacy_keys(self):
-        legendary_instance = GameCard.objects.filter(
-            game=self.game, pokemon_card=self.cards["zapdos"]
-        ).first()
-        legendary_instance.location = GameCard.Location.MAIN
-        legendary_instance.owner = self.current
-        legendary_instance.save(update_fields=["location", "owner"])
+    def test_state_exposes_the_game_types_and_card_types(self):
+        legendary_instance = self._put_card(
+            self.cards["zapdos"],
+            location=GameCard.Location.MAIN,
+            owner=self.current,
+        )
 
         state = self.engine.get_game_state(for_player=self.current)
         own_state = next(player for player in state["players"] if player["id"] == self.current.id)
         card_state = next(card for card in own_state["hand"] if card["id"] == legendary_instance.id)
 
+        self.assertEqual(len(state["game_types"]), 4)
         self.assertEqual(
-            [entry["slug"] for entry in state["available_tcg_types"]],
-            [tcg_type.slug for tcg_type in TCG_TYPES],
+            {entry["slug"] for entry in state["game_types"]},
+            set(self.engine.get_selected_types().values_list("slug", flat=True)),
         )
-        self.assertEqual(len(state["available_tcg_types"]), 4)
-        self.assertIsNone(state["active_tcg_type"])
-        self.assertEqual(card_state["tcg_type"], "lightning")
-        self.assertEqual(card_state["tcg_type_label"], "Électrique")
-        self.assertTrue(card_state["requires_tcg_type_choice"])
-        for legacy_key in ("active_family", "available_families", "active_type"):
+        self.assertTrue(all(entry["color"].startswith("#") for entry in state["game_types"]))
+        self.assertIsNone(state["active_type"])
+        self.assertEqual([entry["slug"] for entry in card_state["types"]], ["flying"])
+        self.assertTrue(card_state["requires_type_choice"])
+        for legacy_key in ("active_tcg_type", "available_tcg_types"):
             self.assertNotIn(legacy_key, state)
-        for legacy_key in (
-            "families",
-            "requires_family_choice",
-            "requires_declared_type",
-            "primary_type",
-            "secondary_type",
-        ):
+        for legacy_key in ("tcg_type", "tcg_type_label", "requires_tcg_type_choice"):
             self.assertNotIn(legacy_key, card_state)
 
 
@@ -489,16 +520,19 @@ class ActionCardEffectsTests(GameEngineTestCase):
             )
         self.game.save(update_fields=["card_sequence_counter"])
 
-    def _make_action(self, card_name, action):
-        pokemon_card = self.cards[card_name]
-        pokemon_card.action = action
-        pokemon_card.save(update_fields=["action"])
-        return pokemon_card
+    def _make_action(self, game_card, action):
+        """Attribue un pouvoir à une carte physique déjà en jeu."""
+        game_card.action = action
+        game_card.save(update_fields=["action"])
+        return game_card
+
+    def _give_game_types(self, *slugs):
+        self.game.selected_types.set([self.types[slug] for slug in slugs])
 
     def test_draw_two_makes_target_draw_and_skips_their_turn(self):
-        draw_two = self._make_action("charmander", PokemonCard.Action.DRAW_TWO)
         self._set_discard_top(self.cards["charmander_evo"])
-        hand = self._force_hand(self.p0, [draw_two, self.cards["squirtle"]])
+        hand = self._force_hand(self.p0, [self.cards["charmander"], self.cards["squirtle"]])
+        self._make_action(hand[0], GameCard.Action.DRAW_TWO)
         self._seed_draw_pile()
 
         self.engine.play_card(self.p0, hand[0])
@@ -513,42 +547,44 @@ class ActionCardEffectsTests(GameEngineTestCase):
             ).exists()
         )
 
-    def test_draw_four_changes_tcg_type_draws_four_and_skips_target(self):
-        draw_four = self._make_action("zapdos", PokemonCard.Action.DRAW_FOUR)
+    def test_draw_four_imposes_a_type_draws_four_and_skips_target(self):
+        self._give_game_types("fire", "water", "grass", "flying")
         self._set_discard_top(self.cards["charmander"])
-        hand = self._force_hand(self.p0, [draw_four, self.cards["squirtle"]])
+        hand = self._force_hand(self.p0, [self.cards["zapdos"], self.cards["squirtle"]])
+        self._make_action(hand[0], GameCard.Action.DRAW_FOUR)
         self._seed_draw_pile()
 
-        self.engine.play_card(self.p0, hand[0], declared_tcg_type="water")
+        self.engine.play_card(self.p0, hand[0], declared_type_slug="water")
 
         self.game.refresh_from_db()
         move = MoveLog.objects.get(game=self.game, game_card=hand[0])
-        self.assertEqual(self.game.active_tcg_type, "water")
-        self.assertEqual(move.declared_tcg_type, "water")
+        self.assertEqual(self.game.active_type, self.types["water"])
+        self.assertEqual(move.declared_type, self.types["water"])
         self.assertEqual(self.p1.hand_cards.count(), 4)
         self.assertEqual(self.engine.get_current_player().pk, self.p2.pk)
 
-    def test_non_legendary_draw_four_requires_a_tcg_type_in_state_contract(self):
-        draw_four = self._make_action("charmander", PokemonCard.Action.DRAW_FOUR)
-        self.assertFalse(draw_four.is_legendary)
+    def test_non_legendary_draw_four_requires_a_type_in_state_contract(self):
+        self._give_game_types("fire", "water", "grass", "flying")
         self._set_discard_top(self.cards["squirtle"])
-        hand = self._force_hand(self.p0, [draw_four, self.cards["bulbasaur"]])
+        hand = self._force_hand(self.p0, [self.cards["charmander"], self.cards["bulbasaur"]])
+        self._make_action(hand[0], GameCard.Action.DRAW_FOUR)
+        self.assertFalse(hand[0].pokemon_card.is_legendary)
 
         state = self.engine.get_game_state(for_player=self.p0)
         own_state = next(player for player in state["players"] if player["id"] == self.p0.id)
         card_state = next(card for card in own_state["hand"] if card["id"] == hand[0].id)
 
-        self.assertTrue(card_state["requires_tcg_type_choice"])
+        self.assertTrue(card_state["requires_type_choice"])
         with self.assertRaisesMessage(
             InvalidMoveError,
-            "Cette carte impose de choisir le prochain type JCC.",
+            "Cette carte impose de choisir un des types de la partie.",
         ):
-            self.engine.play_card(self.p0, hand[0], declared_tcg_type=None)
+            self.engine.play_card(self.p0, hand[0], declared_type_slug=None)
 
     def test_reverse_changes_direction_before_selecting_next_player(self):
-        reverse = self._make_action("charmander", PokemonCard.Action.REVERSE)
         self._set_discard_top(self.cards["charmander_evo"])
-        hand = self._force_hand(self.p0, [reverse, self.cards["squirtle"]])
+        hand = self._force_hand(self.p0, [self.cards["charmander"], self.cards["squirtle"]])
+        self._make_action(hand[0], GameCard.Action.REVERSE)
 
         self.engine.play_card(self.p0, hand[0])
 
@@ -557,9 +593,9 @@ class ActionCardEffectsTests(GameEngineTestCase):
         self.assertEqual(self.engine.get_current_player().pk, self.p2.pk)
 
     def test_shield_grants_protection_and_exposes_it_in_state(self):
-        shield = self._make_action("charmander", PokemonCard.Action.SHIELD)
         self._set_discard_top(self.cards["charmander_evo"])
-        hand = self._force_hand(self.p0, [shield, self.cards["squirtle"]])
+        hand = self._force_hand(self.p0, [self.cards["charmander"], self.cards["squirtle"]])
+        self._make_action(hand[0], GameCard.Action.SHIELD)
 
         self.engine.play_card(self.p0, hand[0])
 
@@ -568,16 +604,16 @@ class ActionCardEffectsTests(GameEngineTestCase):
         own_state = next(player for player in state["players"] if player["id"] == self.p0.id)
         self.assertTrue(self.p0.has_protection)
         self.assertTrue(own_state["has_protection"])
-        self.assertEqual(state["top_discard"]["action"], PokemonCard.Action.SHIELD)
+        self.assertEqual(state["top_discard"]["action"], GameCard.Action.SHIELD)
         self.assertEqual(state["top_discard"]["action_label"], "Protection")
         self.assertEqual(state["direction"], 1)
 
     def test_shield_cancels_penalty_is_consumed_and_preserves_target_turn(self):
         self.p1.has_protection = True
         self.p1.save(update_fields=["has_protection"])
-        draw_two = self._make_action("charmander", PokemonCard.Action.DRAW_TWO)
         self._set_discard_top(self.cards["charmander_evo"])
-        hand = self._force_hand(self.p0, [draw_two, self.cards["squirtle"]])
+        hand = self._force_hand(self.p0, [self.cards["charmander"], self.cards["squirtle"]])
+        self._make_action(hand[0], GameCard.Action.DRAW_TWO)
         self._seed_draw_pile()
 
         self.engine.play_card(self.p0, hand[0])

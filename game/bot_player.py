@@ -4,8 +4,8 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from game.models import GameCard, PokemonCard
-from game.tcg_types import TCG_TYPES
+from game.deck_builder import species_type_slugs
+from game.models import GameCard
 
 if TYPE_CHECKING:
     from game.game_engine import GameEngine
@@ -16,27 +16,29 @@ if TYPE_CHECKING:
 class BotDecision:
     kind: Literal["play", "draw"]
     card_id: int | None = None
-    declared_tcg_type: str = ""
+    declared_type: str = ""
 
 
 ACTION_PRIORITY = {
-    PokemonCard.Action.DRAW_TWO: 0,
-    PokemonCard.Action.REVERSE: 1,
-    PokemonCard.Action.SHIELD: 2,
-    PokemonCard.Action.NORMAL: 3,
-    PokemonCard.Action.DRAW_FOUR: 4,
+    GameCard.Action.DRAW_TWO: 0,
+    GameCard.Action.REVERSE: 1,
+    GameCard.Action.SHIELD: 2,
+    GameCard.Action.NORMAL: 3,
+    GameCard.Action.DRAW_FOUR: 4,
 }
 
 
-def _best_declared_tcg_type(remaining_cards: list[GameCard]) -> str:
+def _best_declared_type(remaining_cards: list[GameCard], game_type_slugs: list[str]) -> str:
+    """Le type de la partie le mieux représenté dans la main restante."""
+
     counts: Counter[str] = Counter()
     for game_card in remaining_cards:
-        counts.update([game_card.pokemon_card.tcg_type])
+        counts.update(slug for slug in species_type_slugs(game_card.pokemon_card))
 
-    type_order = {tcg_type.slug: index for index, tcg_type in enumerate(TCG_TYPES)}
-    if not counts:
-        return TCG_TYPES[0].slug
-    return min(counts, key=lambda slug: (-counts[slug], type_order[slug]))
+    type_order = {slug: index for index, slug in enumerate(game_type_slugs)}
+    if not game_type_slugs:
+        return ""
+    return min(game_type_slugs, key=lambda slug: (-counts[slug], type_order[slug]))
 
 
 def choose_bot_move(engine: "GameEngine", bot: "GamePlayer") -> BotDecision:
@@ -56,21 +58,22 @@ def choose_bot_move(engine: "GameEngine", bot: "GamePlayer") -> BotDecision:
     selected = min(
         playable,
         key=lambda game_card: (
-            engine.requires_tcg_type_choice(game_card.pokemon_card),
-            ACTION_PRIORITY[game_card.pokemon_card.action],
+            engine.requires_type_choice(game_card),
+            ACTION_PRIORITY[game_card.action],
             game_card.order_index,
             game_card.id,
         ),
     )
-    declared_tcg_type = ""
-    if engine.requires_tcg_type_choice(selected.pokemon_card):
-        declared_tcg_type = _best_declared_tcg_type(
-            [game_card for game_card in hand if game_card.pk != selected.pk]
+    declared_type = ""
+    if engine.requires_type_choice(selected):
+        declared_type = _best_declared_type(
+            [game_card for game_card in hand if game_card.pk != selected.pk],
+            [pokemon_type.slug for pokemon_type in engine.get_selected_types()],
         )
     return BotDecision(
         kind="play",
         card_id=selected.id,
-        declared_tcg_type=declared_tcg_type,
+        declared_type=declared_type,
     )
 
 
@@ -84,5 +87,5 @@ def perform_bot_turn(engine: "GameEngine") -> BotDecision:
     game_card = GameCard.objects.select_related(
         "pokemon_card__primary_type", "pokemon_card__secondary_type"
     ).get(pk=decision.card_id, game=engine.game)
-    engine.play_card(bot, game_card, declared_tcg_type=decision.declared_tcg_type)
+    engine.play_card(bot, game_card, declared_type_slug=decision.declared_type)
     return decision

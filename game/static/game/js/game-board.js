@@ -11,6 +11,20 @@
     const announcer = document.getElementById("game-announcer");
     if (announcer && board.contains(announcer)) document.body.appendChild(announcer);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    function wait(duration) {
+        return new Promise((resolve) => window.setTimeout(resolve, duration));
+    }
+
+    function readJson(elementId) {
+        const element = document.getElementById(elementId);
+        if (!element) return null;
+        try {
+            return JSON.parse(element.textContent);
+        } catch (_) {
+            return null;
+        }
+    }
     const precisePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
     const stateUrl = board.dataset.stateUrl;
     const reloadContextKey = `poke-uno:game-reload:${window.location.pathname}`;
@@ -379,17 +393,20 @@
     function buildMotionCardFace(card) {
         const face = document.createElement("div");
         face.className = `card-unit card-unit--display motion-card-reveal${card.action !== "NORMAL" ? " has-action" : ""}`;
-        face.dataset.tcgType = card.tcg_type;
+        const cardTypes = card.types || [];
+        face.style.setProperty("--type-accent", cardTypes[0]?.color || "#9fa19f");
         face.setAttribute("aria-hidden", "true");
 
-        const badge = document.createElement("span");
-        badge.className = "card-unit-type primary";
-        badge.dataset.tcgType = card.tcg_type;
-        const icon = document.createElement("span");
-        icon.className = "tcg-energy-icon";
-        icon.dataset.tcgType = card.tcg_type;
-        badge.appendChild(icon);
-        face.appendChild(badge);
+        const badges = document.createElement("span");
+        badges.className = "card-unit-types";
+        cardTypes.forEach((cardType) => {
+            const pill = document.createElement("span");
+            pill.className = "type-pill";
+            pill.style.setProperty("--type-accent", cardType.color);
+            pill.textContent = cardType.name_fr;
+            badges.appendChild(pill);
+        });
+        face.appendChild(badges);
 
         const number = document.createElement("span");
         number.className = "card-unit-number";
@@ -615,19 +632,19 @@
         const choices = document.getElementById("legendary-choices");
         setTypeChoiceBackgroundInert(true);
         choices.hidden = false;
-        choices.querySelector("[data-declared-tcg-type]")?.focus();
+        choices.querySelector("[data-declared-type]")?.focus();
     }
 
     board.addEventListener("click", (event) => {
         const card = event.target.closest("[data-play-card]");
         if (card) {
             if (card.disabled) return;
-            if (card.dataset.requiresTcgTypeChoice === "true") {
+            if (card.dataset.requiresTypeChoice === "true") {
                 openLegendaryChoices(card);
             } else {
                 submitAction(
                     board.dataset.playUrl,
-                    { game_card_id: Number(card.dataset.playCard), declared_tcg_type: null },
+                    { game_card_id: Number(card.dataset.playCard), declared_type: null },
                     { kind: "play", source: card },
                 );
             }
@@ -639,14 +656,14 @@
             return;
         }
 
-        const tcgType = event.target.closest("[data-declared-tcg-type]");
-        if (tcgType && pendingLegendaryCardId) {
+        const declaredType = event.target.closest("[data-declared-type]");
+        if (declaredType && pendingLegendaryCardId) {
             const source = pendingLegendaryCardElement;
             const gameCardId = pendingLegendaryCardId;
             closeLegendaryChoices({ restoreFocus: false });
             submitAction(
                 board.dataset.playUrl,
-                { game_card_id: Number(gameCardId), declared_tcg_type: tcgType.dataset.declaredTcgType },
+                { game_card_id: Number(gameCardId), declared_type: declaredType.dataset.declaredType },
                 { kind: "play", source },
             );
             return;
@@ -805,6 +822,64 @@
         }, delay);
     }
 
+
+    // -- Rideau de tirage des types -----------------------------------------
+    // Rejoué une seule fois par partie et par navigateur : le tirage a lieu
+    // côté serveur au démarrage, l'animation ne fait que le mettre en scène.
+    async function playTypeDrawIntro() {
+        const curtain = document.getElementById("type-draw");
+        if (!curtain) return;
+
+        const storageKey = `poke-uno:types-seen:${curtain.dataset.gameId}`;
+        try {
+            if (window.sessionStorage.getItem(storageKey)) return;
+            window.sessionStorage.setItem(storageKey, "1");
+        } catch (_) {
+            // Stockage indisponible : l'animation sera rejouée, sans dommage.
+        }
+
+        const slots = [...curtain.querySelectorAll(".type-draw-slot")];
+        if (!slots.length) return;
+
+        const pool = readJson("pokemon-types") || [];
+        curtain.hidden = false;
+        curtain.removeAttribute("aria-hidden");
+        document.body.classList.add("has-type-draw");
+
+        const reveal = (slot) => {
+            slot.classList.add("is-revealed");
+            slot.style.setProperty("--type-accent", slot.dataset.finalColor);
+            slot.querySelector(".type-draw-name").textContent = slot.dataset.finalType;
+        };
+
+        if (reducedMotion.matches || !pool.length) {
+            slots.forEach(reveal);
+            await wait(1200);
+        } else {
+            for (const slot of slots) {
+                const name = slot.querySelector(".type-draw-name");
+                slot.classList.add("is-spinning");
+                for (let tick = 0; tick < 12; tick += 1) {
+                    const candidate = pool[Math.floor(Math.random() * pool.length)];
+                    slot.style.setProperty("--type-accent", candidate.color);
+                    name.textContent = candidate.name_fr;
+                    await wait(60 + tick * 8);
+                }
+                slot.classList.remove("is-spinning");
+                reveal(slot);
+                await wait(180);
+            }
+            await wait(900);
+        }
+
+        curtain.classList.add("is-leaving");
+        await wait(reducedMotion.matches ? 0 : 420);
+        curtain.hidden = true;
+        curtain.setAttribute("aria-hidden", "true");
+        curtain.classList.remove("is-leaving");
+        document.body.classList.remove("has-type-draw");
+    }
+
     layoutPlayerHand();
     setupTiltCards();
     restoreReloadContext();
@@ -814,6 +889,7 @@
         handResizeObserver.observe(handViewport);
     }
     window.addEventListener("resize", scheduleHandLayout, { passive: true });
+    playTypeDrawIntro();
     schedulePoll();
     scheduleBotTurn();
     document.addEventListener("visibilitychange", () => {

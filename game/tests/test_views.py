@@ -6,8 +6,7 @@ from django.urls import reverse
 
 from game.game_engine import GameEngine
 from game.models import Game, GameCard
-from game.tcg_types import TCG_TYPES
-from game.tests.factories import make_cards, make_game, make_types, make_users
+from game.tests.factories import make_cards, make_draft_catalogue, make_game, make_types, make_users
 
 
 class AnonymousAccessTests(TestCase):
@@ -141,7 +140,9 @@ class ApiStartGameTests(TestCase):
     démarrer sans rafraîchir manuellement."""
 
     def setUp(self):
-        make_cards(make_types())
+        types = make_types()
+        make_cards(types)
+        make_draft_catalogue(types)
         self.owner, self.other = make_users(2)
         self.game = make_game(self.owner)
         engine = GameEngine(self.game)
@@ -202,6 +203,7 @@ class GameBoardRenderingTests(TestCase):
     def test_own_hand_renders_disabled_cards_with_type_icons(self):
         types = make_types()
         make_cards(types)
+        make_draft_catalogue(types)
         first, second = make_users(2)
         game = make_game(first)
         engine = GameEngine(game)
@@ -213,13 +215,14 @@ class GameBoardRenderingTests(TestCase):
         response = self.client.get(reverse("game_detail", args=[game.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'class="tcg-energy-icon"')
+        self.assertContains(response, 'class="type-pill"')
         self.assertContains(response, "Non jouable")
 
     @mock.patch("game.game_engine.HAND_SIZE", 3)
     def test_opponent_hand_renders_exact_count_as_card_backs(self):
         types = make_types()
         make_cards(types)
+        make_draft_catalogue(types)
         first, second = make_users(2)
         game = make_game(first)
         engine = GameEngine(game)
@@ -241,6 +244,7 @@ class GameBoardRenderingTests(TestCase):
     def test_large_opponent_hand_is_capped_without_leaking_into_json(self):
         types = make_types()
         cards = make_cards(types)
+        make_draft_catalogue(types)
         first, second = make_users(2)
         game = make_game(first)
         engine = GameEngine(game)
@@ -269,9 +273,10 @@ class GameBoardRenderingTests(TestCase):
         self.assertNotContains(response, '"card_back_slots"')
         self.assertNotContains(response, '"hidden_card_count"')
 
-    def test_tcg_type_selector_and_wild_card_contract_are_rendered(self):
+    def test_type_selector_and_wild_card_contract_are_rendered(self):
         types = make_types()
         cards = make_cards(types)
+        make_draft_catalogue(types)
         first, second = make_users(2)
         game = make_game(first)
         engine = GameEngine(game)
@@ -286,22 +291,22 @@ class GameBoardRenderingTests(TestCase):
         )
         game.status = Game.Status.EN_COURS
         game.save(update_fields=["status"])
+        game.selected_types.set([types["fire"], types["water"], types["grass"], types["flying"]])
 
         self.client.force_login(first)
         response = self.client.get(reverse("game_detail", args=[game.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["declared_tcg_types"], TCG_TYPES)
+        self.assertEqual(
+            [entry["name_fr"] for entry in response.context["game_types"]],
+            ["Eau", "Feu", "Plante", "Vol"],
+        )
         self.assertContains(
             response,
-            'data-requires-tcg-type-choice="true"',
+            'data-requires-type-choice="true"',
             count=1,
         )
-        self.assertContains(
-            response,
-            "data-declared-tcg-type=",
-            count=len(TCG_TYPES),
-        )
+        self.assertContains(response, "data-declared-type=", count=4)
 
 
 class BotLobbyViewTests(TestCase):
@@ -370,6 +375,7 @@ class GameStateApiSecurityTests(TestCase):
     def setUp(self):
         self.types = make_types()
         self.cards = make_cards(self.types)
+        make_draft_catalogue(self.types)
         self.p1_user, self.p2_user = make_users(2)
         self.game = make_game(self.p1_user)
         engine = GameEngine(self.game)
@@ -424,22 +430,19 @@ class GameStateApiSecurityTests(TestCase):
         self.assertIn("hand", mine)
         self.assertEqual(len(mine["hand"]), 1)
 
-    def test_state_uses_tcg_type_contract_and_marks_wild_cards(self):
-        active_tcg_type = next(tcg_type for tcg_type in TCG_TYPES if tcg_type.slug == "lightning")
-        self.game.active_tcg_type = active_tcg_type.slug
-        self.game.save(update_fields=["active_tcg_type"])
+    def test_state_uses_the_real_type_contract_and_marks_wild_cards(self):
+        self.game.selected_types.set([self.types["fire"], self.types["water"]])
+        self.game.active_type = self.types["water"]
+        self.game.save(update_fields=["active_type"])
         self.client.force_login(self.p1_user)
 
         response = self.client.get(reverse("api_game_state", args=[self.game.id]))
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["active_tcg_type"], active_tcg_type.as_dict())
-        self.assertEqual(
-            data["available_tcg_types"],
-            [tcg_type.as_dict() for tcg_type in TCG_TYPES],
-        )
-        self.assertNotIn("active_type", data)
+        self.assertEqual(data["active_type"]["slug"], "water")
+        self.assertEqual([entry["slug"] for entry in data["game_types"]], ["water", "fire"])
+        self.assertNotIn("active_tcg_type", data)
         mine = next(player for player in data["players"] if player["id"] == self.gp1.id)
         card = mine["hand"][0]
         self.assertEqual(
@@ -450,17 +453,15 @@ class GameStateApiSecurityTests(TestCase):
                 "name_fr",
                 "name_en",
                 "sprite_url",
-                "tcg_type",
-                "tcg_type_label",
+                "types",
                 "is_legendary",
-                "requires_tcg_type_choice",
+                "requires_type_choice",
                 "action",
                 "action_label",
             },
         )
-        self.assertEqual(card["tcg_type"], "lightning")
-        self.assertEqual(card["tcg_type_label"], "Électrique")
-        self.assertIs(card["requires_tcg_type_choice"], True)
+        self.assertEqual([entry["slug"] for entry in card["types"]], ["flying"])
+        self.assertIs(card["requires_type_choice"], True)
 
 
 class PlayCardPayloadValidationTests(TestCase):
@@ -484,11 +485,11 @@ class PlayCardPayloadValidationTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["error"], "La requête doit être un objet JSON.")
 
-    def test_declared_tcg_type_must_be_a_string_or_null(self):
-        response = self.post_payload({"game_card_id": 1, "declared_tcg_type": {}})
+    def test_declared_type_must_be_a_string_or_null(self):
+        response = self.post_payload({"game_card_id": 1, "declared_type": {}})
 
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()["error"], "Type JCC déclaré invalide.")
+        self.assertEqual(response.json()["error"], "Type déclaré invalide.")
 
     def test_game_card_id_must_be_a_positive_integer(self):
         for invalid_id in ("abc", {}, [], True, 0, -1):
