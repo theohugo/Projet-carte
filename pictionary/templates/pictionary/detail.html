@@ -4,77 +4,111 @@
 {% block title %}Pictionary Pokémon — partie{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'pictionary/css/pictionary.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'pictionary/css/pictionary.css' %}?v=2">
 
-<div id="pictionary-game" class="pic-game"
+<div id="pictionary-game" class="room-shell pic-game"
      data-state-url="{% url 'pictionary:api_state' game_id=game.id %}"
      data-stroke-url="{% url 'pictionary:api_stroke' game_id=game.id %}"
      data-guess-url="{% url 'pictionary:api_guess' game_id=game.id %}">
-    <header class="pic-game-heading">
-        <a class="back-link" href="{% url 'pictionary:lobby' %}"><span aria-hidden="true">←</span> Retour au lobby</a>
-        <h1>Pictionary <span class="status-badge" data-status="{{ game.status|lower }}">{{ game.get_status_display }}</span></h1>
+    <header class="room-header">
+        <div>
+            <a class="back-link" href="{% url 'pictionary:lobby' %}" data-reload-focus-key="back"><span aria-hidden="true">←</span> Retour au lobby</a>
+            <h1 class="room-title">Pictionary <span class="status-badge" data-status="{{ game.status|lower }}" data-status-badge>{{ game.get_status_display }}</span></h1>
+        </div>
+        <ol class="round-dots" data-round-dots aria-label="Progression des manches"></ol>
     </header>
 
     <p id="pic-feedback" class="message message-error" hidden role="alert"></p>
     <p id="pic-announcer" class="visually-hidden" aria-live="polite"></p>
 
-    <section class="pic-waiting" data-waiting {% if game_state.status != "EN_ATTENTE" %}hidden{% endif %}>
-        <p class="section-kicker">Salon ouvert</p>
-        <h2>En attente des joueurs</h2>
-        <p>Partage le lien de cette page. Il faut au moins {{ game_state.min_players }} joueurs, et la partie compte <strong>{{ game.round_count }} manches</strong>.</p>
-        {% if game_state.is_host %}
-        <form method="post" action="{% url 'pictionary:start_game' game_id=game.id %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="start">Lancer la partie</button>
-        </form>
-        {% else %}
-        <p>L’hôte lancera la partie quand tout le monde sera là.</p>
-        {% endif %}
+    <section class="room-waiting" data-waiting {% if game_state.status != "EN_ATTENTE" %}hidden{% endif %}>
+        <div>
+            <p class="section-kicker"><span class="live-pulse" aria-hidden="true"></span> Salon ouvert</p>
+            <h2>En attente des joueurs</h2>
+            <p class="room-waiting-lead">Il faut au moins <strong>{{ game_state.min_players }} joueurs</strong> : un dessine, les autres devinent. La partie compte <strong>{{ game.round_count }} manches</strong> de 90 secondes, et le crayon tourne à chaque fois.</p>
+            <div class="room-waiting-actions">
+                {% if game_state.is_host %}
+                <form method="post" action="{% url 'pictionary:start_game' game_id=game.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="start">Lancer la partie</button>
+                </form>
+                {% endif %}
+                <button type="button" class="btn btn-secondary" data-copy-link data-reload-focus-key="copy"><span data-copy-label>Copier le lien d’invitation</span></button>
+            </div>
+            {% if not game_state.is_host %}<p class="room-waiting-lead">L’hôte lancera la partie quand tout le monde sera là.</p>{% endif %}
+        </div>
+
+        <div>
+            <div class="pic-easel" aria-hidden="true">
+                <span class="pic-easel-sheet"></span>
+                <span class="pic-easel-stroke pic-easel-stroke--1"></span>
+                <span class="pic-easel-stroke pic-easel-stroke--2"></span>
+                <span class="pic-easel-pen"></span>
+            </div>
+            <p class="section-kicker">Joueurs présents</p>
+            <ul class="room-players" data-waiting-players></ul>
+        </div>
     </section>
 
     <section class="pic-stage" data-stage hidden>
-        <div class="pic-status-row">
-            <p class="pic-round-label"><span data-round-number>—</span></p>
-            <p class="pic-turn" data-turn>—</p>
-            <p class="pic-timer"><span data-timer>—</span> s</p>
+        <div class="pic-stage-top">
+            <div class="pic-turn-block">
+                <p class="pic-round-label" data-round-number>—</p>
+                <p class="pic-turn" data-turn>—</p>
+            </div>
+            <div class="timer-ring" data-timer-ring>
+                <svg viewBox="0 0 100 100" aria-hidden="true">
+                    <circle class="timer-track" cx="50" cy="50" r="44"></circle>
+                    <circle class="timer-progress" cx="50" cy="50" r="44" data-timer-progress></circle>
+                </svg>
+                <span class="timer-value" data-timer>—</span>
+            </div>
         </div>
 
-        <div class="pic-board">
+        <div class="pic-board" data-board>
             <canvas data-canvas width="960" height="640" aria-label="Zone de dessin"></canvas>
-            <p class="pic-word" data-word hidden></p>
+            <p class="pic-watch-badge" data-watch-badge hidden><span class="live-pulse" aria-hidden="true"></span> <span data-watch-text>en direct</span></p>
+            <div class="pic-reveal" data-reveal hidden>
+                <p class="section-kicker">Manche terminée</p>
+                <p class="pic-reveal-word" data-word>—</p>
+            </div>
         </div>
 
         <div class="pic-tools" data-tools hidden>
-            <span class="pic-tool-label">Ton Pokémon : <strong data-secret-word>—</strong></span>
-            <span class="pic-colors" role="group" aria-label="Couleur du trait">
-                <button type="button" class="pic-color is-active" data-color="#f6f9ff" style="--pen: #f6f9ff" aria-label="Blanc"></button>
-                <button type="button" class="pic-color" data-color="#ffd166" style="--pen: #ffd166" aria-label="Jaune"></button>
-                <button type="button" class="pic-color" data-color="#ef476f" style="--pen: #ef476f" aria-label="Rouge"></button>
-                <button type="button" class="pic-color" data-color="#06d6a0" style="--pen: #06d6a0" aria-label="Vert"></button>
-                <button type="button" class="pic-color" data-color="#4cc9f0" style="--pen: #4cc9f0" aria-label="Bleu"></button>
-            </span>
-            <label class="pic-width">Épaisseur
-                <input type="range" min="2" max="24" value="5" data-width>
-            </label>
+            <p class="pic-secret">À faire deviner<strong data-secret-word>—</strong></p>
+            <div class="pic-tool-group" role="group" aria-label="Couleur du trait">
+                <button type="button" class="pic-color is-active" data-color="#f6f9ff" style="--pen: #f6f9ff" aria-label="Blanc" aria-pressed="true"></button>
+                <button type="button" class="pic-color" data-color="#ffd166" style="--pen: #ffd166" aria-label="Jaune" aria-pressed="false"></button>
+                <button type="button" class="pic-color" data-color="#ef476f" style="--pen: #ef476f" aria-label="Rouge" aria-pressed="false"></button>
+                <button type="button" class="pic-color" data-color="#06d6a0" style="--pen: #06d6a0" aria-label="Vert" aria-pressed="false"></button>
+                <button type="button" class="pic-color" data-color="#4cc9f0" style="--pen: #4cc9f0" aria-label="Bleu" aria-pressed="false"></button>
+            </div>
+            <div class="pic-tool-group" role="group" aria-label="Épaisseur du trait">
+                <button type="button" class="pic-size" data-size="4" aria-label="Trait fin" aria-pressed="false"><i style="--dot: 5px"></i></button>
+                <button type="button" class="pic-size is-active" data-size="8" aria-label="Trait moyen" aria-pressed="true"><i style="--dot: 10px"></i></button>
+                <button type="button" class="pic-size" data-size="16" aria-label="Trait épais" aria-pressed="false"><i style="--dot: 16px"></i></button>
+            </div>
             <button type="button" class="btn btn-ghost" data-clear>Tout effacer</button>
         </div>
 
         <form class="pic-guess-form" data-guess-form hidden>
             <label class="visually-hidden" for="pic-guess">Ta proposition</label>
-            <input type="text" id="pic-guess" autocomplete="off" spellcheck="false" maxlength="60" placeholder="C’est quel Pokémon ?" data-guess-input>
+            <input type="text" id="pic-guess" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="60" placeholder="C’est quel Pokémon ?" data-guess-input>
             <button type="submit" class="btn btn-primary" data-guess-submit>Proposer</button>
         </form>
 
         <ul class="pic-guess-feed" data-my-guesses aria-label="Mes propositions"></ul>
-        <ul class="pic-found" data-found aria-label="Joueurs ayant trouvé"></ul>
     </section>
 
     <section class="pic-scores" aria-labelledby="pic-scores-title">
-        <h2 id="pic-scores-title" class="section-kicker">Scores</h2>
-        <ol class="pic-score-list" data-scores></ol>
+        <div class="pic-scores-head">
+            <h2 id="pic-scores-title" class="section-kicker">Classement</h2>
+            <p class="pic-scores-note" data-scores-note></p>
+        </div>
+        <ol class="score-board-list" data-scores></ol>
     </section>
 </div>
 
 {{ game_state|json_script:"pictionary-initial-state" }}
-<script src="{% static 'pictionary/js/game.js' %}?v=1"></script>
+<script src="{% static 'pictionary/js/game.js' %}?v=3"></script>
 {% endblock %}

@@ -202,4 +202,4 @@ Le plateau Poké‑Uno tient dans le viewport sans scroll de page. Les mains dis
 - **JavaScript natif** pour les interactions temps réel : aucun framework ni CDN JavaScript au runtime.
 - **Couleurs de type servies par le serveur** en style inline : les 18 types tiennent ainsi sans dix-huit règles CSS, et les sprites du catalogue restent des URL figées dans la fixture.
 
-Le cahier des charges d’origine est conservé dans [`.claude/skills/projet-cartes/SKILL.md`](.claude/skills/projet-cartes/SKILL.md).
+Le cahier des charges d’origine est conservé dans [`.claude/skills/projet-cartes/SKILL.md`](.claude/skills/projet-cartes/SKILL.md). Le dossier `.claude/skills/ui-ux-pro-max/` embarque une base de règles UI/UX tierce ([ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill), MIT) utilisée comme garde-fou de design ; elle est exclue de `ruff` et `black`, qui ne vérifient que notre code.

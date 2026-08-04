@@ -4,7 +4,7 @@
 {% block title %}Qui est ce Pokémon ? — PokéTable{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'silhouette/css/silhouette.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'silhouette/css/silhouette.css' %}?v=3">
 
 <div id="silhouette-lobby" class="sil-lobby" data-state-url="{% url 'silhouette:api_lobby_state' %}">
     <section class="sil-hero" aria-labelledby="silhouette-title">
@@ -12,7 +12,13 @@
             <a class="back-link" href="{% url 'home' %}"><span aria-hidden="true">←</span> Tous les jeux</a>
             <p class="section-kicker">Réflexe · déduction</p>
             <h1 id="silhouette-title">Qui est ce Pokémon ?</h1>
-            <p class="sil-lead">Une silhouette apparaît. Écris son nom le plus vite possible : plus tu réponds tôt, plus tu marques. Un indice de type tombe après 5 secondes, puis les initiales après 10.</p>
+            <p class="sil-lead">Une silhouette apparaît, tout le monde répond en même temps. Plus tu trouves tôt, plus la manche rapporte.</p>
+            <ol class="sil-steps">
+                <li><b>0 s</b> La silhouette</li>
+                <li><b>5 s</b> Son type</li>
+                <li><b>10 s</b> Ses initiales</li>
+                <li><b>30 s</b> Réponse</li>
+            </ol>
 
             <form method="post" action="{% url 'silhouette:create_game' %}" class="sil-create">
                 {% csrf_token %}
@@ -23,6 +29,7 @@
                         <label class="sil-round-choice">
                             <input type="radio" name="round_count" value="{{ value }}" {% if value == 10 %}checked{% endif %}>
                             <span>{{ label }}</span>
+                            <small>≈ {{ value }} min</small>
                         </label>
                         {% endfor %}
                     </div>
