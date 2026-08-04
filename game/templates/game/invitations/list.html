@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Mes invitations de jeu — PokéTable{% endblock %}
+
+{% block content %}
+<section
+    class="friends-page"
+    aria-labelledby="invitations-title"
+>
+    <header class="friends-header">
+        <div>
+            <p class="section-kicker">
+                Espace multijoueur
+            </p>
+
+            <h1 id="invitations-title">
+                Mes invitations de jeu
+            </h1>
+
+            <p>
+                Retrouve les invitations reçues ou envoyées
+                pour tous les jeux PokéTable.
+            </p>
+        </div>
+
+        <a
+            class="btn btn-ghost"
+            href="{% url 'home' %}"
+        >
+            Voir les jeux
+        </a>
+    </header>
+
+    <section
+        class="friends-section"
+        aria-labelledby="received-invitations-title"
+    >
+        <div class="friends-section-heading">
+            <h2 id="received-invitations-title">
+                Invitations reçues
+            </h2>
+
+            <span
+                class="friends-count"
+                aria-label="{{ received_invitations|length }} invitation{{ received_invitations|length|pluralize }}"
+            >
+                {{ received_invitations|length }}
+            </span>
+        </div>
+
+        {% if received_invitations %}
+            <div class="friends-list">
+                {% for invitation in received_invitations %}
+                    <article class="friend-row game-invitation-row">
+                        <a
+                            class="friend-identity"
+                            href="{% url 'public_profile' invitation.sender.username %}"
+                            aria-label="Voir le profil de {{ invitation.sender.username }}"
+                        >
+                            {% if invitation.sender.profile.avatar %}
+                                <img
+                                    class="friend-avatar"
+                                    src="{{ invitation.sender.profile.avatar.url }}"
+                                    alt="Photo de profil de {{ invitation.sender.username }}"
+                                >
+                            {% else %}
+                                <span
+                                    class="friend-avatar friend-avatar--fallback"
+                                    aria-hidden="true"
+                                >
+                                    {{ invitation.sender.username|first|upper }}
+                                </span>
+                            {% endif %}
+
+                            <span class="game-invitation-copy">
+                                <span
+                                    class="game-mode-badge"
+                                    data-mode="{{ invitation.mode_slug_value }}"
+                                >
+                                    {{ invitation.mode_label_value }}
+                                </span>
+
+                                <strong>
+                                    {{ invitation.sender.username }}
+                                </strong>
+
+                                <small>
+                                    T’invite à rejoindre son salon
+                                    · {{ invitation.player_count }}/{{ invitation.max_players_display }}
+                                    joueur{{ invitation.player_count|pluralize }}
+                                </small>
+                            </span>
+                        </a>
+
+                        <div class="friend-actions">
+                            {% if invitation.detail_url %}
+                                <a
+                                    class="btn btn-ghost"
+                                    href="{{ invitation.detail_url }}"
+                                >
+                                    Voir le salon
+                                </a>
+                            {% endif %}
+
+                            <form
+                                method="post"
+                                action="{% url 'decline_game_invitation' invitation.id %}"
+                            >
+                                {% csrf_token %}
+
+                                <button
+                                    class="btn btn-ghost"
+                                    type="submit"
+                                >
+                                    Refuser
+                                </button>
+                            </form>
+
+                            <form
+                                method="post"
+                                action="{% url 'accept_game_invitation' invitation.id %}"
+                            >
+                                {% csrf_token %}
+
+                                <button
+                                    class="btn btn-primary"
+                                    type="submit"
+                                >
+                                    Rejoindre
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="friends-empty">
+                <h3>
+                    Aucune invitation reçue
+                </h3>
+
+                <p>
+                    Les invitations envoyées par tes amis
+                    apparaîtront ici.
+                </p>
+            </div>
+        {% endif %}
+    </section>
+
+    <section
+        class="friends-section"
+        aria-labelledby="sent-invitations-title"
+    >
+        <div class="friends-section-heading">
+            <h2 id="sent-invitations-title">
+                Invitations envoyées
+            </h2>
+
+            <span
+                class="friends-count"
+                aria-label="{{ sent_invitations|length }} invitation{{ sent_invitations|length|pluralize }}"
+            >
+                {{ sent_invitations|length }}
+            </span>
+        </div>
+
+        {% if sent_invitations %}
+            <div class="friends-list">
+                {% for invitation in sent_invitations %}
+                    <article class="friend-row game-invitation-row">
+                        <a
+                            class="friend-identity"
+                            href="{% url 'public_profile' invitation.recipient.username %}"
+                            aria-label="Voir le profil de {{ invitation.recipient.username }}"
+                        >
+                            {% if invitation.recipient.profile.avatar %}
+                                <img
+                                    class="friend-avatar"
+                                    src="{{ invitation.recipient.profile.avatar.url }}"
+                                    alt="Photo de profil de {{ invitation.recipient.username }}"
+                                >
+                            {% else %}
+                                <span
+                                    class="friend-avatar friend-avatar--fallback"
+                                    aria-hidden="true"
+                                >
+                                    {{ invitation.recipient.username|first|upper }}
+                                </span>
+                            {% endif %}
+
+                            <span class="game-invitation-copy">
+                                <span
+                                    class="game-mode-badge"
+                                    data-mode="{{ invitation.mode_slug_value }}"
+                                >
+                                    {{ invitation.mode_label_value }}
+                                </span>
+
+                                <strong>
+                                    {{ invitation.recipient.username }}
+                                </strong>
+
+                                <small>
+                                    Invitation en attente
+                                    · {{ invitation.player_count }}/{{ invitation.max_players_display }}
+                                    joueur{{ invitation.player_count|pluralize }}
+                                </small>
+                            </span>
+                        </a>
+
+                        <div class="friend-actions">
+                            {% if invitation.detail_url %}
+                                <a
+                                    class="btn btn-ghost"
+                                    href="{{ invitation.detail_url }}"
+                                >
+                                    Voir le salon
+                                </a>
+                            {% endif %}
+
+                            <form
+                                method="post"
+                                action="{% url 'cancel_game_invitation' invitation.id %}"
+                            >
+                                {% csrf_token %}
+
+                                <button
+                                    class="btn btn-ghost"
+                                    type="submit"
+                                >
+                                    Annuler
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="friends-empty">
+                <h3>
+                    Aucune invitation envoyée
+                </h3>
+
+                <p>
+                    Crée un salon dans le jeu de ton choix
+                    pour inviter tes amis.
+                </p>
+
+                <a
+                    class="btn btn-primary"
+                    href="{% url 'home' %}"
+                >
+                    Choisir un jeu
+                </a>
+            </div>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}

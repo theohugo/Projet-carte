@@ -107,6 +107,15 @@
                         </a>
 
                         <a
+                            href="{% url 'game_invitations' %}"
+                            {% if request.resolver_match.url_name == "game_invitations" or request.resolver_match.url_name == "invite_friends_to_game" %}
+                                aria-current="page"
+                            {% endif %}
+                        >
+                            Invitations
+                        </a>
+
+                        <a
                             href="{% url 'lobby' %}"
                             {% if request.resolver_match.url_name == "lobby" and not request.resolver_match.namespace %}
                                 aria-current="page"

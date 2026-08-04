@@ -52,9 +52,30 @@
                 <h2 id="waiting-title">En attente d’un adversaire</h2>
                 <p>Partage ce lien. La sélection secrète commencera automatiquement dès que le deuxième joueur arrivera.</p>
                 <div class="gw-invite-box">
-                    <span data-invite-url class="gw-invite-url"></span>
-                    <button type="button" class="btn btn-primary" data-copy-invite><span data-copy-label>Copier le lien</span></button>
-                </div>
+                <span
+                    data-invite-url
+                    class="gw-invite-url"
+                ></span>
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    data-copy-invite
+                >
+                    <span data-copy-label>
+                        Copier le lien
+                    </span>
+                </button>
+
+                {% if game.created_by_id == user.id and game.status == "EN_ATTENTE" %}
+                    <a
+                        class="btn btn-ghost"
+                        href="{% url 'invite_friends_to_game' mode='qui-est-ce' room_id=game.id %}"
+                    >
+                        Inviter un ami
+                    </a>
+                {% endif %}
+            </div>
                 <div class="gw-waiting-players" data-waiting-players></div>
             </div>
         </section>

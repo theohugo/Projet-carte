@@ -1,15 +1,29 @@
 from django.urls import path
 
-from game import api, views
+from game import api, invitation_views, views
 
 
 urlpatterns = [
-    # Accueil et jeux
-    path("", views.hub, name="home"),
-    path("uno/", views.lobby, name="lobby"),
+    # Accueil
+    path(
+        "",
+        views.hub,
+        name="home",
+    ),
+
+    # Poké-Uno
+    path(
+        "uno/",
+        views.lobby,
+        name="lobby",
+    ),
 
     # Authentification
-    path("signup/", views.signup, name="signup"),
+    path(
+        "signup/",
+        views.signup,
+        name="signup",
+    ),
 
     # Profils
     path(
@@ -65,6 +79,38 @@ urlpatterns = [
         name="remove_friend",
     ),
 
+    # Invitations multi-jeux
+    path(
+        "invitations/",
+        invitation_views.game_invitations,
+        name="game_invitations",
+    ),
+    path(
+        "invitations/<str:mode>/<uuid:room_id>/inviter/",
+        invitation_views.invite_friends_to_game,
+        name="invite_friends_to_game",
+    ),
+    path(
+        "invitations/<str:mode>/<uuid:room_id>/inviter/<str:username>/",
+        invitation_views.send_game_invitation,
+        name="send_game_invitation",
+    ),
+    path(
+        "invitations/<int:invitation_id>/accepter/",
+        invitation_views.accept_game_invitation,
+        name="accept_game_invitation",
+    ),
+    path(
+        "invitations/<int:invitation_id>/refuser/",
+        invitation_views.decline_game_invitation,
+        name="decline_game_invitation",
+    ),
+    path(
+        "invitations/<int:invitation_id>/annuler/",
+        invitation_views.cancel_game_invitation,
+        name="cancel_game_invitation",
+    ),
+
     # Parties Poké-Uno
     path(
         "games/<uuid:game_id>/",
@@ -92,7 +138,7 @@ urlpatterns = [
         name="remove_bot",
     ),
 
-    # API du lobby et des parties
+    # API Poké-Uno
     path(
         "api/lobby/state/",
         api.api_lobby_state,

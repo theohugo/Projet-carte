@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Inviter un ami — {{ mode_label }} — PokéTable{% endblock %}
+
+{% block content %}
+<section
+    class="friends-page"
+    aria-labelledby="invite-friend-title"
+>
+    <header class="friends-header">
+        <div>
+            <p class="section-kicker">
+                Invitation de partie
+            </p>
+
+            <div class="invite-game-heading">
+                <h1 id="invite-friend-title">
+                    Inviter un ami
+                </h1>
+
+                <span
+                    class="game-mode-badge"
+                    data-mode="{{ mode_slug }}"
+                >
+                    {{ mode_label }}
+                </span>
+            </div>
+
+            <p>
+                Choisis un ami à inviter dans ce salon.
+                Le salon contient actuellement
+                {{ player_count }}/{{ max_players }}
+                joueur{{ player_count|pluralize }}.
+            </p>
+        </div>
+
+        <a
+            class="btn btn-ghost"
+            href="{{ room_detail_url }}"
+        >
+            Retour au salon
+        </a>
+    </header>
+
+    <section
+        class="friends-section"
+        aria-labelledby="available-friends-title"
+    >
+        <div class="friends-section-heading">
+            <h2 id="available-friends-title">
+                Mes amis
+            </h2>
+
+            <span class="friends-count">
+                {{ friend_entries|length }}
+            </span>
+        </div>
+
+        {% if game_is_full %}
+            <div class="friends-empty">
+                <h3>
+                    Le salon est complet
+                </h3>
+
+                <p>
+                    Aucune nouvelle invitation ne peut être envoyée
+                    tant qu’une place ne s’est pas libérée.
+                </p>
+
+                <a
+                    class="btn btn-primary"
+                    href="{{ room_detail_url }}"
+                >
+                    Retourner au salon
+                </a>
+            </div>
+
+        {% elif friend_entries %}
+            <div class="player-grid">
+                {% for entry in friend_entries %}
+                    <article class="player-card">
+                        <a
+                            href="{% url 'public_profile' entry.user.username %}"
+                            aria-label="Voir le profil de {{ entry.user.username }}"
+                        >
+                            {% if entry.profile.avatar %}
+                                <img
+                                    class="player-card-avatar"
+                                    src="{{ entry.profile.avatar.url }}"
+                                    alt="Photo de profil de {{ entry.user.username }}"
+                                >
+                            {% else %}
+                                <span
+                                    class="player-card-avatar player-card-avatar--fallback"
+                                    aria-hidden="true"
+                                >
+                                    {{ entry.user.username|first|upper }}
+                                </span>
+                            {% endif %}
+
+                            <h3>
+                                {{ entry.user.username }}
+                            </h3>
+
+                            {% if entry.user.get_full_name %}
+                                <p>
+                                    {{ entry.user.get_full_name }}
+                                </p>
+                            {% else %}
+                                <p>
+                                    Ami PokéTable
+                                </p>
+                            {% endif %}
+                        </a>
+
+                        {% if entry.status == "joined" %}
+                            <span class="friend-status">
+                                Déjà dans le salon
+                            </span>
+
+                        {% elif entry.status == "pending" %}
+                            <span class="friend-status">
+                                Invitation envoyée
+                            </span>
+
+                            {% if entry.invitation %}
+                                <form
+                                    method="post"
+                                    action="{% url 'cancel_game_invitation' entry.invitation.id %}"
+                                >
+                                    {% csrf_token %}
+
+                                    <button
+                                        class="btn btn-ghost btn-block"
+                                        type="submit"
+                                    >
+                                        Annuler l’invitation
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                        {% else %}
+                            <form
+                                method="post"
+                                action="{% url 'send_game_invitation' mode=mode_slug room_id=room.id username=entry.user.username %}"
+                            >
+                                {% csrf_token %}
+
+                                <button
+                                    class="btn btn-primary btn-block"
+                                    type="submit"
+                                >
+                                    Inviter à jouer
+                                </button>
+                            </form>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <div class="friends-empty">
+                <h3>
+                    Aucun ami à inviter
+                </h3>
+
+                <p>
+                    Ajoute d’abord des joueurs à ta liste d’amis,
+                    puis reviens dans ce salon.
+                </p>
+
+                <a
+                    class="btn btn-primary"
+                    href="{% url 'player_search' %}"
+                >
+                    Rechercher des joueurs
+                </a>
+            </div>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}
