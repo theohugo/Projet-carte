@@ -6,90 +6,322 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'silhouette/css/silhouette.css' %}?v=3">
 
-<div id="silhouette-game" class="room-shell sil-game"
-     data-state-url="{% url 'silhouette:api_state' game_id=game.id %}"
-     data-guess-url="{% url 'silhouette:api_guess' game_id=game.id %}">
+<div
+    id="silhouette-game"
+    class="room-shell sil-game"
+    data-state-url="{% url 'silhouette:api_state' game_id=game.id %}"
+    data-guess-url="{% url 'silhouette:api_guess' game_id=game.id %}"
+>
     <header class="room-header">
         <div>
-            <a class="back-link" href="{% url 'silhouette:lobby' %}" data-reload-focus-key="back"><span aria-hidden="true">←</span> Retour au lobby</a>
-            <h1 class="room-title">Qui est ce Pokémon ? <span class="status-badge" data-status="{{ game.status|lower }}" data-status-badge>{{ game.get_status_display }}</span></h1>
+            <a
+                class="back-link"
+                href="{% url 'silhouette:lobby' %}"
+                data-reload-focus-key="back"
+            >
+                <span aria-hidden="true">←</span>
+                Retour au lobby
+            </a>
+
+            <h1 class="room-title">
+                Qui est ce Pokémon ?
+
+                <span
+                    class="status-badge"
+                    data-status="{{ game.status|lower }}"
+                    data-status-badge
+                >
+                    {{ game.get_status_display }}
+                </span>
+            </h1>
         </div>
-        <ol class="round-dots" data-round-dots aria-label="Progression des manches"></ol>
+
+        <ol
+            class="round-dots"
+            data-round-dots
+            aria-label="Progression des manches"
+        ></ol>
     </header>
 
-    <p id="sil-feedback" class="message message-error" hidden role="alert"></p>
-    <p id="sil-announcer" class="visually-hidden" aria-live="polite"></p>
+    <p
+        id="sil-feedback"
+        class="message message-error"
+        hidden
+        role="alert"
+    ></p>
 
-    <section class="room-waiting" data-waiting {% if game_state.status != "EN_ATTENTE" %}hidden{% endif %}>
+    <p
+        id="sil-announcer"
+        class="visually-hidden"
+        aria-live="polite"
+    ></p>
+
+    <section
+        class="room-waiting"
+        data-waiting
+        {% if game_state.status != "EN_ATTENTE" %}
+            hidden
+        {% endif %}
+    >
         <div>
-            <p class="section-kicker"><span class="live-pulse" aria-hidden="true"></span> Salon ouvert</p>
-            <h2>En attente des joueurs</h2>
-            <p class="room-waiting-lead">Partage le lien de cette page : tout le monde joue en même temps. La partie compte <strong>{{ game.round_count }} manches</strong> de 30 secondes.</p>
+            <p class="section-kicker">
+                <span
+                    class="live-pulse"
+                    aria-hidden="true"
+                ></span>
+
+                Salon ouvert
+            </p>
+
+            <h2>
+                En attente des joueurs
+            </h2>
+
+            <p class="room-waiting-lead">
+                Partage le lien de cette page : tout le monde joue
+                en même temps. La partie compte
+                <strong>{{ game.round_count }} manches</strong>
+                de 30 secondes.
+            </p>
+
             <div class="room-waiting-actions">
                 {% if game_state.is_host %}
-                <form method="post" action="{% url 'silhouette:start_game' game_id=game.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="start">Lancer la partie</button>
-                </form>
+                    <form
+                        method="post"
+                        action="{% url 'silhouette:start_game' game_id=game.id %}"
+                    >
+                        {% csrf_token %}
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary btn-large"
+                            data-reload-focus-key="start"
+                        >
+                            Lancer la partie
+                        </button>
+                    </form>
+
+                    <a
+                        class="btn btn-ghost"
+                        href="{% url 'invite_friends_to_game' mode='silhouette' room_id=game.id %}"
+                    >
+                        Inviter un ami
+                    </a>
                 {% endif %}
-                <button type="button" class="btn btn-secondary" data-copy-link data-reload-focus-key="copy"><span data-copy-label>Copier le lien d’invitation</span></button>
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-copy-link
+                    data-reload-focus-key="copy"
+                >
+                    <span data-copy-label>
+                        Copier le lien d’invitation
+                    </span>
+                </button>
             </div>
-            {% if not game_state.is_host %}<p class="room-waiting-lead">L’hôte lancera la partie quand tout le monde sera là.</p>{% endif %}
+
+            {% if not game_state.is_host %}
+                <p class="room-waiting-lead">
+                    L’hôte lancera la partie quand tout le monde sera là.
+                </p>
+            {% endif %}
         </div>
 
         <div>
-            <div class="sil-radar" aria-hidden="true">
+            <div
+                class="sil-radar"
+                aria-hidden="true"
+            >
                 <span class="sil-radar-sweep"></span>
                 <span class="sil-radar-blob"></span>
                 <span class="sil-radar-mark">?</span>
             </div>
-            <p class="section-kicker">Joueurs présents</p>
-            <ul class="room-players" data-waiting-players></ul>
+
+            <p class="section-kicker">
+                Joueurs présents
+            </p>
+
+            <ul
+                class="room-players"
+                data-waiting-players
+            ></ul>
         </div>
     </section>
 
-    <section class="sil-stage" data-stage hidden>
+    <section
+        class="sil-stage"
+        data-stage
+        hidden
+    >
         <div class="sil-stage-top">
-            <p class="sil-round-label" data-round-number>—</p>
-            <div class="timer-ring" data-timer-ring>
-                <svg viewBox="0 0 100 100" aria-hidden="true">
-                    <circle class="timer-track" cx="50" cy="50" r="44"></circle>
-                    <circle class="timer-progress" cx="50" cy="50" r="44" data-timer-progress></circle>
+            <p
+                class="sil-round-label"
+                data-round-number
+            >
+                —
+            </p>
+
+            <div
+                class="timer-ring"
+                data-timer-ring
+            >
+                <svg
+                    viewBox="0 0 100 100"
+                    aria-hidden="true"
+                >
+                    <circle
+                        class="timer-track"
+                        cx="50"
+                        cy="50"
+                        r="44"
+                    ></circle>
+
+                    <circle
+                        class="timer-progress"
+                        cx="50"
+                        cy="50"
+                        r="44"
+                        data-timer-progress
+                    ></circle>
                 </svg>
-                <span class="timer-value" data-timer>—</span>
+
+                <span
+                    class="timer-value"
+                    data-timer
+                >
+                    —
+                </span>
             </div>
         </div>
 
-        <div class="sil-frame" data-frame>
-            <span class="sil-frame-glow" aria-hidden="true"></span>
-            <img data-silhouette alt="Silhouette du Pokémon à deviner" width="320" height="320">
-            <p class="sil-answer" data-answer hidden></p>
+        <div
+            class="sil-frame"
+            data-frame
+        >
+            <span
+                class="sil-frame-glow"
+                aria-hidden="true"
+            ></span>
+
+            <img
+                data-silhouette
+                alt="Silhouette du Pokémon à deviner"
+                width="320"
+                height="320"
+            >
+
+            <p
+                class="sil-answer"
+                data-answer
+                hidden
+            ></p>
         </div>
 
-        <ul class="sil-hints" data-hints aria-label="Indices débloqués">
-            <li class="sil-hint" data-hint="type" hidden><span class="sil-hint-label">Type</span><strong data-hint-value></strong></li>
-            <li class="sil-hint" data-hint="letters" hidden><span class="sil-hint-label">Lettres</span><strong data-hint-value></strong></li>
-            <li class="sil-hint sil-hint--pending" data-hint-pending hidden>Prochain indice dans <strong data-next-hint>—</strong> s</li>
+        <ul
+            class="sil-hints"
+            data-hints
+            aria-label="Indices débloqués"
+        >
+            <li
+                class="sil-hint"
+                data-hint="type"
+                hidden
+            >
+                <span class="sil-hint-label">
+                    Type
+                </span>
+
+                <strong data-hint-value></strong>
+            </li>
+
+            <li
+                class="sil-hint"
+                data-hint="letters"
+                hidden
+            >
+                <span class="sil-hint-label">
+                    Lettres
+                </span>
+
+                <strong data-hint-value></strong>
+            </li>
+
+            <li
+                class="sil-hint sil-hint--pending"
+                data-hint-pending
+                hidden
+            >
+                Prochain indice dans
+                <strong data-next-hint>—</strong> s
+            </li>
         </ul>
 
-        <form class="sil-guess-form" data-guess-form>
-            <label class="visually-hidden" for="sil-guess">Nom du Pokémon</label>
-            <input type="text" id="sil-guess" name="guess" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="60" placeholder="Son nom…" data-guess-input>
-            <button type="submit" class="btn btn-primary" data-guess-submit>Proposer</button>
+        <form
+            class="sil-guess-form"
+            data-guess-form
+        >
+            <label
+                class="visually-hidden"
+                for="sil-guess"
+            >
+                Nom du Pokémon
+            </label>
+
+            <input
+                type="text"
+                id="sil-guess"
+                name="guess"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                maxlength="60"
+                placeholder="Son nom…"
+                data-guess-input
+            >
+
+            <button
+                type="submit"
+                class="btn btn-primary"
+                data-guess-submit
+            >
+                Proposer
+            </button>
         </form>
 
-        <ul class="sil-guess-feed" data-my-guesses aria-label="Mes propositions"></ul>
+        <ul
+            class="sil-guess-feed"
+            data-my-guesses
+            aria-label="Mes propositions"
+        ></ul>
     </section>
 
-    <section class="sil-scores" aria-labelledby="sil-scores-title">
+    <section
+        class="sil-scores"
+        aria-labelledby="sil-scores-title"
+    >
         <div class="sil-scores-head">
-            <h2 id="sil-scores-title" class="section-kicker">Classement</h2>
-            <p class="sil-scores-note" data-scores-note></p>
+            <h2
+                id="sil-scores-title"
+                class="section-kicker"
+            >
+                Classement
+            </h2>
+
+            <p
+                class="sil-scores-note"
+                data-scores-note
+            ></p>
         </div>
-        <ol class="score-board-list" data-scores></ol>
+
+        <ol
+            class="score-board-list"
+            data-scores
+        ></ol>
     </section>
 </div>
 
 {{ game_state|json_script:"silhouette-initial-state" }}
+
 <script src="{% static 'silhouette/js/game.js' %}?v=3"></script>
 {% endblock %}

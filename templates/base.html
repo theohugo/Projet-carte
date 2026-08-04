@@ -1,51 +1,243 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr" class="{% block html_class %}{% endblock %}">
+<html
+    lang="fr"
+    class="{% block html_class %}{% endblock %}"
+>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#050b14">
-    <title>{% block title %}PokéTable{% endblock %}</title>
-    <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
-    <link rel="preconnect" href="https://assets.pokemon.com" crossorigin>
-    <link rel="stylesheet" href="{% static 'tokens.css' %}?v=7">
-    <link rel="stylesheet" href="{% static 'atoms.css' %}?v=11">
-    <link rel="stylesheet" href="{% static 'molecules.css' %}?v=14">
-    <link rel="stylesheet" href="{% static 'organisms.css' %}?v=13">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#050b14"
+    >
+
+    <title>
+        {% block title %}PokéTable{% endblock %}
+    </title>
+
+    <link
+        rel="icon"
+        href="{% static 'favicon.svg' %}"
+        type="image/svg+xml"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://assets.pokemon.com"
+        crossorigin
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'tokens.css' %}?v=7"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'atoms.css' %}?v=11"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'molecules.css' %}?v=14"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'organisms.css' %}?v=17"
+    >
 </head>
+
 <body class="{% block body_class %}{% endblock %}">
-    <a class="skip-link" href="#main-content">Aller au contenu</a>
+    <a
+        class="skip-link"
+        href="#main-content"
+    >
+        Aller au contenu
+    </a>
+
     <header class="site-header">
         <div class="site-header-inner">
-            <a class="site-title" href="{% url 'home' %}" aria-label="PokéTable — accueil" translate="no">
-                <span class="brand-mark" aria-hidden="true"><span></span></span>
-                <span class="brand-name">Poké<span>Table</span></span>
+            <a
+                class="site-title"
+                href="{% url 'home' %}"
+                aria-label="PokéTable — accueil"
+                translate="no"
+            >
+                <span
+                    class="brand-mark"
+                    aria-hidden="true"
+                >
+                    <span></span>
+                </span>
+
+                <span class="brand-name">
+                    Poké<span>Table</span>
+                </span>
             </a>
-            <nav class="site-actions" aria-label="Navigation principale">
+
+            <nav
+                class="site-actions"
+                aria-label="Navigation principale"
+            >
                 {% if user.is_authenticated %}
-                    <span class="site-nav"><a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %}>Jeux</a><a href="{% url 'lobby' %}"{% if request.resolver_match.url_name == 'lobby' and not request.resolver_match.namespace %} aria-current="page"{% endif %}>Poké-Uno</a><a href="{% url 'guesswho:lobby' %}"{% if request.resolver_match.namespace == 'guesswho' %} aria-current="page"{% endif %}>Qui est-ce ?</a><a href="{% url 'silhouette:lobby' %}"{% if request.resolver_match.namespace == 'silhouette' %} aria-current="page"{% endif %}>Silhouette</a><a href="{% url 'pictionary:lobby' %}"{% if request.resolver_match.namespace == 'pictionary' %} aria-current="page"{% endif %}>Pictionary</a></span>
-                    <span class="site-user"><span class="user-avatar" aria-hidden="true">{{ user.username|first|upper }}</span><span class="site-user-copy"><small>Joueur connecté</small>{{ user.username }}</span></span>
-                    <form action="{% url 'logout' %}" method="post" class="inline-form">
+                    <span class="site-nav">
+                        <a
+                            href="{% url 'home' %}"
+                            {% if request.resolver_match.url_name == "home" %}
+                                aria-current="page"
+                            {% endif %}
+                        >
+                            Jeux
+                        </a>
+
+                        <a
+                            href="{% url 'friends' %}"
+                            {% if request.resolver_match.url_name == "friends" or request.resolver_match.url_name == "player_search" %}
+                                aria-current="page"
+                            {% endif %}
+                        >
+                            Amis
+                        </a>
+
+                        <a
+                            href="{% url 'game_invitations' %}"
+                            {% if request.resolver_match.url_name == "game_invitations" or request.resolver_match.url_name == "invite_friends_to_game" %}
+                                aria-current="page"
+                            {% endif %}
+                        >
+                            Invitations
+                        </a>
+
+                        <a
+                            href="{% url 'lobby' %}"
+                            {% if request.resolver_match.url_name == "lobby" and not request.resolver_match.namespace %}
+                                aria-current="page"
+                            {% endif %}
+                        >
+                            Poké-Uno
+                        </a>
+
+                        <a
+                            href="{% url 'guesswho:lobby' %}"
+                            {% if request.resolver_match.namespace == "guesswho" %}
+                                aria-current="page"
+                            {% endif %}
+                        >
+                            Qui est-ce ?
+                        </a>
+
+                        <a
+                            href="{% url 'silhouette:lobby' %}"
+                            {% if request.resolver_match.namespace == "silhouette" %}
+                                aria-current="page"
+                            {% endif %}
+                        >
+                            Silhouette
+                        </a>
+
+                        <a
+                            href="{% url 'pictionary:lobby' %}"
+                            {% if request.resolver_match.namespace == "pictionary" %}
+                                aria-current="page"
+                            {% endif %}
+                        >
+                            Pictionary
+                        </a>
+                    </span>
+
+                    <a
+                        class="site-user"
+                        href="{% url 'my_profile' %}"
+                        aria-label="Voir mon profil"
+                        {% if request.resolver_match.url_name == "my_profile" or request.resolver_match.url_name == "edit_profile" %}
+                            aria-current="page"
+                        {% endif %}
+                    >
+                        {% if user.profile.avatar %}
+                            <img
+                                class="user-avatar"
+                                src="{{ user.profile.avatar.url }}"
+                                alt=""
+                                width="42"
+                                height="42"
+                                style="object-fit: cover;"
+                            >
+                        {% else %}
+                            <span
+                                class="user-avatar"
+                                aria-hidden="true"
+                            >
+                                {{ user.username|first|upper }}
+                            </span>
+                        {% endif %}
+
+                        <span class="site-user-copy">
+                            <small>
+                                Joueur connecté
+                            </small>
+
+                            {{ user.username }}
+                        </span>
+                    </a>
+
+                    <form
+                        action="{% url 'logout' %}"
+                        method="post"
+                        class="inline-form"
+                    >
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-ghost">Se déconnecter</button>
+
+                        <button
+                            type="submit"
+                            class="btn btn-ghost"
+                        >
+                            Se déconnecter
+                        </button>
                     </form>
                 {% else %}
-                    <a class="btn btn-ghost" href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Se connecter</a>
-                    <a class="btn btn-primary" href="{% url 'signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Créer un compte</a>
+                    <a
+                        class="btn btn-ghost"
+                        href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}"
+                    >
+                        Se connecter
+                    </a>
+
+                    <a
+                        class="btn btn-primary"
+                        href="{% url 'signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}"
+                    >
+                        Créer un compte
+                    </a>
                 {% endif %}
             </nav>
         </div>
     </header>
 
     {% if messages %}
-        <ul class="messages" aria-live="polite">
+        <ul
+            class="messages"
+            aria-live="polite"
+            aria-label="Notifications"
+        >
             {% for message in messages %}
-                <li class="message message-{{ message.tags }}">{{ message }}</li>
+                <li class="message message-{{ message.tags }}">
+                    {{ message }}
+                </li>
             {% endfor %}
         </ul>
     {% endif %}
 
-    <main id="main-content" class="page-content">
+    <main
+        id="main-content"
+        class="page-content"
+    >
         {% block content %}{% endblock %}
     </main>
 </body>

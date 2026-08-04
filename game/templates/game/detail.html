@@ -39,6 +39,16 @@
                 <div class="waiting-actions">
                     <button type="button" class="btn btn-secondary" data-copy-game-url data-reload-focus-key="copy-invitation"><span data-copy-label>Copier le lien d’invitation</span></button>
                     {% if is_creator and players|length < game.max_players %}
+                    <a
+                        class="btn btn-primary"
+                        href="{% url 'invite_friends_to_game' mode='poke-uno' room_id=game.id %}"
+                        data-reload-focus-key="invite-friends"
+                    >
+                        Inviter un ami
+                    </a>
+                {% endif %}
+                    
+                    {% if is_creator and players|length < game.max_players %}
                     <form method="post" action="{% url 'add_bot' game_id=game.id %}">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-ghost" data-reload-focus-key="add-bot"><span aria-hidden="true">＋</span> Ajouter une IA</button>

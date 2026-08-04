@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Rechercher un joueur — PokéTable{% endblock %}
+
+{% block content %}
+<section
+    class="friends-page"
+    aria-labelledby="player-search-title"
+>
+    <header class="friends-header">
+        <div>
+            <p class="section-kicker">Recherche</p>
+
+            <h1 id="player-search-title">
+                Trouver un joueur
+            </h1>
+
+            <p>
+                Recherche une personne avec son pseudo,
+                son prénom ou son nom.
+            </p>
+        </div>
+
+        <a
+            class="btn btn-ghost"
+            href="{% url 'friends' %}"
+        >
+            Mes amis
+        </a>
+    </header>
+
+    <form
+        method="get"
+        class="player-search-form"
+        role="search"
+    >
+        <label for="player-search">
+            Nom du joueur
+        </label>
+
+        <div>
+            <input
+                id="player-search"
+                type="search"
+                name="q"
+                value="{{ query }}"
+                placeholder="Exemple : Riri"
+                autocomplete="off"
+                maxlength="150"
+                aria-describedby="player-search-help"
+            >
+
+            <button
+                class="btn btn-primary"
+                type="submit"
+            >
+                Rechercher
+            </button>
+        </div>
+
+        <p
+            id="player-search-help"
+            class="profile-file-help"
+        >
+            Tu peux saisir un pseudo, un prénom ou un nom.
+        </p>
+    </form>
+
+    {% if query %}
+        <section
+            class="friends-section"
+            aria-labelledby="search-results-title"
+        >
+            <div class="friends-section-heading">
+                <h2 id="search-results-title">
+                    Résultats pour « {{ query }} »
+                </h2>
+
+                <span
+                    class="friends-count"
+                    aria-label="{{ search_results|length }} résultat{{ search_results|length|pluralize }}"
+                >
+                    {{ search_results|length }}
+                </span>
+            </div>
+
+            {% if search_results %}
+                <div class="player-grid">
+                    {% for result in search_results %}
+                        <article class="player-card">
+                            <a
+                                href="{% url 'public_profile' result.user.username %}"
+                                aria-label="Voir le profil de {{ result.user.username }}"
+                            >
+                                {% if result.profile.avatar %}
+                                    <img
+                                        class="player-card-avatar"
+                                        src="{{ result.profile.avatar.url }}"
+                                        alt="Photo de profil de {{ result.user.username }}"
+                                    >
+                                {% else %}
+                                    <span
+                                        class="player-card-avatar player-card-avatar--fallback"
+                                        aria-hidden="true"
+                                    >
+                                        {{ result.user.username|first|upper }}
+                                    </span>
+                                {% endif %}
+
+                                <h3>
+                                    {{ result.user.username }}
+                                </h3>
+
+                                {% if result.user.get_full_name %}
+                                    <p>
+                                        {{ result.user.get_full_name }}
+                                    </p>
+                                {% else %}
+                                    <p>
+                                        Joueur PokéTable
+                                    </p>
+                                {% endif %}
+                            </a>
+
+                            {% if result.status == "friends" %}
+                                <span class="friend-status">
+                                    Déjà dans tes amis
+                                </span>
+
+                            {% elif result.status == "sent" %}
+                                <span class="friend-status">
+                                    Demande envoyée
+                                </span>
+
+                                {% if result.friendship %}
+                                    <form
+                                        method="post"
+                                        action="{% url 'cancel_friend_request' result.friendship.id %}"
+                                    >
+                                        {% csrf_token %}
+
+                                        <button
+                                            class="btn btn-ghost btn-block"
+                                            type="submit"
+                                        >
+                                            Annuler la demande
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                            {% elif result.status == "received" %}
+                                <div class="friend-actions">
+                                    <form
+                                        method="post"
+                                        action="{% url 'reject_friend_request' result.friendship.id %}"
+                                    >
+                                        {% csrf_token %}
+
+                                        <button
+                                            class="btn btn-ghost"
+                                            type="submit"
+                                        >
+                                            Refuser
+                                        </button>
+                                    </form>
+
+                                    <form
+                                        method="post"
+                                        action="{% url 'accept_friend_request' result.friendship.id %}"
+                                    >
+                                        {% csrf_token %}
+
+                                        <button
+                                            class="btn btn-primary"
+                                            type="submit"
+                                        >
+                                            Accepter
+                                        </button>
+                                    </form>
+                                </div>
+
+                            {% else %}
+                                <form
+                                    method="post"
+                                    action="{% url 'send_friend_request' result.user.username %}"
+                                >
+                                    {% csrf_token %}
+
+                                    <button
+                                        class="btn btn-primary btn-block"
+                                        type="submit"
+                                    >
+                                        Ajouter en ami
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="friends-empty">
+                    <h3>
+                        Aucun joueur trouvé
+                    </h3>
+
+                    <p>
+                        Essaie avec un autre pseudo,
+                        prénom ou nom.
+                    </p>
+                </div>
+            {% endif %}
+        </section>
+    {% else %}
+        <section class="friends-section">
+            <div class="friends-empty">
+                <h3>
+                    Recherche un autre joueur
+                </h3>
+
+                <p>
+                    Saisis un pseudo, un prénom ou un nom
+                    pour afficher les résultats.
+                </p>
+            </div>
+        </section>
+    {% endif %}
+</section>
+{% endblock %}
