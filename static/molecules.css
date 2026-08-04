@@ -669,3 +669,255 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+/* ── Composants partagés par les salons de jeu (silhouette, pictionary) ──
+   Salle d'attente, chronomètre circulaire, avatars et podium : les deux
+   nouveaux modes réutilisent le même vocabulaire visuel que Poké-Uno. */
+
+.room-shell {
+    display: flex;
+    max-width: 1120px;
+    margin: 0 auto;
+    flex-direction: column;
+    gap: var(--space-5);
+    padding: var(--space-5);
+}
+
+.room-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.room-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin: 0;
+    font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+}
+
+/* Progression des manches : plus lisible qu'un « 3 / 10 » isolé. */
+.round-dots {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.round-dots li {
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.round-dots li.is-done {
+    border-color: transparent;
+    background: var(--color-brand-strong);
+}
+
+.round-dots li.is-current {
+    border-color: var(--color-brand);
+    background: var(--color-brand);
+    transform: scale(1.35);
+}
+
+/* Chronomètre circulaire : la couleur passe au rouge dans les dernières
+   secondes, l'information ne repose donc pas que sur le chiffre. */
+.timer-ring {
+    position: relative;
+    display: grid;
+    width: 84px;
+    height: 84px;
+    flex: none;
+    place-items: center;
+}
+
+.timer-ring svg {
+    position: absolute;
+    inset: 0;
+    transform: rotate(-90deg);
+}
+
+.timer-ring circle {
+    fill: none;
+    stroke-width: 7;
+    stroke-linecap: round;
+}
+
+.timer-ring .timer-track {
+    stroke: rgba(255, 255, 255, 0.1);
+}
+
+.timer-ring .timer-progress {
+    stroke: var(--timer-color, var(--color-brand));
+    transition: stroke-dashoffset 240ms linear, stroke var(--transition-base);
+}
+
+.timer-value {
+    color: var(--timer-color, var(--color-text));
+    font-size: 1.4rem;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.timer-ring.is-urgent {
+    animation: timer-pulse 900ms ease-in-out infinite;
+}
+
+@keyframes timer-pulse {
+    50% { transform: scale(1.05); }
+}
+
+/* Salle d'attente commune : visuel vivant + liste des joueurs présents. */
+.room-waiting {
+    display: grid;
+    align-items: center;
+    gap: var(--space-6);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding: clamp(var(--space-5), 4vw, var(--space-7));
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(145deg, rgba(24, 42, 69, 0.94), rgba(10, 20, 36, 0.97));
+    box-shadow: var(--shadow-raised);
+}
+
+.room-waiting h2 {
+    margin: var(--space-2) 0 var(--space-3);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+}
+
+.room-waiting-lead {
+    color: var(--color-text-muted);
+}
+
+.room-waiting-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+}
+
+.room-players {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.room-player {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: rgba(4, 12, 23, 0.5);
+}
+
+.room-player small {
+    display: block;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.room-player-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 800;
+}
+
+.room-seat {
+    border-style: dashed;
+    color: var(--color-text-muted);
+    background: transparent;
+}
+
+/* Tableau des scores avec podium : la place se lit d'un coup d'œil. */
+.score-board-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: rank;
+}
+
+.score-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: rgba(4, 12, 23, 0.42);
+    transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.score-row.is-me {
+    border-color: var(--color-brand);
+    background: rgba(117, 216, 255, 0.1);
+}
+
+.score-row.is-found {
+    border-color: rgba(98, 230, 166, 0.5);
+}
+
+.score-rank {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    flex: none;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: var(--font-size-xs);
+    font-weight: 900;
+}
+
+.score-row:nth-child(1) .score-rank { background: #d8a72a; color: #1a1204; }
+.score-row:nth-child(2) .score-rank { background: #b9c6d6; color: #10192a; }
+.score-row:nth-child(3) .score-rank { background: #b07747; color: #1b0f05; }
+
+.score-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.score-points {
+    font-variant-numeric: tabular-nums;
+    font-weight: 900;
+}
+
+.score-found-flag {
+    color: var(--color-positive);
+    font-size: var(--font-size-xs);
+    font-weight: 800;
+}
+
+@media (max-width: 780px) {
+    .room-waiting {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .timer-ring.is-urgent {
+        animation: none;
+    }
+}

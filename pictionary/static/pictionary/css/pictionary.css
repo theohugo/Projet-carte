@@ -1,7 +1,8 @@
-/* Pictionary Pokémon — toile de dessin, outils et propositions. */
+/* Pictionary Pokémon — chevalet, palette et propositions.
+   Même vocabulaire visuel que le reste de la plateforme ; l'accent violet
+   distingue le mode dessin du bleu de Poké-Uno. */
 
-.pic-lobby,
-.pic-game {
+.pic-lobby {
     display: flex;
     max-width: 1120px;
     margin: 0 auto;
@@ -10,16 +11,28 @@
     padding: var(--space-5);
 }
 
+/* ── Lobby ─────────────────────────────────────────────────────────────── */
+
 .pic-hero {
+    position: relative;
     display: grid;
     align-items: center;
     gap: var(--space-6);
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    padding: var(--space-6);
+    overflow: hidden;
+    padding: clamp(var(--space-5), 4vw, var(--space-7));
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-xl);
-    background: linear-gradient(145deg, rgba(44, 34, 74, 0.92), rgba(12, 16, 34, 0.96));
+    background:
+        radial-gradient(circle at 76% 24%, rgba(170, 140, 255, 0.22), transparent 46%),
+        linear-gradient(145deg, rgba(44, 34, 74, 0.94), rgba(10, 14, 30, 0.97));
     box-shadow: var(--shadow-raised);
+}
+
+.pic-hero h1 {
+    margin: var(--space-2) 0 var(--space-3);
+    font-size: clamp(2rem, 5vw, 3.1rem);
+    line-height: 1.05;
 }
 
 .pic-lead {
@@ -27,8 +40,32 @@
     color: var(--color-text-muted);
 }
 
+.pic-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: var(--space-5) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pic-steps li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 999px;
+    background: rgba(4, 12, 23, 0.5);
+    font-size: var(--font-size-sm);
+}
+
+.pic-steps b {
+    color: var(--color-accent);
+}
+
 .pic-create {
-    margin-top: var(--space-5);
+    margin-top: var(--space-6);
 }
 
 .pic-create fieldset {
@@ -45,26 +82,47 @@
 }
 
 .pic-round-choice {
+    position: relative;
     display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
+    min-height: 46px;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--space-2) var(--space-4);
     border: 1px solid var(--color-border);
-    border-radius: 999px;
+    border-radius: var(--radius-md);
+    background: rgba(4, 12, 23, 0.45);
     cursor: pointer;
-    font-size: var(--font-size-sm);
-    font-weight: 750;
+    font-weight: 800;
+    transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+}
+
+.pic-round-choice:hover {
+    border-color: var(--color-accent);
+    transform: translateY(-2px);
+}
+
+.pic-round-choice small {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
 }
 
 .pic-round-choice input {
-    width: auto;
+    position: absolute;
+    width: 1px;
+    height: 1px;
     min-height: 0;
-    margin: 0;
+    opacity: 0;
 }
 
 .pic-round-choice:has(input:checked) {
     border-color: var(--color-accent);
-    background: rgba(170, 140, 255, 0.16);
+    background: rgba(170, 140, 255, 0.18);
+}
+
+.pic-round-choice:has(input:focus-visible) {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
 }
 
 .pic-hero-visual {
@@ -79,6 +137,7 @@
     height: 55%;
     border: 3px dashed rgba(170, 140, 255, 0.55);
     border-radius: 46% 54% 62% 38% / 58% 42% 58% 42%;
+    animation: pic-wobble 7s ease-in-out infinite;
 }
 
 .pic-hero-pen {
@@ -90,9 +149,11 @@
     transform: rotate(24deg) translate(38px, -18px);
 }
 
-.pic-stage,
-.pic-waiting,
-.pic-scores,
+@keyframes pic-wobble {
+    0%, 100% { transform: rotate(-2deg) scale(1); }
+    50% { transform: rotate(2deg) scale(1.03); }
+}
+
 .pic-section {
     padding: var(--space-5);
     border: 1px solid var(--color-border-soft);
@@ -100,37 +161,105 @@
     background: var(--color-surface-glass);
 }
 
+.pic-section h2 {
+    margin-top: 0;
+}
+
+/* ── Salle d'attente : un chevalet qui se dessine tout seul ────────────── */
+
+.pic-easel {
+    position: relative;
+    display: grid;
+    width: 100%;
+    max-width: 240px;
+    margin: 0 auto var(--space-4);
+    aspect-ratio: 4 / 3;
+    place-items: center;
+}
+
+.pic-easel-sheet {
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: linear-gradient(160deg, rgba(20, 32, 54, 0.9), rgba(8, 14, 26, 0.96));
+}
+
+.pic-easel-stroke {
+    position: absolute;
+    border-radius: 999px;
+    background: var(--color-accent);
+}
+
+.pic-easel-stroke--1 {
+    width: 52%;
+    height: 6px;
+    transform: rotate(-14deg) translateY(-18px);
+    animation: pic-draw 2.8s ease-in-out infinite;
+}
+
+.pic-easel-stroke--2 {
+    width: 34%;
+    height: 6px;
+    background: #ffd166;
+    transform: rotate(9deg) translateY(20px);
+    animation: pic-draw 2.8s ease-in-out 0.5s infinite;
+}
+
+.pic-easel-pen {
+    position: absolute;
+    right: 16%;
+    bottom: 12%;
+    width: 8px;
+    height: 46px;
+    border-radius: 2px 2px 8px 8px;
+    background: linear-gradient(180deg, #ffd166, #ef476f);
+    transform: rotate(22deg);
+}
+
+@keyframes pic-draw {
+    0% { clip-path: inset(0 100% 0 0); }
+    55%, 100% { clip-path: inset(0 0 0 0); }
+}
+
+/* ── Scène de jeu ──────────────────────────────────────────────────────── */
+
 .pic-stage {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-4);
+    padding: clamp(var(--space-4), 3vw, var(--space-6));
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    background:
+        radial-gradient(circle at 50% 6%, rgba(170, 140, 255, 0.16), transparent 44%),
+        linear-gradient(180deg, rgba(28, 26, 56, 0.94), rgba(6, 10, 22, 0.97));
+    box-shadow: var(--shadow-raised);
 }
 
-.pic-status-row {
+.pic-stage-top {
     display: flex;
     width: 100%;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
-    gap: var(--space-3);
+    gap: var(--space-4);
+}
+
+.pic-turn-block p {
     margin: 0;
 }
 
-.pic-status-row p {
-    margin: 0;
-}
-
-.pic-round-label,
-.pic-timer {
+.pic-round-label {
     color: var(--color-text-muted);
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
 }
 
 .pic-turn {
-    font-size: var(--font-size-lg);
+    font-size: clamp(1.1rem, 2.6vw, 1.5rem);
     font-weight: 900;
 }
 
@@ -146,22 +275,62 @@
     aspect-ratio: 3 / 2;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    background: #0b1524;
+    background:
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 32px),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 32px),
+        #0b1524;
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.45);
     touch-action: none;
+}
+
+.pic-board.is-drawing canvas {
+    border-color: var(--color-accent);
     cursor: crosshair;
 }
 
-.pic-word {
+.pic-watch-badge {
     position: absolute;
-    right: 0;
-    bottom: var(--space-3);
-    left: 0;
+    top: var(--space-3);
+    left: var(--space-3);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
     margin: 0;
-    color: var(--color-positive);
-    font-size: var(--font-size-lg);
-    font-weight: 900;
+    padding: 4px var(--space-3);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 999px;
+    background: rgba(4, 12, 23, 0.78);
+    font-size: var(--font-size-xs);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Rideau de fin de manche : la réponse s'affiche par-dessus le dessin. */
+.pic-reveal {
+    position: absolute;
+    display: grid;
+    inset: 0;
+    place-content: center;
+    border-radius: var(--radius-md);
+    background: rgba(5, 11, 20, 0.86);
     text-align: center;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+}
+
+.pic-reveal-word {
+    margin: var(--space-2) 0 0;
+    color: var(--color-positive);
+    font-size: clamp(1.6rem, 5vw, 2.6rem);
+    font-weight: 900;
+}
+
+.pic-reveal.is-popping .pic-reveal-word {
+    animation: pic-pop 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pic-pop {
+    0% { opacity: 0; transform: scale(0.86); }
+    100% { opacity: 1; transform: scale(1); }
 }
 
 .pic-tools {
@@ -173,42 +342,78 @@
     padding: var(--space-3);
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-md);
-    background: rgba(4, 12, 23, 0.5);
+    background: rgba(4, 12, 23, 0.55);
 }
 
-.pic-tool-label {
-    font-size: var(--font-size-sm);
+.pic-secret {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    margin-right: auto;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
-.pic-colors {
+.pic-secret strong {
+    color: var(--color-text);
+    font-size: var(--font-size-lg);
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+.pic-tool-group {
     display: inline-flex;
     gap: var(--space-2);
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
 }
 
-.pic-color {
-    width: 30px;
-    height: 30px;
-    border: 2px solid rgba(255, 255, 255, 0.32);
+/* Cibles tactiles de 44px : les pastilles sont plus petites que leur bouton. */
+.pic-color,
+.pic-size {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.pic-color::after {
+    width: 26px;
+    height: 26px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     background: var(--pen);
-    cursor: pointer;
+    content: "";
 }
 
-.pic-color.is-active {
+.pic-color.is-active::after {
     border-color: #fff;
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.24);
 }
 
-.pic-width {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--font-size-sm);
+.pic-color:hover,
+.pic-size:hover {
+    transform: translateY(-2px);
 }
 
-.pic-width input {
-    width: 120px;
-    min-height: 0;
+.pic-size i {
+    width: var(--dot);
+    height: var(--dot);
+    border-radius: 50%;
+    background: var(--color-text);
+}
+
+.pic-size.is-active {
+    background: rgba(255, 255, 255, 0.16);
 }
 
 .pic-guess-form {
@@ -221,20 +426,30 @@
     flex: 1;
 }
 
-.pic-guess-feed,
-.pic-found,
-.pic-score-list {
+.pic-guess-form.is-found input {
+    border-color: rgba(98, 230, 166, 0.6);
+}
+
+.pic-guess-feed {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
     margin: 0;
     padding: 0;
     list-style: none;
     font-size: var(--font-size-sm);
 }
 
+.pic-guess-feed li {
+    padding: 4px var(--space-3);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
 .pic-guess-feed li.is-correct {
-    color: var(--color-positive);
+    color: #05210f;
+    background: var(--color-positive);
     font-weight: 800;
 }
 
@@ -243,27 +458,26 @@
     text-decoration: line-through;
 }
 
-.pic-found li {
-    color: var(--color-brand);
+.pic-scores {
+    padding: var(--space-5);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-glass);
 }
 
-.pic-score-list li {
+.pic-scores-head {
     display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
     justify-content: space-between;
-    padding: var(--space-2) 0;
-    border-bottom: 1px solid var(--color-border-soft);
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
 }
 
-.pic-score-list li.is-me {
-    color: var(--color-accent);
-    font-weight: 800;
-}
-
-.pic-game-heading h1 {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    font-size: clamp(1.6rem, 4vw, 2.4rem);
+.pic-scores-note {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
 }
 
 @media (max-width: 760px) {
@@ -273,5 +487,27 @@
 
     .pic-hero-visual {
         display: none;
+    }
+
+    .pic-tools {
+        justify-content: center;
+    }
+
+    .pic-secret {
+        width: 100%;
+        margin-right: 0;
+        text-align: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pic-hero-scribble,
+    .pic-easel-stroke,
+    .pic-reveal.is-popping .pic-reveal-word {
+        animation: none;
+    }
+
+    .pic-easel-stroke {
+        clip-path: none;
     }
 }

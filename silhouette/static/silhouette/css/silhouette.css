@@ -1,7 +1,8 @@
-/* Qui est ce Pokémon ? — silhouette, indices et scores. */
+/* Qui est ce Pokémon ? — projecteur, silhouette et indices.
+   Le mode reprend les tokens de la plateforme (surfaces, rayons, durées) ;
+   seule l'ambiance « salle obscure » lui est propre. */
 
-.sil-lobby,
-.sil-game {
+.sil-lobby {
     display: flex;
     max-width: 1080px;
     margin: 0 auto;
@@ -10,16 +11,28 @@
     padding: var(--space-5);
 }
 
+/* ── Lobby ─────────────────────────────────────────────────────────────── */
+
 .sil-hero {
+    position: relative;
     display: grid;
     align-items: center;
     gap: var(--space-6);
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    padding: var(--space-6);
+    overflow: hidden;
+    padding: clamp(var(--space-5), 4vw, var(--space-7));
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-xl);
-    background: linear-gradient(145deg, rgba(28, 48, 78, 0.92), rgba(10, 20, 36, 0.96));
+    background:
+        radial-gradient(circle at 78% 22%, rgba(117, 216, 255, 0.18), transparent 46%),
+        linear-gradient(145deg, rgba(28, 48, 78, 0.94), rgba(8, 16, 30, 0.97));
     box-shadow: var(--shadow-raised);
+}
+
+.sil-hero h1 {
+    margin: var(--space-2) 0 var(--space-3);
+    font-size: clamp(2rem, 5vw, 3.1rem);
+    line-height: 1.05;
 }
 
 .sil-lead {
@@ -27,8 +40,32 @@
     color: var(--color-text-muted);
 }
 
+.sil-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: var(--space-5) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sil-steps li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 999px;
+    background: rgba(4, 12, 23, 0.5);
+    font-size: var(--font-size-sm);
+}
+
+.sil-steps b {
+    color: var(--color-brand);
+}
+
 .sil-create {
-    margin-top: var(--space-5);
+    margin-top: var(--space-6);
 }
 
 .sil-create fieldset {
@@ -44,27 +81,49 @@
     margin-top: var(--space-2);
 }
 
+/* Choix de la longueur : cible tactile de 46px et état sélectionné visible. */
 .sil-round-choice {
+    position: relative;
     display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
+    min-height: 46px;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--space-2) var(--space-4);
     border: 1px solid var(--color-border);
-    border-radius: 999px;
+    border-radius: var(--radius-md);
+    background: rgba(4, 12, 23, 0.45);
     cursor: pointer;
-    font-size: var(--font-size-sm);
-    font-weight: 750;
+    font-weight: 800;
+    transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+}
+
+.sil-round-choice:hover {
+    border-color: var(--color-brand-strong);
+    transform: translateY(-2px);
+}
+
+.sil-round-choice small {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
 }
 
 .sil-round-choice input {
-    width: auto;
+    position: absolute;
+    width: 1px;
+    height: 1px;
     min-height: 0;
-    margin: 0;
+    opacity: 0;
 }
 
 .sil-round-choice:has(input:checked) {
     border-color: var(--color-brand);
-    background: rgba(117, 216, 255, 0.14);
+    background: rgba(117, 216, 255, 0.16);
+}
+
+.sil-round-choice:has(input:focus-visible) {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
 }
 
 .sil-hero-visual {
@@ -78,16 +137,17 @@
     width: 62%;
     height: 62%;
     border-radius: 42% 58% 55% 45% / 52% 44% 56% 48%;
-    background: linear-gradient(160deg, #0d1422, #1b2f4d);
-    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
+    background: linear-gradient(160deg, #0a1220, #1d3557);
+    box-shadow: inset 0 0 42px rgba(0, 0, 0, 0.66);
     animation: sil-float 6s ease-in-out infinite;
 }
 
 .sil-hero-flash {
     position: absolute;
     color: var(--color-brand);
-    font-size: 4rem;
+    font-size: clamp(2.6rem, 8vw, 4.2rem);
     font-weight: 900;
+    text-shadow: 0 0 26px rgba(117, 216, 255, 0.55);
 }
 
 @keyframes sil-float {
@@ -95,57 +155,159 @@
     50% { transform: translateY(6px) rotate(2deg); }
 }
 
+.sil-section {
+    padding: var(--space-5);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-glass);
+}
+
+.sil-section h2 {
+    margin-top: 0;
+}
+
+/* ── Salle d'attente : un radar balaie une silhouette ──────────────────── */
+
+.sil-radar {
+    position: relative;
+    display: grid;
+    width: 100%;
+    max-width: 240px;
+    margin: 0 auto var(--space-4);
+    aspect-ratio: 1;
+    overflow: hidden;
+    place-items: center;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 50%;
+    background:
+        repeating-radial-gradient(circle at 50% 50%, rgba(117, 216, 255, 0.09) 0 1px, transparent 1px 26px),
+        radial-gradient(circle at 50% 50%, rgba(11, 21, 36, 0.9), rgba(5, 11, 20, 0.98));
+}
+
+.sil-radar-sweep {
+    position: absolute;
+    inset: 0;
+    background: conic-gradient(from 0deg, rgba(117, 216, 255, 0.32), transparent 32%);
+    animation: sil-sweep 3.6s linear infinite;
+}
+
+.sil-radar-blob {
+    width: 44%;
+    height: 44%;
+    border-radius: 44% 56% 52% 48% / 54% 46% 54% 46%;
+    background: #0b1524;
+    box-shadow: 0 0 0 1px rgba(117, 216, 255, 0.2);
+}
+
+.sil-radar-mark {
+    position: absolute;
+    color: var(--color-brand);
+    font-size: 2.2rem;
+    font-weight: 900;
+}
+
+@keyframes sil-sweep {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Scène de jeu ──────────────────────────────────────────────────────── */
+
 .sil-stage {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-4);
-    padding: var(--space-6);
+    padding: clamp(var(--space-4), 3vw, var(--space-6));
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-xl);
-    background: radial-gradient(circle at 50% 30%, rgba(24, 58, 96, 0.92), rgba(6, 13, 24, 0.97));
+    background:
+        radial-gradient(circle at 50% 8%, rgba(117, 216, 255, 0.16), transparent 42%),
+        linear-gradient(180deg, rgba(16, 32, 54, 0.94), rgba(5, 11, 20, 0.97));
     box-shadow: var(--shadow-raised);
     text-align: center;
+}
+
+.sil-stage-top {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
 }
 
 .sil-round-label {
     margin: 0;
     color: var(--color-text-muted);
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
 }
 
+/* Le cadre fait office de projecteur. La silhouette est noire : il lui faut un
+   fond clair derrière, sinon elle se confond avec la surface sombre du salon. */
 .sil-frame {
+    position: relative;
     display: grid;
-    width: min(340px, 100%);
+    width: min(360px, 100%);
     aspect-ratio: 1;
     place-items: center;
     border-radius: var(--radius-lg);
-    background: rgba(255, 255, 255, 0.05);
+}
+
+.sil-frame-glow {
+    position: absolute;
+    width: 88%;
+    height: 88%;
+    border-radius: 50%;
+    background: radial-gradient(circle, #dcefff 0%, #9fcdf2 46%, rgba(96, 165, 224, 0.45) 66%, transparent 76%);
+    box-shadow: 0 0 70px rgba(117, 216, 255, 0.42);
+    transition: background var(--transition-base), box-shadow var(--transition-base);
 }
 
 .sil-frame img {
+    position: relative;
     width: 100%;
     height: 100%;
     object-fit: contain;
+    filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.55));
     transition: transform var(--transition-base);
 }
 
-.sil-frame img.is-revealed {
-    transform: scale(1.04);
+/* À la révélation, l'illustration reprend ses couleurs : le projecteur passe
+   en vert et s'estompe pour ne pas laver l'image. */
+.sil-frame.is-revealed .sil-frame-glow {
+    background: radial-gradient(circle, rgba(98, 230, 166, 0.34) 0%, rgba(98, 230, 166, 0.12) 55%, transparent 72%);
+    box-shadow: 0 0 60px rgba(98, 230, 166, 0.28);
+}
+
+.sil-frame.is-popping img {
+    animation: sil-pop 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes sil-pop {
+    0% { transform: scale(0.9); }
+    60% { transform: scale(1.06); }
+    100% { transform: scale(1); }
 }
 
 .sil-answer {
+    position: absolute;
+    bottom: -6px;
     margin: 0;
-    color: var(--color-positive);
+    padding: var(--space-2) var(--space-4);
+    border-radius: 999px;
+    color: #05210f;
+    background: var(--color-positive);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
     font-size: var(--font-size-lg);
     font-weight: 900;
 }
 
 .sil-hints {
     display: flex;
+    min-height: 42px;
     flex-wrap: wrap;
+    align-items: center;
     justify-content: center;
     gap: var(--space-2);
     margin: 0;
@@ -153,19 +315,44 @@
     list-style: none;
 }
 
-.sil-hints li {
+.sil-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
     padding: var(--space-2) var(--space-3);
     border: 1px solid var(--color-border-soft);
     border-radius: 999px;
-    background: rgba(4, 12, 23, 0.55);
+    background: rgba(4, 12, 23, 0.6);
     font-size: var(--font-size-sm);
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    animation: sil-hint-in 240ms ease-out;
+}
+
+.sil-hint-label {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.sil-hint strong {
+    letter-spacing: 0.12em;
+}
+
+.sil-hint--pending {
+    border-style: dashed;
+    color: var(--color-text-muted);
+    animation: none;
+}
+
+@keyframes sil-hint-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.96); }
+    to { opacity: 1; transform: none; }
 }
 
 .sil-guess-form {
     display: flex;
-    width: min(420px, 100%);
+    width: min(440px, 100%);
     gap: var(--space-2);
 }
 
@@ -173,20 +360,40 @@
     flex: 1;
 }
 
-.sil-guess-feed,
-.sil-found,
-.sil-score-list {
+.sil-guess-form.is-found input {
+    border-color: rgba(98, 230, 166, 0.6);
+}
+
+.sil-guess-form.is-wrong input {
+    animation: sil-shake 320ms ease-out;
+}
+
+@keyframes sil-shake {
+    25% { transform: translateX(-6px); }
+    50% { transform: translateX(6px); }
+    75% { transform: translateX(-3px); }
+}
+
+.sil-guess-feed {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
     margin: 0;
     padding: 0;
     list-style: none;
     font-size: var(--font-size-sm);
 }
 
+.sil-guess-feed li {
+    padding: 4px var(--space-3);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
 .sil-guess-feed li.is-correct {
-    color: var(--color-positive);
+    color: #05210f;
+    background: var(--color-positive);
     font-weight: 800;
 }
 
@@ -195,36 +402,26 @@
     text-decoration: line-through;
 }
 
-.sil-found li {
-    color: var(--color-brand);
-}
-
-.sil-scores,
-.sil-waiting,
-.sil-section {
+.sil-scores {
     padding: var(--space-5);
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-lg);
     background: var(--color-surface-glass);
 }
 
-.sil-score-list li {
+.sil-scores-head {
     display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
     justify-content: space-between;
-    padding: var(--space-2) 0;
-    border-bottom: 1px solid var(--color-border-soft);
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
 }
 
-.sil-score-list li.is-me {
-    color: var(--color-brand);
-    font-weight: 800;
-}
-
-.sil-game-heading h1 {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    font-size: clamp(1.6rem, 4vw, 2.4rem);
+.sil-scores-note {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
 }
 
 @media (max-width: 760px) {
@@ -234,5 +431,15 @@
 
     .sil-hero-visual {
         display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sil-hero-shape,
+    .sil-radar-sweep,
+    .sil-hint,
+    .sil-frame.is-popping img,
+    .sil-guess-form.is-wrong input {
+        animation: none;
     }
 }

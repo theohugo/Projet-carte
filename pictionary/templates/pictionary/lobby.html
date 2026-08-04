@@ -4,7 +4,7 @@
 {% block title %}Pictionary Pokémon — PokéTable{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'pictionary/css/pictionary.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'pictionary/css/pictionary.css' %}?v=2">
 
 <div id="pictionary-lobby" class="pic-lobby" data-state-url="{% url 'pictionary:api_lobby_state' %}">
     <section class="pic-hero" aria-labelledby="pictionary-title">
@@ -12,7 +12,13 @@
             <a class="back-link" href="{% url 'home' %}"><span aria-hidden="true">←</span> Tous les jeux</a>
             <p class="section-kicker">Dessin · devinette</p>
             <h1 id="pictionary-title">Pictionary Pokémon</h1>
-            <p class="pic-lead">À chaque manche, un joueur reçoit un Pokémon de la première génération et le dessine. Les autres écrivent leur réponse : plus on trouve tôt, plus on marque — et le dessinateur gagne des points à chaque joueur qui devine.</p>
+            <p class="pic-lead">À chaque manche, un joueur reçoit un Pokémon de la première génération et le dessine. Les autres écrivent leur réponse.</p>
+            <ol class="pic-steps">
+                <li><b>1</b> Le crayon tourne</li>
+                <li><b>90 s</b> pour dessiner</li>
+                <li><b>Vite</b> = plus de points</li>
+                <li><b>+150</b> au dessinateur par bonne réponse</li>
+            </ol>
 
             <form method="post" action="{% url 'pictionary:create_game' %}" class="pic-create">
                 {% csrf_token %}
@@ -23,6 +29,7 @@
                         <label class="pic-round-choice">
                             <input type="radio" name="round_count" value="{{ value }}" {% if value == 6 %}checked{% endif %}>
                             <span>{{ label }}</span>
+                            <small>≈ {{ value }} × 1 min 30</small>
                         </label>
                         {% endfor %}
                     </div>

@@ -23,7 +23,9 @@ dev = [
 
 [tool.ruff]
 line-length = 110
-exclude = ["**/migrations/"]
+# `.claude/skills` contient des assets tiers (skill UI/UX) : ce code n'est pas
+# le nôtre et ne suit pas nos conventions.
+exclude = ["**/migrations/", ".claude/"]
 
 [tool.ruff.lint]
 extend-ignore = [
@@ -33,4 +35,4 @@ extend-ignore = [
 [tool.black]
 line-length = 110
 target-version = ["py313"]
-extend-exclude = "/migrations/"
+extend-exclude = "/(migrations|\\.claude)/"
