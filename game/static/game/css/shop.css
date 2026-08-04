@@ -43,10 +43,18 @@
 }
 
 .points-value {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
     font-size: 1.9rem;
     font-weight: 900;
     font-variant-numeric: tabular-nums;
     line-height: 1;
+}
+
+.points-value .icon {
+    width: 26px;
+    height: 26px;
 }
 
 .points-badge small {
@@ -167,10 +175,18 @@
 }
 
 .booster-guaranteed {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     margin-top: var(--space-2);
     color: var(--color-positive);
     font-size: var(--font-size-xs);
     font-weight: 800;
+}
+
+.booster-guaranteed .icon {
+    width: 15px;
+    height: 15px;
 }
 
 .booster-buy {
@@ -184,8 +200,12 @@
 }
 
 .booster-price {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: var(--font-size-lg);
     font-weight: 900;
+    font-variant-numeric: tabular-nums;
 }
 
 .shop-note {
@@ -193,265 +213,646 @@
     font-size: var(--font-size-sm);
 }
 
-/* ── Scène d'ouverture ─────────────────────────────────────────────────── */
+/* ── Ouverture d'un booster ─────────────────────────────────────────────
+   Une carte à la fois : elle sort du paquet, se retourne en 3D, suit le
+   doigt ou la souris, puis s'envole d'un balayage. La scène se teinte de la
+   rareté avant même qu'on lise l'étiquette. */
 
 .opening {
+    --card-width: min(64vw, 274px);
+    --aura: rgba(88, 132, 214, 0.26);
+    --aura-strong: rgba(126, 170, 245, 0.5);
+    --ring: rgba(255, 255, 255, 0.16);
+
     position: fixed;
     z-index: 900;
     display: grid;
     inset: 0;
     place-items: center;
     opacity: 0;
-    transition: opacity var(--transition-base);
+    transition: opacity 280ms ease;
 }
 
 .opening.is-open {
     opacity: 1;
 }
 
-.opening-backdrop {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 50% 40%, rgba(20, 46, 82, 0.92), rgba(3, 7, 14, 0.97));
-    backdrop-filter: blur(4px);
+.opening[data-rarity="RARE"] {
+    --aura: rgba(56, 176, 233, 0.34);
+    --aura-strong: rgba(124, 226, 255, 0.62);
+    --ring: rgba(124, 226, 255, 0.75);
 }
 
-.opening-stage {
-    position: relative;
-    display: flex;
-    width: min(1000px, 94vw);
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-5);
-    perspective: 1200px;
+.opening[data-rarity="LEGENDAIRE"] {
+    --aura: rgba(214, 156, 44, 0.38);
+    --aura-strong: rgba(255, 224, 140, 0.7);
+    --ring: rgba(255, 216, 112, 0.85);
 }
 
 body.has-opening {
     overflow: hidden;
 }
 
-/* Le sachet : deux faces en 3D, déchiré par le haut au clic. */
-.opening-pack {
-    position: relative;
-    display: grid;
-    width: 240px;
-    height: 340px;
-    place-items: center;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transform-style: preserve-3d;
-    animation: pack-idle 3.4s ease-in-out infinite;
+.opening-backdrop {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 50% 44%, var(--aura), transparent 58%),
+        radial-gradient(circle at 50% 120%, rgba(52, 96, 168, 0.22), transparent 60%),
+        #03060d;
+    transition: background 520ms ease;
 }
 
-.opening-pack-face {
-    display: grid;
-    width: 100%;
+/* Rayons qui tournent derrière la carte : réservés aux tirages qui comptent. */
+.opening-rays {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 190vmax;
+    height: 190vmax;
+    background: repeating-conic-gradient(
+        from 0deg,
+        var(--aura-strong) 0deg 2.4deg,
+        transparent 2.4deg 12deg
+    );
+    mask-image: radial-gradient(circle, #000 4%, rgba(0, 0, 0, 0.55) 26%, transparent 58%);
+    opacity: 0;
+    translate: -50% -50%;
+    animation: rays-turn 26s linear infinite;
+    transition: opacity 520ms ease;
+}
+
+.opening.is-special .opening-rays {
+    opacity: 0.42;
+}
+
+@keyframes rays-turn {
+    to { rotate: 360deg; }
+}
+
+/* Éclair de scène, déclenché à la déchirure et sur une carte rare. */
+.opening-flash {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 46%, #fff, rgba(255, 255, 255, 0) 46%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.opening-flash.is-firing {
+    animation: scene-flash 620ms ease-out;
+}
+
+@keyframes scene-flash {
+    0% { opacity: 0.85; }
+    100% { opacity: 0; }
+}
+
+.opening-scene {
+    position: relative;
+    display: flex;
+    width: min(1040px, 96vw);
     height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(var(--space-3), 3vh, var(--space-5));
+    padding: var(--space-5) var(--space-4);
+    perspective: 1400px;
+}
+
+.opening-close {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 50%;
+    background: rgba(6, 14, 28, 0.7);
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+
+.opening-close:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: var(--color-text);
+}
+
+/* Points de progression : on sait toujours combien de cartes restent. */
+.opening-dots {
+    display: flex;
+    gap: 7px;
+    height: 8px;
+}
+
+.opening-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: background 300ms ease, transform 300ms ease;
+}
+
+.opening-dots span.is-done {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.opening-dots span.is-current {
+    background: var(--ring);
+    transform: scale(1.5);
+}
+
+/* ── Le sachet ─────────────────────────────────────────────────────────── */
+
+.opening-pack {
+    position: relative;
+    width: min(56vw, 226px);
+    aspect-ratio: 63 / 98;
+    border: 0;
+    border-radius: 16px;
+    background: none;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    animation: pack-float 3.8s ease-in-out infinite;
+}
+
+.opening-pack:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 8px;
+}
+
+.opening-pack-body {
+    position: absolute;
+    display: grid;
+    inset: 0;
+    overflow: hidden;
     align-content: center;
     justify-items: center;
     gap: var(--space-2);
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    border-radius: inherit;
     background:
-        radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.34), transparent 40%),
-        linear-gradient(155deg, #2a3f8f, #6a2fb5 45%, #d2477f 76%, #f2a03d);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55);
+        radial-gradient(circle at 26% 14%, rgba(255, 255, 255, 0.36), transparent 42%),
+        linear-gradient(158deg, #2b3a96 0%, #6c2fb8 38%, #cf3f80 70%, #f5a53c 100%);
+    box-shadow:
+        0 40px 70px rgba(0, 0, 0, 0.6),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.24);
     text-align: center;
+}
+
+.opening-pack-body::after {
+    position: absolute;
+    inset: -40%;
+    background: linear-gradient(112deg, transparent 44%, rgba(255, 255, 255, 0.55) 50%, transparent 56%);
+    content: "";
+    mix-blend-mode: screen;
+    animation: pack-sheen 3.6s ease-in-out infinite;
 }
 
 .opening-pack-logo {
     color: #fff;
-    font-size: 1.5rem;
+    font-size: 1.45rem;
     font-weight: 900;
-    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+    letter-spacing: 0.01em;
+    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
 }
 
 .opening-pack-logo b {
-    color: #ffe9a8;
+    color: #ffe6a3;
 }
 
-.opening-pack-set,
-.opening-pack-hint {
-    color: rgba(255, 255, 255, 0.9);
+.opening-pack-set {
+    padding: 4px var(--space-3);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.28);
+    color: rgba(255, 255, 255, 0.92);
     font-size: var(--font-size-xs);
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
 }
 
-.opening-pack-hint {
-    margin-top: var(--space-4);
-    padding: 6px var(--space-3);
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.32);
-}
-
-.opening-pack-tear {
+/* Bande à arracher, dents comprises. */
+.opening-pack-strip {
     position: absolute;
     top: 0;
     right: 0;
     left: 0;
-    height: 46px;
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent);
+    height: 15%;
+    border-radius: 16px 16px 0 0;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.06)),
+        linear-gradient(158deg, #2b3a96, #6c2fb8);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
     transform-origin: top center;
+}
+
+.opening-pack-strip::after {
+    position: absolute;
+    right: 6px;
+    bottom: -3px;
+    left: 6px;
+    height: 6px;
+    background: radial-gradient(circle at 4px 0, transparent 4px, rgba(3, 6, 13, 0.85) 4.5px) repeat-x;
+    background-size: 9px 6px;
+    content: "";
 }
 
 .opening.is-torn .opening-pack {
     animation: none;
-    transform: rotateX(12deg) scale(0.92);
     opacity: 0;
-    transition: transform 560ms cubic-bezier(0.16, 1, 0.3, 1), opacity 460ms ease-in;
+    transform: scale(1.16) translateZ(90px);
+    transition: transform 620ms cubic-bezier(0.16, 1, 0.3, 1), opacity 480ms ease-in 140ms;
 }
 
-.opening.is-torn .opening-pack-tear {
-    transform: translateY(-70px) rotateX(70deg);
+.opening.is-torn .opening-pack-strip {
     opacity: 0;
-    transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1), opacity 420ms linear;
+    transform: translateY(-90px) rotateX(96deg);
+    transition: transform 560ms cubic-bezier(0.16, 1, 0.3, 1), opacity 420ms linear;
 }
 
-@keyframes pack-idle {
-    0%, 100% { transform: translateY(-6px) rotateZ(-1.5deg); }
-    50% { transform: translateY(6px) rotateZ(1.5deg); }
+@keyframes pack-float {
+    0%, 100% { transform: translateY(-8px) rotateZ(-1.6deg) rotateY(-6deg); }
+    50% { transform: translateY(8px) rotateZ(1.6deg) rotateY(6deg); }
 }
 
-.opening-cards {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--space-3);
+@keyframes pack-sheen {
+    0%, 100% { transform: translateX(-26%); }
+    50% { transform: translateX(26%); }
 }
 
-/* Chaque carte est un carton qui se retourne : dos puis face. */
-.pull-card {
-    width: clamp(130px, 16vw, 176px);
-    aspect-ratio: 5 / 7;
-    perspective: 900px;
-}
+/* ── La pile de cartes ─────────────────────────────────────────────────── */
 
-.pull-card-inner {
+.opening-deck {
     position: relative;
+    width: var(--card-width);
+    aspect-ratio: 63 / 88;
+    transform-style: preserve-3d;
+    touch-action: none;
+}
+
+.tcg-card {
+    position: absolute;
+    inset: 0;
+    opacity: 1;
+    transform:
+        translate3d(var(--dx, 0px), calc(var(--depth) * 9px), calc(var(--depth) * -34px))
+        rotate(var(--rot, 0deg));
+    transform-style: preserve-3d;
+    transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1), opacity 360ms ease;
+}
+
+.tcg-card.is-dragging {
+    transition: none;
+}
+
+.tcg-card.is-gone {
+    opacity: 0;
+    transform: translate3d(var(--exit-x, -130%), -8%, 120px) rotate(var(--exit-rot, -18deg));
+}
+
+/* Le basculement suit le pointeur ; la carte du dessus seulement. */
+.tcg-card-tilt {
+    width: 100%;
+    height: 100%;
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transform-style: preserve-3d;
+    transition: transform 220ms ease-out;
+}
+
+.tcg-card.is-tilting .tcg-card-tilt {
+    transition: none;
+}
+
+.tcg-card-inner {
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    transition: transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 760ms cubic-bezier(0.3, 1.1, 0.35, 1);
 }
 
-.pull-card.is-flipped .pull-card-inner {
+.tcg-card.is-revealed .tcg-card-inner {
     transform: rotateY(180deg);
 }
 
-.pull-card-face {
+.tcg-face {
     position: absolute;
-    display: grid;
     inset: 0;
-    align-content: end;
-    justify-items: center;
-    gap: 2px;
     overflow: hidden;
-    padding: var(--space-2);
-    border-radius: 12px;
+    border-radius: 5.2%;
     backface-visibility: hidden;
+    box-shadow: 0 26px 50px rgba(0, 0, 0, 0.55);
 }
 
-.pull-card-back {
+/* Dos de carte : bleu profond, tissage discret, pastille centrale. */
+.tcg-back {
+    display: grid;
+    place-items: center;
     background:
-        repeating-linear-gradient(135deg, transparent 0 6px, rgba(255, 255, 255, 0.06) 6px 7px),
-        linear-gradient(150deg, #1a3d78, #0a1730);
-    box-shadow: inset 0 0 0 2px rgba(132, 224, 255, 0.5);
+        repeating-linear-gradient(135deg, transparent 0 7px, rgba(255, 255, 255, 0.05) 7px 8px),
+        radial-gradient(circle at 50% 42%, #2a58a8, #123064 52%, #071531);
+    box-shadow: inset 0 0 0 5px rgba(226, 238, 255, 0.9), inset 0 0 0 8px #0b1f42;
 }
 
-.pull-card-back-mark {
-    width: 46px;
-    height: 46px;
-    margin: auto;
-    border: 4px solid #0a1730;
+.tcg-back-mark {
+    width: 34%;
+    aspect-ratio: 1;
+    border: 5px solid #071531;
     border-radius: 50%;
-    background: linear-gradient(180deg, #ef476f 50%, #f7fbff 50%);
+    background: linear-gradient(180deg, #ef476f 0 50%, #f4f8ff 50% 100%);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
 }
 
-.pull-card-front {
-    align-content: start;
-    background: linear-gradient(160deg, #f7f9fc, #d8e3f2);
-    color: #14243c;
+.tcg-back-mark::after {
+    display: block;
+    width: 30%;
+    height: 30%;
+    margin: 35% auto;
+    border: 4px solid #071531;
+    border-radius: 50%;
+    background: #f4f8ff;
+    content: "";
+}
+
+/* Face : le visuel remplit la carte, sans cadre blanc autour. */
+.tcg-front {
+    background: #0d1424;
     transform: rotateY(180deg);
 }
 
-.pull-card-front img {
+.tcg-front img {
+    display: block;
     width: 100%;
-    height: 72%;
-    object-fit: contain;
+    height: 100%;
+    object-fit: cover;
 }
 
-.pull-card-name {
-    font-size: var(--font-size-xs);
+.tcg-card.is-rare .tcg-front {
+    box-shadow: 0 0 0 2px rgba(124, 226, 255, 0.9), 0 20px 44px rgba(56, 176, 233, 0.4);
+}
+
+.tcg-card.is-legendaire .tcg-front {
+    box-shadow: 0 0 0 3px rgba(255, 216, 112, 0.95), 0 24px 54px rgba(230, 172, 44, 0.45);
+}
+
+/* Reflet holographique : la teinte se déplace avec le pointeur. */
+.tcg-holo {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(
+            calc(var(--sheen, 115) * 1deg),
+            transparent 34%,
+            rgba(255, 255, 255, 0.55) 48%,
+            transparent 60%
+        ),
+        conic-gradient(
+            from 200deg at var(--mx, 50%) var(--my, 50%),
+            #ff6b9d,
+            #ffd76a,
+            #62e6a6,
+            #7fd7ff,
+            #b58cff,
+            #ff6b9d
+        );
+    mix-blend-mode: color-dodge;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.tcg-card.is-legendaire .tcg-holo {
+    opacity: 0.42;
+}
+
+/* Tache spéculaire qui suit le doigt : c'est elle qui donne le relief. Elle
+   n'apparaît qu'au survol, sinon elle voile inutilement le visuel. */
+.tcg-glare {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle at var(--mx, 50%) var(--my, 50%),
+        rgba(255, 255, 255, 0.42),
+        rgba(255, 255, 255, 0) 44%
+    );
+    mix-blend-mode: overlay;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 240ms ease;
+}
+
+.opening-deck:hover .tcg-card.is-active .tcg-glare,
+.tcg-card.is-active.is-tilting .tcg-glare {
+    opacity: 1;
+}
+
+/* Anneau de lumière qui s'échappe au retournement d'une carte rare. */
+.tcg-burst {
+    position: absolute;
+    inset: -14%;
+    border: 3px solid var(--ring);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tcg-card.is-bursting .tcg-burst {
+    animation: burst-ring 760ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes burst-ring {
+    0% { opacity: 0.9; transform: scale(0.55); }
+    100% { opacity: 0; transform: scale(1.5); }
+}
+
+.tcg-card.is-bursting {
+    animation: card-pop 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes card-pop {
+    0% { scale: 0.94; }
+    45% { scale: 1.08; }
+    100% { scale: 1; }
+}
+
+/* Étincelles projetées depuis la carte. */
+.spark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ring);
+    box-shadow: 0 0 12px var(--ring);
+    pointer-events: none;
+    animation: spark-fly var(--life, 800ms) ease-out forwards;
+}
+
+@keyframes spark-fly {
+    0% {
+        opacity: 1;
+        transform: rotate(var(--angle)) translateX(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: rotate(var(--angle)) translateX(var(--distance)) scale(0.2);
+    }
+}
+
+/* ── Légende et invite ─────────────────────────────────────────────────── */
+
+.opening-caption {
+    display: flex;
+    min-height: 78px;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    opacity: 0;
+    text-align: center;
+    transition: opacity 320ms ease;
+}
+
+.opening-caption.is-visible {
+    opacity: 1;
+}
+
+.opening-caption-name {
+    font-size: clamp(1.3rem, 4vw, 1.9rem);
     font-weight: 900;
+    line-height: 1.1;
 }
 
-.pull-card-rarity {
-    font-size: 0.62rem;
+.opening-caption-tags {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.rarity-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px var(--space-3);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    opacity: 0.72;
 }
 
-/* Rare : liseré bleu et reflet holographique qui balaie la carte. */
-.pull-card.is-rare .pull-card-front {
-    box-shadow: 0 0 0 2px #4cc9f0, 0 14px 34px rgba(76, 201, 240, 0.34);
+.rarity-chip[data-rarity="RARE"] {
+    background: rgba(124, 226, 255, 0.9);
+    color: #06202e;
 }
 
-.pull-card.is-legendaire .pull-card-front {
-    box-shadow: 0 0 0 3px #f2ce3e, 0 18px 44px rgba(242, 206, 62, 0.42);
+.rarity-chip[data-rarity="LEGENDAIRE"] {
+    background: linear-gradient(120deg, #ffd76a, #ffb03a);
+    color: #2a1a02;
 }
 
-.pull-card-shine {
-    position: absolute;
-    inset: -50%;
-    background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.85) 50%, transparent 60%);
-    mix-blend-mode: screen;
-    animation: pull-shine 2.6s ease-in-out infinite;
+.new-chip {
+    padding: 4px var(--space-3);
+    border: 1px solid rgba(98, 230, 166, 0.5);
+    border-radius: 999px;
+    color: var(--color-positive);
+    font-size: var(--font-size-xs);
+    font-weight: 800;
 }
 
-.pull-card.is-legendaire .pull-card-shine {
-    background: linear-gradient(
-        115deg,
-        transparent 34%,
-        rgba(255, 236, 160, 0.95) 46%,
-        rgba(255, 255, 255, 0.9) 52%,
-        transparent 64%
-    );
+.opening-hint {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transition: opacity 320ms ease;
 }
 
-.pull-card.is-flipped.is-legendaire {
-    animation: legendary-pop 700ms cubic-bezier(0.16, 1, 0.3, 1);
+.opening-hint.is-visible {
+    opacity: 1;
+    animation: hint-breathe 2.4s ease-in-out infinite;
 }
 
-@keyframes pull-shine {
-    0%, 100% { transform: translateX(-26%) rotate(2deg); }
-    50% { transform: translateX(26%) rotate(2deg); }
+@keyframes hint-breathe {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.95; }
 }
 
-@keyframes legendary-pop {
-    0% { transform: scale(0.9); }
-    55% { transform: scale(1.12); }
-    100% { transform: scale(1); }
+/* ── Récapitulatif ─────────────────────────────────────────────────────── */
+
+.opening-recap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
 }
 
-/* La scène réagit aussi : halo coloré derrière les cartes. */
-.opening.is-rare-pull .opening-backdrop {
-    background: radial-gradient(circle at 50% 45%, rgba(76, 201, 240, 0.34), rgba(3, 7, 14, 0.97));
+.recap-fan {
+    display: flex;
+    justify-content: center;
+    padding-top: var(--space-4);
+    perspective: 900px;
 }
 
-.opening.is-legendary-pull .opening-backdrop {
-    background: radial-gradient(circle at 50% 45%, rgba(242, 206, 62, 0.4), rgba(3, 7, 14, 0.97));
-    animation: legendary-flash 900ms ease-out;
+.recap-card {
+    width: clamp(84px, 13vw, 132px);
+    aspect-ratio: 63 / 88;
+    overflow: hidden;
+    margin-inline: -2.4%;
+    border-radius: 6%;
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transform-origin: bottom center;
+    animation: recap-deal 480ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: calc(var(--i) * 70ms);
+    transition: transform 220ms ease;
 }
 
-@keyframes legendary-flash {
-    0% { filter: brightness(2.1); }
-    100% { filter: brightness(1); }
+.recap-card:hover {
+    z-index: 2;
+    transform: translateY(-14px) rotate(0deg) scale(1.06);
+}
+
+.recap-card img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.recap-card.is-rare {
+    box-shadow: 0 0 0 2px rgba(124, 226, 255, 0.9), 0 16px 34px rgba(56, 176, 233, 0.35);
+}
+
+.recap-card.is-legendaire {
+    box-shadow: 0 0 0 2px rgba(255, 216, 112, 0.95), 0 16px 38px rgba(230, 172, 44, 0.4);
+}
+
+@keyframes recap-deal {
+    0% {
+        opacity: 0;
+        transform: translateY(40px) rotate(0deg) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) rotate(calc((var(--i) - var(--mid)) * 7deg)) scale(1);
+    }
+}
+
+.opening-summary {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: 800;
+    text-align: center;
 }
 
 .opening-actions {
@@ -462,28 +863,39 @@ body.has-opening {
     gap: var(--space-3);
 }
 
-.opening-summary {
-    width: 100%;
-    margin: 0;
-    color: var(--color-text);
-    font-size: var(--font-size-lg);
-    font-weight: 800;
-    text-align: center;
+@media (max-width: 560px) {
+    .opening {
+        --card-width: min(74vw, 300px);
+    }
+
+    .opening-scene {
+        gap: var(--space-3);
+        padding: var(--space-4) var(--space-3);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .opening-pack,
-    .booster-art-shine,
-    .pull-card-shine,
-    .pull-card.is-flipped.is-legendaire,
-    .opening.is-legendary-pull .opening-backdrop {
+    .opening-pack-body::after,
+    .opening-rays,
+    .opening-hint.is-visible,
+    .tcg-card.is-bursting,
+    .tcg-card.is-bursting .tcg-burst,
+    .spark {
         animation: none;
     }
 
-    .pull-card-inner,
+    .tcg-card,
+    .tcg-card-inner,
+    .tcg-card-tilt,
     .opening.is-torn .opening-pack,
-    .opening.is-torn .opening-pack-tear {
+    .opening.is-torn .opening-pack-strip {
         transition: none;
+    }
+
+    .recap-card {
+        opacity: 1;
+        animation: none;
     }
 }
 
@@ -754,6 +1166,9 @@ body.has-opening {
 }
 
 .quest-reward-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     color: #f2ce3e;
     font-size: var(--font-size-lg);
     font-weight: 900;
@@ -765,6 +1180,9 @@ body.has-opening {
 
 .quest-done,
 .quest-todo {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     color: var(--color-text-muted);
     font-size: var(--font-size-xs);
     font-weight: 800;

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static icons %}
 
 {% block title %}Boutique — PokéTable{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=2">
 
 <section class="shop-page" id="shop" data-shop
          data-open-url-template="{% url 'api_open_booster' booster_key='KEY' %}"
@@ -16,7 +16,7 @@
             <p>Des cartes de la première édition, tirées au sort à l’ouverture. Les points viennent des quêtes.</p>
         </div>
         <p class="points-badge" data-points-badge>
-            <span class="points-value" data-points>{{ points }}</span>
+            <span class="points-value">{% icon "coin" %}<span data-points>{{ points }}</span></span>
             <small>points disponibles</small>
         </p>
     </header>
@@ -25,7 +25,7 @@
 
     <ul class="booster-list">
         {% for booster in boosters %}
-        <li class="booster-card" data-rarity-tilt>
+        <li class="booster-card">
             <div class="booster-art" aria-hidden="true">
                 <span class="booster-art-shine"></span>
                 <span class="booster-art-logo">Poké<b>Table</b></span>
@@ -41,13 +41,16 @@
                     <li data-rarity="{{ entry.rarity }}">{{ entry.percent }} %</li>
                     {% endfor %}
                 </ul>
-                {% if booster.guaranteed %}<span class="booster-guaranteed">Une carte rare garantie</span>{% endif %}
+                {% if booster.guaranteed %}
+                <span class="booster-guaranteed">{% icon "star" %}Une carte rare garantie</span>
+                {% endif %}
             </div>
 
             <div class="booster-buy">
-                <span class="booster-price">{{ booster.price }} pts</span>
-                <button type="button" class="btn btn-primary" data-open-booster="{{ booster.key }}" {% if not booster.affordable %}disabled{% endif %}>
-                    {% if booster.affordable %}Ouvrir{% else %}Il manque {{ booster.missing }} pts{% endif %}
+                <span class="booster-price">{% icon "coin" %}<span data-price>{{ booster.price }}</span></span>
+                <button type="button" class="btn btn-primary" data-open-booster="{{ booster.key }}"
+                        data-price="{{ booster.price }}" {% if not booster.affordable %}disabled{% endif %}>
+                    {% if booster.affordable %}{% icon "pack" %}Ouvrir{% else %}Il manque {{ booster.missing }} pts{% endif %}
                 </button>
             </div>
         </li>
@@ -57,31 +60,44 @@
     <p class="shop-note">Pas assez de points ? <a href="{% url 'quests' %}">Termine une quête</a> — la plupart se bouclent en une partie.</p>
 </section>
 
-{# Scène d'ouverture : le booster se déchire, puis les cartes se retournent. #}
-<div class="opening" data-opening hidden>
-    <div class="opening-backdrop" data-opening-close></div>
+{# Scène d'ouverture : le sachet se déchire, puis les cartes défilent une à une. #}
+<div class="opening" data-opening data-rarity="COMMUNE" hidden>
+    <div class="opening-backdrop"></div>
+    <div class="opening-rays" aria-hidden="true"></div>
+    <div class="opening-flash" data-flash aria-hidden="true"></div>
 
-    <div class="opening-stage" role="dialog" aria-modal="true" aria-labelledby="opening-title">
+    <div class="opening-scene" role="dialog" aria-modal="true" aria-labelledby="opening-title">
         <h2 id="opening-title" class="visually-hidden">Ouverture du booster</h2>
 
-        <div class="opening-pack" data-pack>
-            <span class="opening-pack-face">
+        <button type="button" class="opening-close" data-opening-close aria-label="Fermer l’ouverture">
+            {% icon "close" %}
+        </button>
+
+        <div class="opening-dots" data-dots hidden aria-hidden="true"></div>
+
+        <button type="button" class="opening-pack" data-pack aria-label="Déchirer le booster">
+            <span class="opening-pack-body">
                 <span class="opening-pack-logo">Poké<b>Table</b></span>
-                <span class="opening-pack-set">Booster · 1<sup>re</sup> édition</span>
-                <span class="opening-pack-hint" data-pack-hint>Clique pour déchirer</span>
+                <span class="opening-pack-set">1<sup>re</sup> édition</span>
             </span>
-            <span class="opening-pack-tear" aria-hidden="true"></span>
-        </div>
+            <span class="opening-pack-strip" aria-hidden="true"></span>
+        </button>
 
-        <div class="opening-cards" data-cards hidden></div>
+        <div class="opening-deck" data-deck hidden></div>
 
-        <div class="opening-actions" data-opening-actions hidden>
+        <p class="opening-caption" data-caption aria-live="polite"></p>
+        <p class="opening-hint" data-hint></p>
+
+        <div class="opening-recap" data-recap hidden>
+            <div class="recap-fan" data-fan></div>
             <p class="opening-summary" data-summary></p>
-            <a class="btn btn-secondary" href="{% url 'collection' %}">Voir ma collection</a>
-            <button type="button" class="btn btn-ghost" data-opening-close>Fermer</button>
+            <div class="opening-actions">
+                <a class="btn btn-secondary" href="{% url 'collection' %}">{% icon "collection" %}Voir ma collection</a>
+                <button type="button" class="btn btn-ghost" data-opening-close>{% icon "close" %}Fermer</button>
+            </div>
         </div>
     </div>
 </div>
 
-<script src="{% static 'game/js/shop.js' %}?v=1"></script>
+<script src="{% static 'game/js/shop.js' %}?v=2"></script>
 {% endblock %}
