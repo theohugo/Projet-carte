@@ -2,6 +2,7 @@ import json
 import random
 from unittest.mock import patch
 
+from django.db.models import QuerySet
 from django.test import TestCase
 from django.utils.translation import override
 
@@ -170,6 +171,25 @@ class IslandServiceTests(TestCase):
         for formation in formations:
             self.assertNotIn(str(formation.id), opponent_branch)
             self.assertNotIn(formation.pokemon_card.sprite_url, opponent_branch)
+
+    def test_bot_start_never_locks_the_nullable_user_join(self):
+        """PostgreSQL rejects FOR UPDATE on the nullable side of an outer join."""
+
+        game = create_game(self.host)
+        game = add_bot(game.id, self.host, game.turn_revision)
+        select_related = QuerySet.select_related
+
+        def reject_nullable_user_lock(queryset, *fields):
+            if queryset.query.select_for_update and any(
+                field == "user" or field.endswith("__user") for field in fields
+            ):
+                self.fail("A nullable user relation was joined under SELECT FOR UPDATE")
+            return select_related(queryset, *fields)
+
+        with patch.object(QuerySet, "select_related", reject_nullable_user_lock):
+            game = start_bot_game(game.id, self.host, game.turn_revision, rng=random.Random(13))
+
+        self.assertEqual(game.status, IslandGame.Status.PLACEMENT)
 
     def test_bot_name_is_localized_without_changing_its_database_identity(self):
         game = create_game(self.host)

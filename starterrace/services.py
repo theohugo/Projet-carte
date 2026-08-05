@@ -373,7 +373,10 @@ def _apply_move_locked(game: Game, player: Player, pawn: Pawn) -> Game:
     if landing_global is not None and landing_global not in SAFE_CELLS:
         opponents = (
             Pawn.objects.select_for_update()
-            .select_related("player__user", "player__starter_card")
+            # Le compte d'un joueur IA est nullable : le joindre sous
+            # FOR UPDATE fait échouer PostgreSQL. La carte, non nullable,
+            # peut rester chargée avec la ligne verrouillée.
+            .select_related("player__starter_card")
             .filter(player__game=game)
             .exclude(player=player)
             .filter(position__gte=0, position__lt=TRACK_LENGTH)
@@ -491,9 +494,7 @@ def _play_one_bot_action(game_id, *, rng=None, stop_after_roll=False) -> Game:
     game = _lock_game(game_id)
     if game.status != Game.Status.EN_COURS or game.current_turn_id is None:
         return game
-    player = (
-        game.players.select_for_update().select_related("user", "starter_card").get(pk=game.current_turn_id)
-    )
+    player = game.players.select_for_update().select_related("starter_card").get(pk=game.current_turn_id)
     if not player.is_bot:
         return game
 

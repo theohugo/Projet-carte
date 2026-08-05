@@ -57,7 +57,9 @@ def _lock_game(game_id) -> MetamorphGame:
 
 
 def _players_locked(game: MetamorphGame) -> list[MetamorphPlayer]:
-    return list(game.players.select_for_update().select_related("user").order_by("turn_order"))
+    # ``user`` est nullable pour une IA. PostgreSQL interdit FOR UPDATE sur
+    # le côté nullable du LEFT OUTER JOIN produit par select_related.
+    return list(game.players.select_for_update().order_by("turn_order"))
 
 
 def _player_for_user(players: list[MetamorphPlayer], user) -> MetamorphPlayer:

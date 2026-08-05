@@ -306,7 +306,9 @@ def start_bot_game(game_id, user, expected_revision: int, *, rng=None) -> Island
     if game.status != IslandGame.Status.EN_ATTENTE:
         raise IslandStateError(text("Le déploiement a déjà commencé.", "Deployment has already started."))
 
-    players = list(game.players.select_for_update().select_related("user").order_by("turn_order"))
+    # Ne pas joindre ``user`` ici : il est nullable pour les bots et
+    # PostgreSQL refuse FOR UPDATE sur le côté nullable d'un OUTER JOIN.
+    players = list(game.players.select_for_update().order_by("turn_order"))
     bots = [player for player in players if player.is_bot]
     if len(players) != game.max_players or len(bots) != 1:
         raise IslandStateError(
@@ -599,12 +601,7 @@ def play_bot_turn(
     _assert_revision(game, expected_revision)
     if game.status != IslandGame.Status.EN_COURS:
         raise IslandStateError(text("La bataille n'est pas en cours.", "The battle is not in progress."))
-    bot = (
-        game.players.select_for_update()
-        .select_related("user")
-        .filter(pk=game.current_turn_id, user__isnull=True)
-        .first()
-    )
+    bot = game.players.select_for_update().filter(pk=game.current_turn_id, user__isnull=True).first()
     if bot is None:
         raise IslandStateError(text("Ce n'est pas le tour de l'IA.", "It is not the AI's turn."))
 
