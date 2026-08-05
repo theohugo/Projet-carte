@@ -392,11 +392,18 @@ class GameStateApiSecurityTests(TestCase):
         # Distribution manuelle minimale pour avoir une main non vide côté p1.
         from game.models import GameCard
 
+        # Les types de la partie sont tirés au sort : Électhor n'est dans la
+        # pioche que si Vol sort. Ces tests ont besoin de cette carte précise
+        # (légendaire, donc joker), on la pose plutôt que d'espérer le tirage.
         first_p1_card = GameCard.objects.filter(
             game=self.game,
             location=GameCard.Location.PIOCHE,
             pokemon_card=self.cards["zapdos"],
-        ).first()
+        ).first() or GameCard.objects.create(
+            game=self.game,
+            pokemon_card=self.cards["zapdos"],
+            location=GameCard.Location.PIOCHE,
+        )
         first_p1_card.location = GameCard.Location.MAIN
         first_p1_card.owner = self.gp1
         first_p1_card.save()
