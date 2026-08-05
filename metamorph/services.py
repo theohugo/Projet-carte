@@ -404,11 +404,11 @@ def _draw_card_for_actor(
             bilingual_text("Choisissez une carte face cachée valide.", "Choose a valid face-down card.")
         )
 
+    # Verrouiller uniquement les cartes physiques. ``secondary_type`` est
+    # nullable et son ``select_related`` produit un LEFT OUTER JOIN que
+    # PostgreSQL refuse sur une requête FOR UPDATE.
     locked_cards = list(
-        game.cards.select_for_update()
-        .select_related("pokemon_card__primary_type", "pokemon_card__secondary_type")
-        .filter(owner__isnull=False)
-        .order_by("owner_id", "hand_position", "id")
+        game.cards.select_for_update().filter(owner__isnull=False).order_by("owner_id", "hand_position", "id")
     )
     owner_ids = {card.owner_id for card in locked_cards}
     source = _relative_player_with_cards(

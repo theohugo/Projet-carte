@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from django.conf import settings
+from django.db.models import QuerySet
 from django.test import TestCase
 from django.utils import timezone, translation
 from django.utils.translation import override
@@ -59,6 +60,23 @@ class MetamorphServiceTests(TestCase):
                 user or self.host,
                 game.turn_revision,
             )
+
+    def test_draw_never_joins_a_nullable_relation_under_row_lock(self):
+        """PostgreSQL rejects FOR UPDATE on the nullable side of an outer join."""
+
+        game = self.start_deterministically(self.make_waiting_game())
+        actor = game.current_turn
+        source = game.players.order_by("turn_order").exclude(pk=actor.pk).first()
+        card_position = game.cards.filter(owner=source).order_by("hand_position").first().hand_position
+        select_related = QuerySet.select_related
+
+        def reject_nullable_join(queryset, *fields):
+            if queryset.query.select_for_update and "pokemon_card__secondary_type" in fields:
+                self.fail("A nullable Pokémon type was joined under SELECT FOR UPDATE")
+            return select_related(queryset, *fields)
+
+        with patch.object(QuerySet, "select_related", reject_nullable_join):
+            draw_card(game.id, actor.user, card_position, game.turn_revision)
 
     def test_create_and_join_register_two_to_six_ordered_players(self):
         game = create_game(self.host)
