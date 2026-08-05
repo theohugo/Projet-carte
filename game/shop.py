@@ -284,23 +284,55 @@ def _grant(user, booster: Booster, price: int, rng=None) -> dict:
     return {"booster": booster.label, "season": season, "cards": payload}
 
 
+# Lots proposés en boutique. Ouvrir dix boosters d'un coup évite dix
+# allers-retours, mais il faut une borne : le tirage se fait en une transaction.
+BATCH_SIZES = (1, 5, 10)
+
+
+def clean_quantity(value) -> int:
+    """Le nombre de boosters demandé, ramené à un lot proposé."""
+
+    try:
+        quantity = int(value)
+    except (TypeError, ValueError):
+        return 1
+    return quantity if quantity in BATCH_SIZES else 1
+
+
 @transaction.atomic
-def open_booster(user, booster_key: str, rng=None) -> dict:
-    """Débite les points, tire les cartes et les ajoute à la collection."""
+def open_booster(user, booster_key: str, rng=None, quantity: int = 1) -> dict:
+    """Débite les points, tire les cartes et les ajoute à la collection.
+
+    ``quantity`` ouvre plusieurs boosters d'affilée : un seul débit, une seule
+    transaction, mais une archive par booster.
+    """
 
     booster = BOOSTERS_BY_KEY.get(booster_key)
     if booster is None:
         raise ShopError("Ce booster n'existe pas.")
 
-    profile = Profile.objects.select_for_update().get(user=user)
-    if profile.points < booster.price:
-        raise ShopError(f"Il te manque {booster.price - profile.points} points pour ce booster.")
+    quantity = clean_quantity(quantity)
+    total = booster.price * quantity
 
-    result = _grant(user, booster, booster.price, rng)
-    Profile.objects.filter(pk=profile.pk).update(points=F("points") - booster.price)
+    profile = Profile.objects.select_for_update().get(user=user)
+    if profile.points < total:
+        missing = total - profile.points
+        if quantity > 1:
+            raise ShopError(f"Il te manque {missing} points pour ces {quantity} boosters.")
+        raise ShopError(f"Il te manque {missing} points pour ce booster.")
+
+    results = [_grant(user, booster, booster.price, rng) for _ in range(quantity)]
+    Profile.objects.filter(pk=profile.pk).update(points=F("points") - total)
 
     profile.refresh_from_db(fields=["points"])
-    return result | {"points_left": profile.points, "tickets_left": pending_tickets(user).count()}
+    return {
+        "booster": booster.label,
+        "season": booster.season,
+        "quantity": quantity,
+        "cards": [card for result in results for card in result["cards"]],
+        "points_left": profile.points,
+        "tickets_left": pending_tickets(user).count(),
+    }
 
 
 @transaction.atomic
@@ -324,6 +356,7 @@ def open_ticket(user, ticket_id: int, rng=None) -> dict:
     ticket.save(update_fields=["opened_at"])
 
     return result | {
+        "quantity": 1,
         "points_left": Profile.objects.get(user=user).points,
         "tickets_left": pending_tickets(user).count(),
     }

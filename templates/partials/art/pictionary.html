@@ -1,0 +1,10 @@
+{% load static %}
+{# Un dessin en cours : le tracé s'arrête là où le crayon en est. #}
+<div class="game-art game-art--pictionary" aria-hidden="true">
+    <span class="game-art-stage">
+        <span class="pictionary-canvas">
+            <img class="pictionary-sketch" src="{% static 'img/hub/bulbizarre.png' %}" alt="" loading="lazy" decoding="async">
+            <span class="pictionary-pen"></span>
+        </span>
+    </span>
+</div>

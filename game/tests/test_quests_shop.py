@@ -351,6 +351,37 @@ class ShopTests(TestCase):
         best = CollectionCard.objects.filter(user=self.user).order_by("-copies").first()
         self.assertGreater(best.copies, 1)
 
+    def test_a_batch_opens_every_booster_at_once(self):
+        self.fill_gen_one_catalogue()
+        self.give_points(5000)
+
+        result = open_booster(self.user, "s151", random.Random(11), quantity=5)
+
+        self.user.profile.refresh_from_db()
+        self.assertEqual(result["quantity"], 5)
+        self.assertEqual(len(result["cards"]), 25)
+        self.assertEqual(self.user.profile.points, 5000 - 5 * BOOSTERS_BY_KEY["s151"].price)
+        # Une archive par booster, pas une seule pour le lot.
+        self.assertEqual(BoosterOpening.objects.count(), 5)
+
+    def test_a_batch_out_of_reach_is_refused_whole(self):
+        self.give_points(BOOSTERS_BY_KEY["base"].price * 3)
+
+        with self.assertRaisesMessage(ShopError, "ces 5 boosters"):
+            open_booster(self.user, "base", quantity=5)
+
+        self.user.profile.refresh_from_db()
+        self.assertEqual(self.user.profile.points, BOOSTERS_BY_KEY["base"].price * 3)
+        self.assertEqual(BoosterOpening.objects.count(), 0)
+
+    def test_an_invented_batch_size_falls_back_on_one(self):
+        self.give_points(BOOSTERS_BY_KEY["base"].price)
+
+        result = open_booster(self.user, "base", random.Random(1), quantity=999)
+
+        self.assertEqual(result["quantity"], 1)
+        self.assertEqual(len(result["cards"]), 5)
+
     def test_a_booster_out_of_reach_is_refused(self):
         self.give_points(10)
 
@@ -429,6 +460,17 @@ class ShopViewTests(TestCase):
         self.assertEqual(len(payload["cards"]), 5)
         self.assertEqual(payload["points_left"], 150)
         self.assertIn("rarity", payload["cards"][0])
+
+    def test_the_shop_opens_a_batch_from_the_page(self):
+        Profile.objects.filter(user=self.user).update(points=2000)
+
+        response = self.client.post(reverse("api_open_booster", args=["base"]), {"quantity": 5})
+
+        payload = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload["quantity"], 5)
+        self.assertEqual(len(payload["cards"]), 25)
+        self.assertEqual(payload["points_left"], 2000 - 5 * 150)
 
     def test_the_collection_marks_what_is_owned(self):
         card = PokemonCard.objects.filter(pokedex_id__lte=151).first()

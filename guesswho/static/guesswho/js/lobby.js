@@ -108,7 +108,9 @@
     window.setInterval(refreshIfLobbyChanged, 1800);
     document.addEventListener("visibilitychange", refreshIfLobbyChanged);
 
-    const heroBoard = lobby.querySelector(".gw-hero-board");
+    // L'illustration du lobby suit le pointeur. Elle est partagée avec
+    // l'accueil, d'où le sélecteur générique.
+    const heroBoard = lobby.querySelector(".lobby-hero-art");
     if (!heroBoard || reducedMotion.matches || !precisePointer.matches) return;
 
     let bounds = null;

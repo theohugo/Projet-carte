@@ -81,6 +81,8 @@ L'illustration passe par un proxy (`/qui-est-ce-pokemon/rounds/<id>/image/`) qui
 | SIR | Illustration spéciale rare | 5 | tempête de prisme |
 | HR | Rare Or | 1 | écran doré + confettis |
 
+- Un booster s'ouvre à l'unité, **par cinq ou par dix** : un seul débit, une seule transaction, une archive par booster. Au-delà d'un booster, la scène passe en **planche** — cinquante cartes défilant une à une seraient interminables : elles se posent en grille et se retournent en cascade, seules les Double rare et au-dessus déclenchant leur mise en scène.
+
 | Booster | Saison | Prix | Contenu |
 | --- | --- | ---: | --- |
 | Set de Base | 1 | 150 pts | 5 cartes · 82 % commune, 15 % rare, 3 % légendaire |
@@ -217,6 +219,8 @@ L’identité « salon de jeux nocturne » repose sur des tokens centralisés da
 - **atomes** dans `static/atoms.css` : boutons, badges, pastilles de type, cartes 3D, champs ;
 - **molécules** dans `static/molecules.css` : mains en éventail, pioche, défausse, indicateurs de tour, sélecteur de type ;
 - **organismes** dans `static/organisms.css` : navigation, accueil multijeux, lobbies et tables complètes.
+
+Les illustrations des quatre jeux sont écrites une seule fois dans `templates/partials/art/` et incluses aux deux endroits qui les montrent : la vignette de l’accueil et le hero du lobby du jeu. Leur taille suit `--art-scale`, que chaque emplacement choisit ; le lobby y ajoute une parallaxe au pointeur.
 
 Les 18 types s’affichent avec leurs **pastilles officielles** en PNG (`game/static/game/img/types/`, régénérables par `manage.py fetch_type_icons`) : le symbole blanc sur son disque de couleur, celui des jeux. Elles sont servies depuis nos statiques, donc aucun visuel ne dépend d’un domaine tiers. L’URL part avec l’état de la partie (`icon_url`), car en production le nom du fichier porte une empreinte que le navigateur ne peut pas deviner.
 

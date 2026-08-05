@@ -284,6 +284,19 @@
     border-color: rgba(242, 206, 62, 0.45);
 }
 
+/* Les lots : « Ouvrir » d'abord, puis ×5 et ×10 en second rang. */
+.booster-batches {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.booster-batches .btn-secondary {
+    min-width: 46px;
+    padding-inline: var(--space-3);
+    font-variant-numeric: tabular-nums;
+}
+
 .booster-price-free {
     color: var(--color-positive);
     font-size: var(--font-size-lg);
@@ -588,6 +601,48 @@ body.has-opening {
     aspect-ratio: 63 / 88;
     transform-style: preserve-3d;
     touch-action: none;
+}
+
+/* Ouverture multiple : cinquante cartes une par une seraient interminables.
+   Elles se posent en planche et se retournent en cascade, la scène gardant la
+   mise en scène des plus rares du lot. */
+.opening-deck.is-sheet {
+    display: grid;
+    width: min(92vw, 900px);
+    max-height: 62vh;
+    aspect-ratio: auto;
+    gap: clamp(4px, 1vw, 10px);
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    overflow-y: auto;
+    padding: var(--space-2);
+}
+
+.opening-deck.is-sheet .tcg-card {
+    position: relative;
+    inset: auto;
+    aspect-ratio: 63 / 88;
+    transform: none;
+    transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1), opacity 320ms ease;
+}
+
+.opening-deck.is-sheet .tcg-card:hover {
+    z-index: 5;
+    transform: scale(1.14);
+}
+
+/* En planche, les feuillets fins deviennent illisibles : on garde le liseré
+   et le sigle, on coupe le reste. */
+.opening-deck.is-sheet .tcg-glare,
+.opening-deck.is-sheet .tcg-burst {
+    display: none;
+}
+
+.opening-deck.is-sheet .tcg-rarity-badge {
+    right: 4%;
+    bottom: 4%;
+    padding: 0 5px;
+    border-width: 1px;
+    font-size: 0.55rem;
 }
 
 .tcg-card {
@@ -1097,6 +1152,35 @@ body.has-opening {
     justify-content: center;
     padding-top: var(--space-4);
     perspective: 900px;
+}
+
+/* Récapitulatif d'une ouverture multiple : une grille, pas un éventail. */
+.recap-fan.is-grid {
+    display: grid;
+    width: min(92vw, 880px);
+    max-height: 56vh;
+    gap: 6px;
+    grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+    overflow-y: auto;
+    perspective: none;
+}
+
+.recap-fan.is-grid .recap-card {
+    width: auto;
+    margin-inline: 0;
+    /* L'éventail incline chaque carte selon sa place ; en grille, elles se
+       posent droites. */
+    animation-name: recap-pop;
+    animation-delay: calc(var(--i) * 18ms);
+}
+
+@keyframes recap-pop {
+    0% { opacity: 0; transform: scale(0.85); }
+    100% { opacity: 1; transform: none; }
+}
+
+.recap-fan.is-grid .recap-card:hover {
+    transform: scale(1.12);
 }
 
 .recap-card {

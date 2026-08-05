@@ -126,35 +126,6 @@
     outline-offset: 2px;
 }
 
-.sil-hero-visual {
-    position: relative;
-    display: grid;
-    aspect-ratio: 1;
-    place-items: center;
-}
-
-.sil-hero-shape {
-    width: 62%;
-    height: 62%;
-    border-radius: 42% 58% 55% 45% / 52% 44% 56% 48%;
-    background: linear-gradient(160deg, #0a1220, #1d3557);
-    box-shadow: inset 0 0 42px rgba(0, 0, 0, 0.66);
-    animation: sil-float 6s ease-in-out infinite;
-}
-
-.sil-hero-flash {
-    position: absolute;
-    color: var(--color-brand);
-    font-size: clamp(2.6rem, 8vw, 4.2rem);
-    font-weight: 900;
-    text-shadow: 0 0 26px rgba(117, 216, 255, 0.55);
-}
-
-@keyframes sil-float {
-    0%, 100% { transform: translateY(-6px) rotate(-2deg); }
-    50% { transform: translateY(6px) rotate(2deg); }
-}
-
 .sil-section {
     padding: var(--space-5);
     border: 1px solid var(--color-border-soft);
@@ -428,14 +399,9 @@
     .sil-hero {
         grid-template-columns: minmax(0, 1fr);
     }
-
-    .sil-hero-visual {
-        display: none;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .sil-hero-shape,
     .sil-radar-sweep,
     .sil-hint,
     .sil-frame.is-popping img,

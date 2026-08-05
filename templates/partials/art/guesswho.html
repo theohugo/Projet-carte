@@ -1,0 +1,17 @@
+{% load static %}
+{# Le plateau du jeu : neuf portraits, ceux qu'on a éliminés rabattus. #}
+<div class="game-art game-art--guess" aria-hidden="true">
+    <span class="game-art-stage">
+        <span class="guess-board">
+            <span class="guess-tile is-down"></span>
+            <span class="guess-tile"><img src="{% static 'img/hub/carapuce.png' %}" alt="" loading="lazy" decoding="async"></span>
+            <span class="guess-tile is-down"></span>
+            <span class="guess-tile"><img src="{% static 'img/hub/rondoudou.png' %}" alt="" loading="lazy" decoding="async"></span>
+            <span class="guess-tile is-target"><img src="{% static 'img/hub/salameche.png' %}" alt="" loading="lazy" decoding="async"></span>
+            <span class="guess-tile is-down"></span>
+            <span class="guess-tile is-down"></span>
+            <span class="guess-tile"><img src="{% static 'img/hub/bulbizarre.png' %}" alt="" loading="lazy" decoding="async"></span>
+            <span class="guess-tile is-down"></span>
+        </span>
+    </span>
+</div>

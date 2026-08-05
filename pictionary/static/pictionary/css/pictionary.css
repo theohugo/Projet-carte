@@ -125,35 +125,6 @@
     outline-offset: 2px;
 }
 
-.pic-hero-visual {
-    position: relative;
-    display: grid;
-    aspect-ratio: 1;
-    place-items: center;
-}
-
-.pic-hero-scribble {
-    width: 70%;
-    height: 55%;
-    border: 3px dashed rgba(170, 140, 255, 0.55);
-    border-radius: 46% 54% 62% 38% / 58% 42% 58% 42%;
-    animation: pic-wobble 7s ease-in-out infinite;
-}
-
-.pic-hero-pen {
-    position: absolute;
-    width: 12px;
-    height: 90px;
-    border-radius: 3px 3px 12px 12px;
-    background: linear-gradient(180deg, #ffd166, #ef476f);
-    transform: rotate(24deg) translate(38px, -18px);
-}
-
-@keyframes pic-wobble {
-    0%, 100% { transform: rotate(-2deg) scale(1); }
-    50% { transform: rotate(2deg) scale(1.03); }
-}
-
 .pic-section {
     padding: var(--space-5);
     border: 1px solid var(--color-border-soft);
@@ -485,10 +456,6 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .pic-hero-visual {
-        display: none;
-    }
-
     .pic-tools {
         justify-content: center;
     }
@@ -501,7 +468,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .pic-hero-scribble,
     .pic-easel-stroke,
     .pic-reveal.is-popping .pic-reveal-word {
         animation: none;

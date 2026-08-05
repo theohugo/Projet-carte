@@ -94,10 +94,16 @@
 
                 <div class="booster-buy">
                     <span class="booster-price">{% icon "coin" %}<span data-price>{{ booster.price }}</span></span>
-                    <button type="button" class="btn btn-primary" data-open-booster="{{ booster.key }}"
-                            data-price="{{ booster.price }}" {% if not booster.affordable %}disabled{% endif %}>
-                        {% icon "pack" %}<span data-label>{% if booster.affordable %}Ouvrir{% else %}Il manque {{ booster.missing }} pts{% endif %}</span>
-                    </button>
+                    <div class="booster-batches" role="group" aria-label="Nombre de boosters à ouvrir">
+                        {% for batch in booster.batches %}
+                        <button type="button" class="btn {% if batch.quantity == 1 %}btn-primary{% else %}btn-secondary{% endif %}"
+                                data-open-booster="{{ booster.key }}" data-quantity="{{ batch.quantity }}"
+                                data-price="{{ batch.price }}" {% if not batch.affordable %}disabled{% endif %}
+                                title="{{ batch.quantity }} booster{{ batch.quantity|pluralize }} · {{ batch.price }} points">
+                            {% if batch.quantity == 1 %}{% icon "pack" %}{% endif %}<span data-label>{% if batch.affordable %}{% if batch.quantity == 1 %}Ouvrir{% else %}×{{ batch.quantity }}{% endif %}{% else %}−{{ batch.missing }}{% endif %}</span>
+                        </button>
+                        {% endfor %}
+                    </div>
                 </div>
             </li>
             {% endfor %}

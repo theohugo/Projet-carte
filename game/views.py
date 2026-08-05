@@ -29,9 +29,11 @@ from game.quests import QuestError, claim_reward, quest_board
 from game.rarities import as_dict as rarity_payload
 from game.seasons import SEASONS, get_season, has_prints
 from game.shop import (
+    BATCH_SIZES,
     BOOSTERS,
     BOOSTERS_BY_KEY,
     ShopError,
+    clean_quantity,
     open_booster,
     open_ticket,
     pending_tickets,
@@ -319,6 +321,16 @@ def shop(request):
             "season": booster.season,
             "affordable": affordable,
             "missing": max(0, booster.price - points),
+            # Les lots : ouvrir dix boosters d'un coup plutôt que dix fois un.
+            "batches": [
+                {
+                    "quantity": size,
+                    "price": booster.price * size,
+                    "affordable": points >= booster.price * size,
+                    "missing": max(0, booster.price * size - points),
+                }
+                for size in BATCH_SIZES
+            ],
             "odds": [odds_entry(rarity, odds) for rarity, odds in booster.odds],
             "guaranteed": rarity_payload(booster.guaranteed)["rarity_label"] if booster.guaranteed else "",
         }
@@ -358,10 +370,14 @@ def shop(request):
 @members_only
 @require_POST
 def api_open_booster(request, booster_key):
-    """Ouvre un booster : le tirage et le débit se font ici, pas dans le navigateur."""
+    """Ouvre un ou plusieurs boosters : le tirage et le débit se font ici."""
 
     try:
-        result = open_booster(request.user, booster_key)
+        result = open_booster(
+            request.user,
+            booster_key,
+            quantity=clean_quantity(request.POST.get("quantity")),
+        )
     except ShopError as exc:
         return JsonResponse({"error": str(exc)}, status=400)
 

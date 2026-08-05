@@ -32,6 +32,8 @@
     let index = 0;
     let locked = true;
     let isBusy = false;
+    // Au-delà d'un booster, on passe en planche plutôt qu'en défilé.
+    let isSheet = false;
 
     // La classe suit la clé de rareté : COMMUNE -> is-commune,
     // ILLUSTRATION_SPECIALE -> is-illustration-speciale.
@@ -349,6 +351,13 @@
         if (locked) return;
         locked = true;
 
+        // En planche, tout est déjà retourné : le clic mène au récapitulatif.
+        if (isSheet) {
+            index = pulls.length;
+            finish();
+            return;
+        }
+
         const element = cardElements[index];
         const towardsRight = direction >= 0;
         element.style.setProperty("--exit-x", towardsRight ? "130%" : "-130%");
@@ -374,6 +383,10 @@
 
         await wait(420);
         deck.hidden = true;
+        deck.classList.remove("is-sheet");
+        // Un éventail de cinquante cartes ne se lit pas : au-delà d'un booster,
+        // le récapitulatif passe en grille.
+        fan.classList.toggle("is-grid", pulls.length > 5);
 
         fan.replaceChildren(
             ...pulls.map((card, position) => {
@@ -408,6 +421,53 @@
         recap.hidden = false;
     }
 
+    // ── Planche : plusieurs boosters d'un coup ────────────────────────────
+
+    async function revealSheet() {
+        deck.classList.add("is-sheet");
+        dots.hidden = true;
+
+        for (let position = 0; position < pulls.length; position += 1) {
+            const card = pulls[position];
+            const element = cardElements[position];
+            element.classList.add("is-revealed");
+
+            // Seules les cartes qui comptent déclenchent leur mise en scène :
+            // cinquante spectacles d'affilée n'en feraient plus aucun.
+            if ((card.rarity_rank || 0) >= 4) {
+                opening.dataset.rarity = card.rarity;
+                opening.dataset.reveal = card.reveal;
+                opening.style.setProperty("--rarity-color", card.rarity_color || "#9fb0c4");
+                opening.classList.add("is-special");
+                (REVEALS[card.reveal] || REVEALS.simple)(element);
+                await wait(340);
+            }
+            await wait(reducedMotion.matches ? 0 : 55);
+        }
+
+        const best = pulls.reduce(
+            (top, card) => ((card.rarity_rank || 0) > (top.rarity_rank || 0) ? card : top),
+            pulls[0] || {},
+        );
+        caption.innerHTML = "";
+        const name = document.createElement("span");
+        name.className = "opening-caption-name";
+        name.textContent = `${pulls.length} cartes`;
+        const tags = document.createElement("span");
+        tags.className = "opening-caption-tags";
+        const rarity = document.createElement("span");
+        rarity.className = "rarity-chip";
+        rarity.dataset.rarity = best.rarity;
+        rarity.style.setProperty("--rarity-color", best.rarity_color || "#9fb0c4");
+        rarity.textContent = `Meilleure : ${best.rarity_label || "Commune"}`;
+        tags.appendChild(rarity);
+        caption.append(name, tags);
+        caption.classList.add("is-visible");
+
+        locked = false;
+        setHint("Clique pour le récapitulatif");
+    }
+
     // ── Le sachet ─────────────────────────────────────────────────────────
 
     async function tearPack() {
@@ -419,6 +479,10 @@
         await wait(560);
         pack.hidden = true;
         deck.hidden = false;
+        if (isSheet) {
+            await revealSheet();
+            return;
+        }
         buildDots(pulls.length);
         await revealCurrent();
     }
@@ -462,7 +526,8 @@
     let dragStart = null;
 
     function onPointerDown(event) {
-        if (locked || deck.hidden) return;
+        // En planche, rien ne se balaie : les cartes sont toutes posées.
+        if (locked || deck.hidden || isSheet) return;
         dragStart = { x: event.clientX, y: event.clientY, moved: false };
         try {
             // Le pointeur peut déjà être relâché (souris rapide, événement simulé).
@@ -474,6 +539,7 @@
     }
 
     function onPointerMove(event) {
+        if (isSheet) return;
         if (event.pointerType === "mouse" && !dragStart) applyTilt(event);
         if (!dragStart) return;
 
@@ -510,7 +576,9 @@
     function resetScene() {
         opening.classList.remove("is-torn", "is-special");
         scene.classList.remove("is-shaking");
+        deck.classList.remove("is-sheet");
         fx.replaceChildren();
+        isSheet = false;
         opening.dataset.rarity = "COMMUNE";
         opening.dataset.reveal = "simple";
         pack.hidden = false;
@@ -539,10 +607,13 @@
         const points = Number(pointsValue.textContent);
         shop.querySelectorAll("[data-open-booster]").forEach((button) => {
             const price = Number(button.dataset.price);
+            const quantity = Number(button.dataset.quantity || 1);
             const affordable = points >= price;
             button.disabled = !affordable;
             const label = button.querySelector("[data-label]");
-            if (label) label.textContent = affordable ? "Ouvrir" : `Il manque ${price - points} pts`;
+            if (!label) return;
+            if (!affordable) label.textContent = `−${price - points}`;
+            else label.textContent = quantity === 1 ? "Ouvrir" : `×${quantity}`;
         });
     }
 
@@ -565,13 +636,18 @@
             ? shop.dataset.ticketUrlTemplate.replace("/0/", `/${ticketId}/`)
             : shop.dataset.openUrlTemplate.replace("KEY", button.dataset.openBooster);
 
+        const body = new URLSearchParams();
+        if (!ticketId) body.set("quantity", button.dataset.quantity || "1");
+
         try {
             const response = await fetch(url, {
                 method: "POST",
                 headers: {
                     "X-CSRFToken": csrfToken(),
                     "X-Requested-With": "XMLHttpRequest",
+                    "Content-Type": "application/x-www-form-urlencoded",
                 },
+                body,
             });
             const payload = await response.json();
 
@@ -584,9 +660,10 @@
             pointsValue.textContent = String(payload.points_left);
             resetScene();
             pulls = payload.cards;
+            isSheet = (payload.quantity || 1) > 1;
             cardElements = pulls.map(buildCard);
             deck.replaceChildren(...cardElements);
-            layout();
+            if (!isSheet) layout();
 
             const season = payload.season || 1;
             opening.dataset.season = String(season);
@@ -615,6 +692,9 @@
     });
 
     pack.addEventListener("click", tearPack);
+    deck.addEventListener("click", () => {
+        if (isSheet) next(-1);
+    });
     deck.addEventListener("pointerdown", onPointerDown);
     deck.addEventListener("pointermove", onPointerMove);
     deck.addEventListener("pointerup", onPointerUp);

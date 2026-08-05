@@ -220,131 +220,6 @@
     color: var(--gw-cyan);
 }
 
-.gw-hero-board {
-    --hero-rx: 0deg;
-    --hero-ry: 0deg;
-    position: relative;
-    min-height: 330px;
-    perspective: 1100px;
-    transform-style: preserve-3d;
-}
-
-.gw-hero-glow {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 330px;
-    height: 330px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(103, 218, 245, 0.27), transparent 68%);
-    filter: blur(12px);
-    transform: translate(-50%, -50%);
-}
-
-.gw-hero-card {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    display: flex;
-    width: 210px;
-    height: 285px;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.32);
-    border-radius: 24px;
-    box-shadow: 0 20px 55px rgba(0, 0, 0, 0.48), 0 10px 0 #071423;
-    transform-style: preserve-3d;
-}
-
-.gw-hero-card--back {
-    color: rgba(255, 255, 255, 0.24);
-    background:
-        linear-gradient(135deg, transparent 45%, rgba(103, 218, 245, 0.15) 45% 55%, transparent 55%) 0 0 / 24px 24px,
-        #0a213d;
-    transform: translate(-78%, -47%) rotateX(var(--hero-rx)) rotateY(calc(22deg + var(--hero-ry))) rotateZ(-9deg);
-    transition: transform 180ms ease-out;
-}
-
-.gw-hero-card--front {
-    gap: 24px;
-    color: #0a1a2d;
-    background:
-        radial-gradient(circle at 50% 28%, rgba(255, 255, 255, 0.9), transparent 34%),
-        linear-gradient(160deg, #f8fbff, #dbe7f1);
-    transform: translate(-20%, -52%) rotateX(var(--hero-rx)) rotateY(calc(-16deg + var(--hero-ry))) rotateZ(7deg) translateZ(40px);
-    transition: transform 180ms ease-out;
-}
-
-.gw-hero-card--front::after {
-    position: absolute;
-    inset: 8px;
-    border: 2px solid color-mix(in srgb, var(--tcg-color) 70%, transparent);
-    border-radius: 17px;
-    content: "";
-}
-
-.gw-hero-card--front strong {
-    z-index: 2;
-    font-size: 0.76rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-}
-
-.gw-card-question {
-    font-size: 8rem;
-    font-weight: 950;
-    line-height: 1;
-    text-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-}
-
-.gw-hero-silhouette {
-    position: relative;
-    width: 108px;
-    height: 108px;
-    border-radius: 48% 52% 46% 54%;
-    background: linear-gradient(145deg, #263a54, #0c1828);
-    box-shadow: 0 20px 26px rgba(8, 20, 35, 0.25);
-}
-
-.gw-hero-silhouette::before,
-.gw-hero-silhouette::after {
-    position: absolute;
-    top: -22px;
-    width: 44px;
-    height: 58px;
-    border-radius: 80% 15% 70% 35%;
-    background: #182a40;
-    content: "";
-}
-
-.gw-hero-silhouette::before {
-    left: 1px;
-    transform: rotate(-28deg);
-}
-
-.gw-hero-silhouette::after {
-    right: 1px;
-    transform: scaleX(-1) rotate(-28deg);
-}
-
-.gw-scan-line {
-    position: absolute;
-    top: 20%;
-    right: 4%;
-    bottom: 20%;
-    left: 4%;
-    border-top: 1px solid rgba(103, 218, 245, 0.64);
-    box-shadow: 0 -7px 22px rgba(103, 218, 245, 0.32);
-    animation: gw-scan 3.8s ease-in-out infinite;
-}
-
-@keyframes gw-scan {
-    0%, 100% { transform: translateY(0); opacity: 0.15; }
-    50% { transform: translateY(180px); opacity: 0.86; }
-}
-
 .gw-rules {
     display: grid;
     grid-template-columns: minmax(210px, 0.62fr) minmax(0, 1.38fr);
@@ -1327,13 +1202,6 @@
     font-weight: 900;
 }
 
-.gw-card .gw-tcg-symbol {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    z-index: 3;
-}
-
 .gw-card-eliminated-label,
 .gw-card-mode-label {
     position: absolute;
@@ -1387,37 +1255,6 @@
 [data-tcg-type="colorless"],
 [data-tcg-type="normal"] { --tcg-color: #aab4bd; --tcg-glyph: "☆"; }
 
-.gw-tcg-symbol {
-    display: grid;
-    width: 22px;
-    height: 22px;
-    place-items: center;
-    border: 2px solid rgba(255, 255, 255, 0.82);
-    border-radius: 50%;
-    color: #fff;
-    background-color: var(--tcg-color, #8b9aad);
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 78%;
-    box-shadow: 0 3px 8px rgba(8, 20, 34, 0.28);
-    font-size: 0;
-}
-
-.gw-tcg-symbol::before {
-    content: none;
-}
-
-.gw-tcg-symbol[data-tcg-type="grass"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/grass.png"); }
-.gw-tcg-symbol[data-tcg-type="fire"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/fire.png"); }
-.gw-tcg-symbol[data-tcg-type="water"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/water.png"); }
-.gw-tcg-symbol[data-tcg-type="lightning"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/lightning.png"); }
-.gw-tcg-symbol[data-tcg-type="psychic"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/psychic.png"); }
-.gw-tcg-symbol[data-tcg-type="fighting"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/fighting.png"); }
-.gw-tcg-symbol[data-tcg-type="darkness"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/darkness.png"); }
-.gw-tcg-symbol[data-tcg-type="metal"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/metal.png"); }
-.gw-tcg-symbol[data-tcg-type="dragon"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/dragon.png"); }
-.gw-tcg-symbol[data-tcg-type="colorless"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/colorless.png"); }
-
 [data-tcg-type="lightning"] .gw-tcg-symbol,
 .gw-tcg-symbol[data-tcg-type="lightning"],
 [data-tcg-type="electric"] .gw-tcg-symbol,
@@ -1425,9 +1262,6 @@
 [data-tcg-type="metal"] .gw-tcg-symbol,
 .gw-tcg-symbol[data-tcg-type="metal"],
 [data-tcg-type="steel"] .gw-tcg-symbol,
-.gw-tcg-symbol[data-tcg-type="steel"] {
-    color: #172034;
-}
 
 /* Colonne d’enquête */
 .gw-side-panel {
@@ -2046,12 +1880,6 @@
         grid-template-columns: 1fr;
     }
 
-    .gw-hero-board {
-        width: min(100%, 480px);
-        min-height: 300px;
-        justify-self: center;
-    }
-
     .gw-rules,
     .gw-lobby-columns {
         grid-template-columns: 1fr;
@@ -2258,11 +2086,6 @@
 
     .gw-feature-list {
         display: grid;
-    }
-
-    .gw-hero-board {
-        min-height: 260px;
-        transform: scale(0.84);
     }
 
     .gw-game-header .gw-back-link {

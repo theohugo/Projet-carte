@@ -387,16 +387,95 @@
     perspective: 800px;
 }
 
-/* Poké-Uno : trois vraies cartes en éventail, chacune de la couleur de son
-   type, avec la pastille officielle en haut et le Pokémon dessous. */
-.uno-mode-art {
+/* ── Illustrations des quatre jeux ──────────────────────────────────────
+   Les mêmes sur l'accueil et dans le lobby de chaque jeu : un gabarit inclus
+   des deux côtés (`templates/partials/art/`), une seule feuille de style. La
+   taille suit `--art-scale`, que chaque emplacement choisit. */
+
+.game-art {
+    position: relative;
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+    overflow: hidden;
+}
+
+.game-art-stage {
+    position: relative;
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+    transform: scale(var(--art-scale, 1));
+}
+
+.game-art--uno {
+    perspective: 800px;
+}
+
+/* Halo propre à chaque jeu : il porte l'illustration là où le fond du bloc
+   ne la porte pas (lobbies), sans gêner là où il la porte (accueil). */
+.game-art::before {
+    position: absolute;
+    width: 78%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--art-glow, transparent), transparent 68%);
+    content: "";
+}
+
+/* Emplacement des illustrations dans les lobbies : plus de place que sur une
+   vignette d'accueil, donc plus grand. */
+.lobby-hero-art {
+    position: relative;
+    min-height: 320px;
+    perspective: 1000px;
+    --art-scale: 1.5;
+}
+
+/* Le lobby laisse l'illustration suivre le pointeur (voir lobby.js). */
+.lobby-hero-art .game-art-stage {
+    transform: scale(var(--art-scale, 1)) rotateX(var(--hero-rx, 0deg)) rotateY(var(--hero-ry, 0deg));
+    transition: transform 180ms ease-out;
+}
+
+@media (max-width: 900px) {
+    .lobby-hero-art {
+        min-height: 220px;
+        --art-scale: 1.05;
+    }
+}
+
+.game-art--uno { --art-glow: rgba(117, 216, 255, 0.3); }
+.game-art--guess { --art-glow: rgba(170, 140, 255, 0.32); }
+.game-art--silhouette { --art-glow: rgba(117, 216, 255, 0.34); }
+.game-art--pictionary { --art-glow: rgba(170, 140, 255, 0.3); }
+
+/* Fonds pleins des vignettes de l'accueil. */
+.game-mode-art--uno {
     background: radial-gradient(circle at 50% 130%, rgba(117, 216, 255, 0.42), transparent 58%), #0b213d;
 }
 
+.game-mode-art--guess {
+    background: radial-gradient(circle at 50% 100%, rgba(170, 140, 255, 0.46), transparent 58%), #1a183f;
+}
+
+.game-mode-art--silhouette {
+    background: radial-gradient(circle at 50% 58%, rgba(117, 216, 255, 0.5), transparent 62%), #071628;
+}
+
+.game-mode-art--pictionary {
+    background: radial-gradient(circle at 50% 120%, rgba(170, 140, 255, 0.4), transparent 60%), #16123a;
+}
+
+/* Poké-Uno : trois vraies cartes en éventail, chacune de la couleur de son
+   type, avec la pastille officielle en haut et le Pokémon dessous. */
 .mode-playing-card {
     position: absolute;
-    top: 22px;
-    left: calc(50% - 56px);
+    top: 50%;
+    left: 50%;
+    margin: -76px 0 0 -56px;
     display: flex;
     width: 112px;
     height: 152px;
@@ -495,12 +574,6 @@
 
 /* Qui est-ce ? : le plateau lui-même, vu de face. Les cases rabattues sont
    celles qu'on a éliminées, la case cerclée est la cible qu'on cherche. */
-.guess-mode-art {
-    display: grid;
-    place-items: center;
-    background: radial-gradient(circle at 50% 100%, rgba(170, 140, 255, 0.46), transparent 58%), #1a183f;
-}
-
 .guess-board {
     display: grid;
     gap: 6px;
@@ -687,11 +760,6 @@
 }
 
 .lobby-hero-copy,
-.hero-card-fan {
-    position: relative;
-    z-index: 1;
-}
-
 .lobby-hero h1 {
     margin: 0;
     font-size: clamp(3rem, 7vw, 6rem);
@@ -722,61 +790,6 @@
     gap: var(--space-2);
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);
-}
-
-.hero-card-fan {
-    width: 330px;
-    height: 285px;
-    justify-self: center;
-    perspective: 900px;
-}
-
-.hero-card {
-    position: absolute;
-    bottom: 25px;
-    left: 98px;
-    display: grid;
-    width: 138px;
-    height: 202px;
-    place-items: center;
-    border: 4px solid var(--hero-type);
-    border-radius: 22px;
-    background:
-        radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.92) 0 15%, transparent 16%),
-        linear-gradient(155deg, #fbfdff, #dbe6f1);
-    box-shadow: 0 12px 0 #07101e, 0 30px 45px rgba(0, 0, 0, 0.46);
-}
-
-.hero-card::before {
-    position: absolute;
-    inset: 7px;
-    border: 1px solid var(--hero-type);
-    border-radius: 14px;
-    content: "";
-    opacity: 0.35;
-}
-
-.hero-card .tcg-energy-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
-}
-
-.hero-card--water {
-    --hero-type: var(--color-tcg-water);
-    transform: rotate(-18deg) translate(-62px, 16px);
-}
-
-.hero-card--fire {
-    --hero-type: var(--color-tcg-fire);
-    z-index: 2;
-    transform: translateZ(45px) rotate(2deg) translateY(-12px);
-}
-
-.hero-card--electric {
-    --hero-type: var(--color-tcg-lightning);
-    transform: rotate(18deg) translate(62px, 18px);
 }
 
 .lobby-grid {
@@ -1399,14 +1412,6 @@
 
     .lobby-hero {
         grid-template-columns: 1fr;
-    }
-
-    .hero-card-fan {
-        position: absolute;
-        right: -72px;
-        bottom: -70px;
-        opacity: 0.34;
-        transform: scale(0.8);
     }
 
     .lobby-hero-copy {
@@ -2279,20 +2284,8 @@ body.has-type-draw {
 }
 
 
-/* Vignettes des deux modes de devinette sur l'accueil. */
-.silhouette-mode-art,
-.pictionary-mode-art {
-    position: relative;
-    display: grid;
-    place-items: center;
-}
-
 /* L'écran culte : le Pokémon passé au noir sur un halo, comme à la coupure
    publicitaire du dessin animé. */
-.silhouette-mode-art {
-    background: radial-gradient(circle at 50% 58%, rgba(117, 216, 255, 0.5), transparent 62%), #071628;
-}
-
 .silhouette-burst {
     position: absolute;
     width: 150px;
@@ -2322,10 +2315,6 @@ body.has-type-draw {
 
 /* Pictionary : un dessin à moitié tracé. Le trait s'arrête net là où le
    crayon en est — c'est ça, une manche en cours. */
-.pictionary-mode-art {
-    background: radial-gradient(circle at 50% 120%, rgba(170, 140, 255, 0.4), transparent 60%), #16123a;
-}
-
 .pictionary-canvas {
     position: relative;
     display: grid;

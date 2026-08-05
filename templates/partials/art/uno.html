@@ -1,0 +1,20 @@
+{% load static %}
+{# Trois cartes en éventail, chacune à la couleur de son type. Partagée entre
+   l'accueil et le lobby Poké-Uno : une seule illustration à maintenir. #}
+<div class="game-art game-art--uno" aria-hidden="true">
+    <span class="game-art-stage">
+        <span class="mode-playing-card" style="--type-accent: #e8752f">
+            <img class="mode-card-type" src="{% static 'game/img/types/fire.png' %}" alt="" width="30" height="30">
+            <img class="mode-card-art" src="{% static 'img/hub/salameche.png' %}" alt="" loading="lazy" decoding="async">
+            <b class="mode-card-power">+4</b>
+        </span>
+        <span class="mode-playing-card" style="--type-accent: #3d90d8">
+            <img class="mode-card-type" src="{% static 'game/img/types/water.png' %}" alt="" width="30" height="30">
+            <img class="mode-card-art" src="{% static 'img/hub/carapuce.png' %}" alt="" loading="lazy" decoding="async">
+        </span>
+        <span class="mode-playing-card" style="--type-accent: #e5c22b">
+            <img class="mode-card-type" src="{% static 'game/img/types/electric.png' %}" alt="" width="30" height="30">
+            <img class="mode-card-art" src="{% static 'img/hub/pikachu.png' %}" alt="" loading="lazy" decoding="async">
+        </span>
+    </span>
+</div>
