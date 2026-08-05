@@ -30,6 +30,40 @@ class AnonymousAccessTests(TestCase):
         self.assertTemplateUsed(response, "guest_gate.html")
 
 
+class HubRenderingTests(TestCase):
+    """L'accueil et les lobbies partagent les mêmes illustrations."""
+
+    def setUp(self):
+        (self.user,) = make_users(1)
+        self.client.force_login(self.user)
+
+    def test_every_game_shows_its_illustration_on_the_hub_and_in_its_lobby(self):
+        pages = [
+            reverse("home"),
+            reverse("lobby"),
+            reverse("guesswho:lobby"),
+            reverse("silhouette:lobby"),
+            reverse("pictionary:lobby"),
+        ]
+
+        for url in pages:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "game-art")
+                self.assertContains(response, "img/hub/")
+
+    def test_no_template_comment_leaks_into_the_page(self):
+        # Un commentaire `{# … #}` sur plusieurs lignes n'en est pas un : Django
+        # le rend tel quel, en toutes lettres, au milieu de la page.
+        for url in (reverse("home"), reverse("lobby")):
+            with self.subTest(url=url):
+                body = self.client.get(url).content.decode()
+
+                self.assertNotIn("{#", body)
+
+
 class SignupRedirectTests(TestCase):
     def test_new_account_returns_to_a_safe_game_invitation(self):
         (owner,) = make_users(1)
