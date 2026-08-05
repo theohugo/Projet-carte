@@ -15,6 +15,11 @@
 
     <div class="quest-reward">
         <span class="quest-reward-value">{% icon "coin" "icon-sm" %}+{{ quest.reward }}</span>
+        {% if quest.booster_label %}
+        <span class="quest-reward-booster" data-season="{{ quest.booster_season }}">
+            {% icon "pack" "icon-sm" %}{{ quest.booster_label }}
+        </span>
+        {% endif %}
         {% if quest.claimed %}
             <span class="quest-done">{% icon "star" "icon-sm" %}Récupérée</span>
         {% elif quest.claimable %}

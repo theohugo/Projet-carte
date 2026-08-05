@@ -4,12 +4,20 @@ from django.test import TestCase
 from django.urls import reverse
 
 from game.game_engine import GameEngine
-from game.models import BoosterOpening, CollectionCard, PokemonCard, Profile, QuestProgress
+from game.models import (
+    BoosterOpening,
+    BoosterTicket,
+    CollectionCard,
+    PokemonCard,
+    Profile,
+    QuestProgress,
+)
 from game.quests import (
     EVENT_GAME_PLAYED,
     EVENT_GAME_WON,
     EVENT_PICTIONARY_FOUND,
     EVENT_SILHOUETTE_FOUND,
+    QUESTS,
     QUESTS_BY_KEY,
     QuestError,
     claim_reward,
@@ -17,16 +25,20 @@ from game.quests import (
     quest_board,
     record_event,
 )
+from game.seasons import SEASON_151, SEASON_BASE, is_ex
 from game.shop import (
     BOOSTERS_BY_KEY,
     COMMUNE,
+    EX,
     LEGENDAIRE,
     RARE,
     ShopError,
     draw_cards,
     open_booster,
+    open_ticket,
     rarity_of,
 )
+from game.tcg_card_images import get_tcg_image_url
 from game.tests.factories import make_cards, make_draft_catalogue, make_game, make_types, make_users
 
 
@@ -55,13 +67,60 @@ class QuestProgressTests(TestCase):
         for _ in range(5):
             record_event(self.user, EVENT_SILHOUETTE_FOUND)
 
-        reward = claim_reward(self.user, "daily_silhouettes")
+        claim = claim_reward(self.user, "daily_silhouettes")
 
         self.user.profile.refresh_from_db()
-        self.assertEqual(reward, QUESTS_BY_KEY["daily_silhouettes"].reward)
-        self.assertEqual(self.user.profile.points, reward)
+        self.assertEqual(claim.points, QUESTS_BY_KEY["daily_silhouettes"].reward)
+        self.assertEqual(self.user.profile.points, claim.points)
         with self.assertRaises(QuestError):
             claim_reward(self.user, "daily_silhouettes")
+
+    def test_a_daily_quest_pays_in_points_only(self):
+        for _ in range(5):
+            record_event(self.user, EVENT_SILHOUETTE_FOUND)
+
+        claim = claim_reward(self.user, "daily_silhouettes")
+
+        self.assertEqual(claim.booster_label, "")
+        self.assertEqual(BoosterTicket.objects.filter(user=self.user).count(), 0)
+
+    def test_every_weekly_quest_offers_a_booster(self):
+        for quest in QUESTS:
+            if quest.period == "weekly":
+                with self.subTest(quest=quest.key):
+                    self.assertIn(quest.booster, BOOSTERS_BY_KEY)
+
+    def test_a_weekly_quest_adds_a_booster_to_open(self):
+        for _ in range(5):
+            record_event(self.user, EVENT_GAME_WON)
+
+        claim = claim_reward(self.user, "weekly_champion")
+
+        ticket = BoosterTicket.objects.get(user=self.user)
+        self.user.profile.refresh_from_db()
+        self.assertEqual(self.user.profile.points, QUESTS_BY_KEY["weekly_champion"].reward)
+        self.assertEqual(ticket.booster_key, QUESTS_BY_KEY["weekly_champion"].booster)
+        self.assertEqual(ticket.source, "weekly_champion")
+        self.assertIsNone(ticket.opened_at)
+        self.assertEqual(claim.booster_label, BOOSTERS_BY_KEY[ticket.booster_key].label)
+
+    def test_a_weekly_quest_claimed_twice_offers_a_single_booster(self):
+        for _ in range(5):
+            record_event(self.user, EVENT_GAME_WON)
+        claim_reward(self.user, "weekly_champion")
+
+        with self.assertRaises(QuestError):
+            claim_reward(self.user, "weekly_champion")
+
+        self.assertEqual(BoosterTicket.objects.filter(user=self.user).count(), 1)
+
+    def test_the_board_announces_the_booster_of_a_weekly_quest(self):
+        board = quest_board(self.user)
+
+        weekly = next(q for q in board["weekly"] if q["key"] == "weekly_champion")
+        daily = next(q for q in board["daily"] if q["key"] == "daily_win_one")
+        self.assertEqual(weekly["booster_label"], BOOSTERS_BY_KEY["s151_ultra"].label)
+        self.assertEqual(daily["booster_label"], "")
 
     def test_an_unfinished_quest_pays_nothing(self):
         record_event(self.user, EVENT_SILHOUETTE_FOUND)
@@ -173,6 +232,31 @@ class ShopTests(TestCase):
         self.assertEqual(rarity_of(PokemonCard.objects.get(pokedex_id=6)), RARE)
         self.assertEqual(rarity_of(PokemonCard.objects.get(pokedex_id=19)), COMMUNE)
 
+    def test_the_second_season_promotes_its_ex_cards(self):
+        charizard = PokemonCard.objects.get(pokedex_id=6)
+
+        self.assertEqual(rarity_of(charizard, SEASON_BASE), RARE)
+        self.assertEqual(rarity_of(charizard, SEASON_151), EX)
+        # Un Pokémon sans carte ex garde son rang d'une saison à l'autre.
+        self.assertEqual(rarity_of(self.legendary, SEASON_151), LEGENDAIRE)
+
+    def test_a_second_season_booster_fills_its_own_collection(self):
+        self.give_points(1000)
+
+        open_booster(self.user, "s151", random.Random(4))
+
+        self.assertEqual(CollectionCard.objects.filter(user=self.user, season=SEASON_BASE).count(), 0)
+        self.assertGreaterEqual(CollectionCard.objects.filter(user=self.user, season=SEASON_151).count(), 1)
+        self.assertEqual(BoosterOpening.objects.get().season, SEASON_151)
+
+    def test_the_same_pokemon_is_collected_once_per_season(self):
+        card = PokemonCard.objects.get(pokedex_id=19)
+        CollectionCard.objects.create(user=self.user, pokemon_card=card, season=SEASON_BASE)
+
+        CollectionCard.objects.create(user=self.user, pokemon_card=card, season=SEASON_151)
+
+        self.assertEqual(CollectionCard.objects.filter(user=self.user, pokemon_card=card).count(), 2)
+
     def test_a_booster_holds_the_expected_number_of_cards(self):
         booster = BOOSTERS_BY_KEY["base"]
 
@@ -224,6 +308,37 @@ class ShopTests(TestCase):
         with self.assertRaises(ShopError):
             open_booster(self.user, "booster-fantome")
 
+    def test_a_quest_booster_opens_without_spending_a_point(self):
+        ticket = BoosterTicket.objects.create(user=self.user, booster_key="s151", source="weekly_guesser")
+
+        result = open_ticket(self.user, ticket.pk, random.Random(2))
+
+        ticket.refresh_from_db()
+        self.user.profile.refresh_from_db()
+        self.assertEqual(len(result["cards"]), 5)
+        self.assertEqual(result["season"], SEASON_151)
+        self.assertEqual(self.user.profile.points, 0)
+        self.assertIsNotNone(ticket.opened_at)
+        self.assertEqual(BoosterOpening.objects.get().price, 0)
+
+    def test_a_quest_booster_cannot_be_opened_twice(self):
+        ticket = BoosterTicket.objects.create(user=self.user, booster_key="base")
+        open_ticket(self.user, ticket.pk, random.Random(2))
+
+        with self.assertRaises(ShopError):
+            open_ticket(self.user, ticket.pk, random.Random(2))
+
+        self.assertEqual(BoosterOpening.objects.count(), 1)
+
+    def test_a_ticket_belonging_to_someone_else_is_refused(self):
+        (other,) = make_users(1)
+        ticket = BoosterTicket.objects.create(user=other, booster_key="base")
+
+        with self.assertRaises(ShopError):
+            open_ticket(self.user, ticket.pk)
+
+        self.assertEqual(BoosterOpening.objects.count(), 0)
+
 
 class ShopViewTests(TestCase):
     def setUp(self):
@@ -268,6 +383,50 @@ class ShopViewTests(TestCase):
         self.assertEqual(response.context["owned_count"], 1)
         self.assertContains(response, "×2")
 
+    def test_the_collection_shows_one_season_at_a_time(self):
+        card = PokemonCard.objects.filter(pokedex_id__lte=151).first()
+        CollectionCard.objects.create(user=self.user, pokemon_card=card, season=SEASON_151)
+
+        first = self.client.get(reverse("collection"))
+        second = self.client.get(reverse("collection"), {"saison": SEASON_151})
+
+        self.assertEqual(first.context["owned_count"], 0)
+        self.assertEqual(second.context["owned_count"], 1)
+        self.assertEqual(second.context["season"].number, SEASON_151)
+
+    def test_an_unknown_season_falls_back_on_the_first(self):
+        response = self.client.get(reverse("collection"), {"saison": "neuf"})
+
+        self.assertEqual(response.context["season"].number, SEASON_BASE)
+
+    def test_the_shop_lists_the_boosters_won_in_quests(self):
+        ticket = BoosterTicket.objects.create(user=self.user, booster_key="s151")
+
+        response = self.client.get(reverse("shop"))
+
+        self.assertEqual([row["id"] for row in response.context["tickets"]], [ticket.pk])
+        self.assertContains(response, "Tes boosters de quête")
+
+    def test_an_opened_ticket_leaves_the_shop(self):
+        ticket = BoosterTicket.objects.create(user=self.user, booster_key="s151")
+
+        response = self.client.post(reverse("api_open_ticket", args=[ticket.pk]))
+
+        payload = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload["season"], SEASON_151)
+        self.assertEqual(payload["tickets_left"], 0)
+        self.assertEqual(self.client.get(reverse("shop")).context["tickets"], [])
+
+    def test_opening_someone_elses_ticket_is_refused(self):
+        (other,) = make_users(1)
+        ticket = BoosterTicket.objects.create(user=other, booster_key="base")
+
+        response = self.client.post(reverse("api_open_ticket", args=[ticket.pk]))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(BoosterOpening.objects.count(), 0)
+
     def test_claiming_a_quest_from_the_page_credits_the_points(self):
         for _ in range(5):
             record_event(self.user, EVENT_SILHOUETTE_FOUND)
@@ -277,3 +436,34 @@ class ShopViewTests(TestCase):
         self.user.profile.refresh_from_db()
         self.assertRedirects(response, reverse("quests"))
         self.assertEqual(self.user.profile.points, QUESTS_BY_KEY["daily_silhouettes"].reward)
+
+    def test_claiming_a_weekly_quest_announces_the_booster(self):
+        for _ in range(5):
+            record_event(self.user, EVENT_GAME_WON)
+
+        response = self.client.post(reverse("claim_quest", args=["weekly_champion"]), follow=True)
+
+        self.assertContains(response, BOOSTERS_BY_KEY["s151_ultra"].label)
+        self.assertEqual(BoosterTicket.objects.filter(user=self.user).count(), 1)
+
+
+class SeasonImageTests(TestCase):
+    """Les visuels committés : une saison complète, ex compris."""
+
+    def test_each_season_has_its_own_visual_for_every_pokemon(self):
+        for season in (SEASON_BASE, SEASON_151):
+            with self.subTest(season=season):
+                urls = {get_tcg_image_url(pokedex_id, season) for pokedex_id in range(1, 152)}
+
+                self.assertNotIn(None, urls)
+                self.assertEqual(len(urls), 151)
+
+    def test_the_two_seasons_show_different_cards(self):
+        self.assertNotEqual(get_tcg_image_url(6, SEASON_BASE), get_tcg_image_url(6, SEASON_151))
+
+    def test_an_ex_pokemon_gets_the_full_art_of_the_151_set(self):
+        # Les pleines pages sont numérotées au-delà des 165 cartes officielles.
+        self.assertIn("/18", get_tcg_image_url(6, SEASON_151))
+        self.assertTrue(is_ex(6, SEASON_151))
+        self.assertFalse(is_ex(6, SEASON_BASE))
+        self.assertFalse(is_ex(25, SEASON_151))

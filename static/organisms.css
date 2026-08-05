@@ -346,11 +346,8 @@
     position: absolute;
     width: 42px;
     height: 42px;
-    padding: 7px;
-    border: 2px solid rgba(255, 255, 255, 0.76);
     border-radius: 50%;
-    background-color: var(--type-accent);
-    box-shadow: 0 9px 20px rgba(0, 0, 0, 0.34);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.76), 0 9px 20px rgba(0, 0, 0, 0.34);
     animation: orbit 18s linear infinite reverse;
 }
 
@@ -390,25 +387,75 @@
     perspective: 800px;
 }
 
+/* Poké-Uno : trois vraies cartes en éventail, chacune de la couleur de son
+   type, avec la pastille officielle en haut et le Pokémon dessous. */
+.uno-mode-art {
+    background: radial-gradient(circle at 50% 130%, rgba(117, 216, 255, 0.42), transparent 58%), #0b213d;
+}
+
 .mode-playing-card {
     position: absolute;
-    top: 25px;
-    left: calc(50% - 55px);
-    display: grid;
-    width: 110px;
-    height: 150px;
-    place-items: center;
+    top: 22px;
+    left: calc(50% - 56px);
+    display: flex;
+    width: 112px;
+    height: 152px;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 8px 10px;
     border: 4px solid var(--type-accent);
-    border-radius: 16px;
-    background: #f5f8fc;
-    box-shadow: 0 8px 0 #07101e, 0 20px 30px rgba(0, 0, 0, 0.4);
+    border-radius: 14px;
+    background: linear-gradient(170deg, #fbfdff, #dfe8f4);
+    box-shadow: 0 8px 0 #07101e, 0 20px 30px rgba(0, 0, 0, 0.42);
+}
+
+/* Reflet oblique : sans lui, la carte reste un rectangle blanc mat. */
+.mode-playing-card::after {
+    position: absolute;
+    border-radius: 10px;
+    background: linear-gradient(118deg, rgba(255, 255, 255, 0.85) 24%, transparent 46%);
+    content: "";
+    inset: 0;
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 .mode-playing-card:nth-child(1) { z-index: 2; transform: translateZ(35px) rotate(1deg); }
 .mode-playing-card:nth-child(2) { transform: translateX(-82px) rotate(-17deg); }
 .mode-playing-card:nth-child(3) { transform: translateX(82px) rotate(17deg); }
-.mode-playing-card .tcg-energy-icon { width: 38px; height: 38px; }
-.mode-playing-card b { color: #18243a; font-size: 1.4rem; }
+
+.mode-card-type {
+    align-self: flex-start;
+    width: 30px;
+    height: 30px;
+    filter: drop-shadow(0 2px 4px rgba(10, 21, 35, 0.32));
+}
+
+.mode-card-art {
+    width: 88px;
+    height: 88px;
+    margin-top: -6px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(10, 21, 35, 0.3));
+}
+
+/* Le +4 se lit comme sur une carte pouvoir : un jeton, pas une légende. */
+.mode-card-power {
+    position: absolute;
+    right: -12px;
+    bottom: -12px;
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border: 3px solid #fbfdff;
+    border-radius: 50%;
+    color: #fff;
+    background: var(--type-accent);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.42);
+    font-size: 1.15rem;
+    font-weight: 900;
+}
 
 .game-mode-copy {
     display: flex;
@@ -446,41 +493,53 @@
     box-shadow: 0 0 11px currentColor;
 }
 
+/* Qui est-ce ? : le plateau lui-même, vu de face. Les cases rabattues sont
+   celles qu'on a éliminées, la case cerclée est la cible qu'on cherche. */
 .guess-mode-art {
     display: grid;
     place-items: center;
     background: radial-gradient(circle at 50% 100%, rgba(170, 140, 255, 0.46), transparent 58%), #1a183f;
 }
 
-.guess-silhouette {
-    position: relative;
-    z-index: 2;
+.guess-board {
     display: grid;
-    width: 96px;
-    height: 126px;
+    gap: 6px;
+    grid-template-columns: repeat(3, 46px);
+    transform: perspective(700px) rotateX(11deg);
+}
+
+.guess-tile {
+    display: grid;
+    height: 46px;
     place-items: center;
-    border: 3px solid rgba(255, 255, 255, 0.82);
-    border-radius: 48% 48% 38% 38%;
-    color: #fff;
-    background: linear-gradient(145deg, #7756e8, #322474);
-    box-shadow: 0 18px 35px rgba(0, 0, 0, 0.42);
-    font-size: 3rem;
-    font-weight: 950;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.34);
+    border-radius: 9px;
+    background: linear-gradient(160deg, rgba(60, 48, 122, 0.95), rgba(22, 18, 52, 0.95));
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.36);
 }
 
-.guess-card-mini {
-    position: absolute;
-    bottom: 17px;
-    width: 70px;
-    height: 90px;
-    border: 2px solid rgba(255, 255, 255, 0.42);
-    border-radius: 10px;
-    background: rgba(10, 20, 42, 0.8);
+.guess-tile img {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
 }
 
-.guess-card-mini:nth-of-type(2) { left: 16%; transform: rotate(-12deg); }
-.guess-card-mini:nth-of-type(3) { right: 16%; transform: rotate(12deg); }
-.guess-card-mini:nth-of-type(4) { right: 30%; transform: translateY(12px); }
+/* Une case rabattue montre son dos et bascule vers l'arrière. */
+.guess-tile.is-down {
+    border-color: rgba(255, 255, 255, 0.14);
+    background:
+        repeating-linear-gradient(135deg, transparent 0 5px, rgba(255, 255, 255, 0.05) 5px 6px),
+        linear-gradient(160deg, #171436, #0d0b22);
+    opacity: 0.72;
+    transform: rotateX(38deg);
+}
+
+.guess-tile.is-target {
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 0 3px rgba(170, 140, 255, 0.55), 0 8px 18px rgba(0, 0, 0, 0.45);
+    transform: scale(1.12);
+}
 
 /* Authentification */
 .auth-layout {
@@ -698,12 +757,9 @@
 }
 
 .hero-card .tcg-energy-icon {
-    width: 48px;
-    height: 48px;
-    padding: 12px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    background-color: var(--hero-type);
-    background-size: 27px;
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
 }
 
@@ -2012,9 +2068,9 @@
         height: 16px;
     }
 
-    .game-shell--active .center-row .type-glyph {
-        width: 10px;
-        height: 10px;
+    .game-shell--active .center-row .type-icon {
+        width: 16px;
+        height: 16px;
     }
 
     .game-shell--active .center-row .card-action {
@@ -2163,22 +2219,25 @@
 /* Le symbole d'abord, le nom en dessous : on reconnaît le type avant de lire. */
 .type-draw-glyph {
     display: grid;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     place-items: center;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.28);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5), 0 6px 16px rgba(4, 10, 20, 0.45);
 }
 
-.type-draw-glyph .type-glyph {
-    width: 26px;
-    height: 26px;
+.type-draw-glyph .type-icon {
+    width: 44px;
+    height: 44px;
 }
 
 .type-draw-slot:not(.is-revealed):not(.is-spinning) .type-draw-glyph {
     background: rgba(255, 255, 255, 0.08);
     box-shadow: none;
+}
+
+.type-draw-slot:not(.is-revealed):not(.is-spinning) .type-draw-glyph .type-icon {
+    opacity: 0;
 }
 
 .type-draw-slot:not(.is-revealed):not(.is-spinning) {
@@ -2228,35 +2287,76 @@ body.has-type-draw {
     place-items: center;
 }
 
+/* L'écran culte : le Pokémon passé au noir sur un halo, comme à la coupure
+   publicitaire du dessin animé. */
+.silhouette-mode-art {
+    background: radial-gradient(circle at 50% 58%, rgba(117, 216, 255, 0.5), transparent 62%), #071628;
+}
+
+.silhouette-burst {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.22), rgba(117, 216, 255, 0.16) 58%, transparent 70%);
+}
+
 .silhouette-shape {
-    width: 96px;
-    height: 96px;
-    border-radius: 44% 56% 52% 48% / 54% 46% 54% 46%;
-    background: linear-gradient(160deg, #0b1524, #22385c);
-    box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.62);
+    position: relative;
+    width: 132px;
+    height: 132px;
+    object-fit: contain;
+    /* Noir plein : c'est bien une silhouette, pas une image assombrie. */
+    filter: brightness(0) drop-shadow(0 0 14px rgba(117, 216, 255, 0.6));
 }
 
 .silhouette-flash {
     position: absolute;
+    right: 24%;
+    bottom: 18%;
     color: var(--color-brand);
-    font-size: 2.4rem;
+    font-size: 2.6rem;
     font-weight: 900;
+    text-shadow: 0 4px 14px rgba(4, 12, 24, 0.75);
 }
 
-.pictionary-scribble {
-    width: 108px;
-    height: 84px;
-    border: 3px dashed rgba(170, 140, 255, 0.6);
-    border-radius: 46% 54% 62% 38% / 58% 42% 58% 42%;
+/* Pictionary : un dessin à moitié tracé. Le trait s'arrête net là où le
+   crayon en est — c'est ça, une manche en cours. */
+.pictionary-mode-art {
+    background: radial-gradient(circle at 50% 120%, rgba(170, 140, 255, 0.4), transparent 60%), #16123a;
+}
+
+.pictionary-canvas {
+    position: relative;
+    display: grid;
+    width: 150px;
+    height: 118px;
+    place-items: center;
+    border: 2px dashed rgba(170, 140, 255, 0.5);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.pictionary-sketch {
+    width: 104px;
+    height: 104px;
+    object-fit: contain;
+    /* Contraste poussé et teinte violette : l'image passe pour un tracé. */
+    filter: grayscale(1) brightness(1.6) contrast(2.4) sepia(1) hue-rotate(215deg) saturate(3);
+    /* Le dessin s'efface vers la droite : la partie pas encore tracée. */
+    mask-image: linear-gradient(100deg, #000 42%, rgba(0, 0, 0, 0.25) 58%, transparent 70%);
 }
 
 .pictionary-pen {
     position: absolute;
-    width: 10px;
-    height: 62px;
-    border-radius: 3px 3px 10px 10px;
-    background: linear-gradient(180deg, #ffd166, #ef476f);
-    transform: rotate(26deg) translate(30px, -10px);
+    top: 26px;
+    right: 30px;
+    width: 11px;
+    height: 66px;
+    border-radius: 3px 3px 11px 11px;
+    background: linear-gradient(180deg, #ffd166 62%, #ef476f);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45);
+    transform: rotate(26deg);
 }
 
 
@@ -2930,6 +3030,14 @@ body.has-type-draw {
 
 .friends-section-heading h2 {
   margin: 0;
+}
+
+/* Sous-titre du rayon « Derniers inscrits » : dit pourquoi ces joueurs-là
+   s'affichent alors qu'on n'a rien cherché. */
+.friends-section-note {
+  margin: -12px 0 22px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .friends-count {

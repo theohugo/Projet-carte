@@ -751,7 +751,11 @@ class QuestProgress(models.Model):
 
 
 class CollectionCard(models.Model):
-    """Une carte possédée par un joueur, avec le nombre d'exemplaires."""
+    """Une carte possédée par un joueur, avec le nombre d'exemplaires.
+
+    La saison fait partie de l'identité de la carte : le même Pokémon se
+    collectionne une fois par édition.
+    """
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -765,21 +769,26 @@ class CollectionCard(models.Model):
         related_name="collected_by",
     )
 
+    season = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="Édition dont vient cette carte : 1 pour le Set de Base, 2 pour la série 151.",
+    )
+
     copies = models.PositiveIntegerField(default=1)
 
     obtained_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["pokemon_card__pokedex_id"]
+        ordering = ["season", "pokemon_card__pokedex_id"]
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "pokemon_card"],
-                name="unique_collection_card_per_user",
+                fields=["user", "pokemon_card", "season"],
+                name="unique_collection_card_per_user_and_season",
             ),
         ]
 
     def __str__(self):
-        return f"{self.user_id} · #{self.pokemon_card_id} ×{self.copies}"
+        return f"{self.user_id} · S{self.season} #{self.pokemon_card_id} ×{self.copies}"
 
 
 class BoosterOpening(models.Model):
@@ -793,7 +802,11 @@ class BoosterOpening(models.Model):
 
     booster_key = models.CharField(max_length=30)
 
-    price = models.PositiveIntegerField()
+    season = models.PositiveSmallIntegerField(default=1)
+
+    price = models.PositiveIntegerField(
+        help_text="Points débités. Zéro pour un booster offert par une quête.",
+    )
 
     cards = models.ManyToManyField(
         "game.PokemonCard",
@@ -807,3 +820,36 @@ class BoosterOpening(models.Model):
 
     def __str__(self):
         return f"{self.user_id} · {self.booster_key}"
+
+
+class BoosterTicket(models.Model):
+    """Un booster gagné en quête, à ouvrir gratuitement depuis la boutique.
+
+    Le ticket est consommé à l'ouverture (``opened_at``) plutôt que supprimé :
+    on garde la trace de ce qu'une quête a rapporté.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="booster_tickets",
+    )
+
+    booster_key = models.CharField(max_length=30)
+
+    source = models.CharField(
+        max_length=40,
+        blank=True,
+        help_text="Clé de la quête qui l'a offert.",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    opened_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [models.Index(fields=["user", "opened_at"])]
+
+    def __str__(self):
+        return f"{self.user_id} · ticket {self.booster_key}"

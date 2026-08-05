@@ -2,25 +2,29 @@
 
 Ce module ne concerne que l'illustration affichée en Collection : le
 catalogue de jeu (``PokemonCard``) reste alimenté par PokeAPI et n'est pas
-modifié. Le fixture est committé, donc aucun accès réseau n'est requis au
-démarrage ; voir ``manage.py fetch_tcg_card_images`` pour le régénérer.
+modifié. Un fixture par saison, tous committés, donc aucun accès réseau n'est
+requis au démarrage ; voir ``manage.py fetch_tcg_card_images`` pour les
+régénérer.
 """
 
 import json
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
-FIXTURE_PATH = Path(__file__).resolve().parent / "fixtures" / "tcg_card_images.json"
+from game.seasons import DEFAULT_SEASON, get_season
+
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
 
-@lru_cache(maxsize=1)
-def _load_images() -> dict[str, str]:
-    if not FIXTURE_PATH.exists():
+@cache
+def _load_images(fixture: str) -> dict[str, str]:
+    path = FIXTURES_DIR / fixture
+    if not path.exists():
         return {}
-    return json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def get_tcg_image_url(pokedex_id: int) -> str | None:
-    """URL de la carte TCG associée à ce numéro de Pokédex, si connue."""
+def get_tcg_image_url(pokedex_id: int, season: int = DEFAULT_SEASON) -> str | None:
+    """URL de la carte TCG de cette saison pour ce numéro de Pokédex, si connue."""
 
-    return _load_images().get(str(pokedex_id))
+    return _load_images(get_season(season).fixture).get(str(pokedex_id))

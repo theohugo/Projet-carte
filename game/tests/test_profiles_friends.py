@@ -216,6 +216,34 @@ class ProfileViewTests(TestCase):
             usernames,
         )
 
+    def test_player_search_without_query_suggests_the_newest_players(self):
+        newcomer = User.objects.create_user(
+            username="zoe",
+            password="MotDePasse123!",
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("player_search"))
+
+        usernames = [result["user"].username for result in response.context["search_results"]]
+        self.assertContains(response, "Derniers inscrits")
+        # Le plus récent d'abord, et jamais soi-même.
+        self.assertEqual(usernames[0], newcomer.username)
+        self.assertNotIn("alice", usernames)
+
+    def test_the_suggestions_leave_out_guest_accounts(self):
+        guest = User.objects.create_user(
+            username="invite-1234",
+            password="MotDePasse123!",
+        )
+        Profile.objects.filter(user=guest).update(is_guest=True)
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("player_search"))
+
+        usernames = [result["user"].username for result in response.context["search_results"]]
+        self.assertNotIn(guest.username, usernames)
+
 
 class FriendshipViewTests(TestCase):
     def setUp(self):

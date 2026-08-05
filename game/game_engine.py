@@ -18,6 +18,7 @@ from game.deck_builder import draw_game_types, select_species, species_type_slug
 from game.models import Game, GameCard, GamePlayer, MoveLog, PokemonCard, PokemonType, Profile
 from game.pokemon_types import get_pokemon_type
 from game.quests import EVENT_GAME_PLAYED, EVENT_GAME_WON, record_event
+from game.type_icons import type_icon_url
 
 HAND_SIZE = 7
 DECK_COPIES_PER_CARD = 2
@@ -495,6 +496,7 @@ class GameEngine:
                 "slug": pokemon_type.slug,
                 "name_fr": info.name_fr if info else pokemon_type.name_fr,
                 "color": info.color if info else "#9fa19f",
+                "icon_url": type_icon_url(pokemon_type.slug),
             }
 
         def serialize_card(game_card):

@@ -38,6 +38,11 @@ urlpatterns = [
         name="shop",
     ),
     path(
+        "boutique/cadeaux/<int:ticket_id>/ouvrir/",
+        views.api_open_ticket,
+        name="api_open_ticket",
+    ),
+    path(
         "boutique/<str:booster_key>/ouvrir/",
         views.api_open_booster,
         name="api_open_booster",

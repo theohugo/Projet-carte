@@ -4,7 +4,6 @@
 {% block html_class %}{% if game.status == "EN_COURS" %}game-document{% endif %}{% endblock %}
 {% block body_class %}game-shell{% if game.status == "EN_COURS" %} game-shell--active{% endif %}{% endblock %}
 {% block content %}
-{% type_sprite %}
 <div class="game-page">
     <header class="game-page-heading">
         <div>
@@ -100,7 +99,7 @@
                 <h2 class="type-draw-title">Les 4 types de la partie</h2>
                 <ul class="type-draw-slots">
                     {% for type in game_types %}
-                    <li class="type-draw-slot" data-slot="{{ forloop.counter0 }}" data-final-type="{{ type.name_fr }}" data-final-color="{{ type.color }}" data-final-slug="{{ type.slug }}">
+                    <li class="type-draw-slot" data-slot="{{ forloop.counter0 }}" data-final-type="{{ type.name_fr }}" data-final-color="{{ type.color }}" data-final-slug="{{ type.slug }}" data-final-icon="{{ type.icon_url }}">
                         <span class="type-draw-glyph" data-type-glyph></span>
                         <span class="type-draw-name">?</span>
                     </li>

@@ -10,7 +10,7 @@ from django import template
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
-from game.type_glyphs import TYPE_GLYPHS
+from game.type_icons import type_icon_url
 
 register = template.Library()
 
@@ -65,6 +65,9 @@ ICONS = {
 }
 
 DEFAULT_SIZE = 20
+# Les pastilles de type sont fournies en 64 px ; on les rend en 20 pour rester
+# nettes sur les écrans à forte densité.
+TYPE_ICON_SIZE = 20
 
 
 @register.simple_tag(name="icon")
@@ -91,30 +94,18 @@ def icon(name, extra_class=""):
     )
 
 
-@register.simple_tag(name="type_sprite")
-def type_sprite():
-    """Dépose les 18 pictogrammes de type une seule fois dans la page.
-
-    Le gabarit et le JavaScript n'ont plus qu'à pointer un ``<use>`` : un seul
-    dessin par type, quel que soit le nombre de cartes affichées.
-    """
-
-    symbols = "".join(
-        f'<symbol id="type-{slug}" viewBox="0 0 24 24">{body}</symbol>' for slug, body in TYPE_GLYPHS.items()
-    )
-    # Dessins statiques du module type_glyphs : rien ne vient d'une saisie.
-    return mark_safe(f'<svg class="type-sprite" aria-hidden="true" focusable="false" hidden>{symbols}</svg>')
-
-
 @register.simple_tag(name="type_icon")
 def type_icon(slug):
-    """Le pictogramme d'un type, à poser sur une pastille colorée."""
+    """La pastille officielle d'un type : le symbole blanc sur son disque."""
 
-    if slug not in TYPE_GLYPHS:
+    url = type_icon_url(slug)
+    if not url:
         return ""
 
     return format_html(
-        '<svg class="type-glyph" viewBox="0 0 24 24" fill="currentColor" '
-        'aria-hidden="true" focusable="false"><use href="#type-{}"></use></svg>',
-        slug,
+        '<img class="type-icon" src="{}" width="{}" height="{}" alt="" '
+        'aria-hidden="true" loading="lazy" decoding="async">',
+        url,
+        TYPE_ICON_SIZE,
+        TYPE_ICON_SIZE,
     )

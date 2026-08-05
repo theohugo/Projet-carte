@@ -1,6 +1,15 @@
 from django.contrib import admin
 
-from game.models import Game, GameCard, GamePlayer, MoveLog, PokemonCard, PokemonType, Profile
+from game.models import (
+    BoosterTicket,
+    Game,
+    GameCard,
+    GamePlayer,
+    MoveLog,
+    PokemonCard,
+    PokemonType,
+    Profile,
+)
 
 
 @admin.register(PokemonType)
@@ -50,6 +59,13 @@ class MoveLogAdmin(admin.ModelAdmin):
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ("user", "total_games_played", "total_games_won")
+
+
+@admin.register(BoosterTicket)
+class BoosterTicketAdmin(admin.ModelAdmin):
+    list_display = ("user", "booster_key", "source", "created_at", "opened_at")
+    list_filter = ("booster_key", "source")
+    search_fields = ("user__username",)
 
 
 admin.site.register(GameCard)

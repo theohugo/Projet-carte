@@ -1,8 +1,12 @@
-"""Quêtes quotidiennes et hebdomadaires, et points qu'elles rapportent.
+"""Quêtes quotidiennes et hebdomadaires, et ce qu'elles rapportent.
 
 Le suivi passe par des évènements de jeu (``record_event``) que les quatre
 moteurs déclenchent au moment utile. Chaque quête est décrite une fois ici :
 les vues n'ont qu'à lire ``quest_board`` et à encaisser les récompenses.
+
+Les quotidiennes paient en points ; les hebdomadaires y ajoutent un booster à
+ouvrir en boutique, parce qu'une semaine de jeu mérite des cartes, pas
+seulement de la monnaie.
 
 La remise à zéro est implicite : une quête est stockée avec la période qu'elle
 concerne (le jour ou la semaine ISO), donc changer de journée suffit à repartir
@@ -16,6 +20,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from game.models import Profile, QuestProgress
+from game.shop import BOOSTERS_BY_KEY, grant_ticket
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,6 +32,8 @@ class Quest:
     target: int
     reward: int
     period: str  # "daily" ou "weekly"
+    # Clé du booster offert en plus des points, s'il y en a un.
+    booster: str | None = None
 
 
 # Les évènements suivis, alimentés par les moteurs de jeu.
@@ -81,6 +88,7 @@ QUESTS = (
         target=15,
         reward=260,
         period="weekly",
+        booster="base",
     ),
     Quest(
         key="weekly_champion",
@@ -90,6 +98,7 @@ QUESTS = (
         target=5,
         reward=320,
         period="weekly",
+        booster="s151_ultra",
     ),
     Quest(
         key="weekly_guesser",
@@ -99,6 +108,7 @@ QUESTS = (
         target=25,
         reward=280,
         period="weekly",
+        booster="s151",
     ),
 )
 
@@ -158,6 +168,7 @@ def quest_board(user) -> dict:
         progress = min(row.progress, quest.target) if row else 0
         claimed = bool(row and row.claimed_at)
         is_complete = progress >= quest.target
+        booster = BOOSTERS_BY_KEY.get(quest.booster) if quest.booster else None
         if is_complete and not claimed:
             board["claimable"] += 1
         board[quest.period].append(
@@ -166,6 +177,8 @@ def quest_board(user) -> dict:
                 "label": quest.label,
                 "description": quest.description,
                 "reward": quest.reward,
+                "booster_label": booster.label if booster else "",
+                "booster_season": booster.season if booster else None,
                 "target": quest.target,
                 "progress": progress,
                 "percent": round(100 * progress / quest.target),
@@ -181,9 +194,17 @@ class QuestError(Exception):
     """Récompense impossible à encaisser."""
 
 
+@dataclass(frozen=True, slots=True)
+class Claim:
+    """Ce qu'une quête vient de rapporter."""
+
+    points: int
+    booster_label: str = ""
+
+
 @transaction.atomic
-def claim_reward(user, quest_key: str) -> int:
-    """Encaisse une quête terminée et crédite ses points. Renvoie le gain."""
+def claim_reward(user, quest_key: str) -> Claim:
+    """Encaisse une quête terminée : points crédités, booster offert s'il y en a un."""
 
     quest = QUESTS_BY_KEY.get(quest_key)
     if quest is None:
@@ -202,4 +223,9 @@ def claim_reward(user, quest_key: str) -> int:
     progress.claimed_at = timezone.now()
     progress.save(update_fields=["claimed_at"])
     Profile.objects.filter(user=user).update(points=F("points") + quest.reward)
-    return quest.reward
+
+    ticket = grant_ticket(user, quest.booster, source=quest.key) if quest.booster else None
+    return Claim(
+        points=quest.reward,
+        booster_label=BOOSTERS_BY_KEY[ticket.booster_key].label if ticket else "",
+    )

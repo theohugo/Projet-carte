@@ -36,10 +36,20 @@
 
     <section class="game-mode-grid" aria-label="Jeux disponibles">
         <article class="game-mode-card game-mode-card--uno">
-            <div class="game-mode-art" aria-hidden="true">
-                <span class="mode-playing-card"><i class="tcg-energy-icon" data-tcg-type="fire"></i><b>+4</b></span>
-                <span class="mode-playing-card"><i class="tcg-energy-icon" data-tcg-type="water"></i></span>
-                <span class="mode-playing-card"><i class="tcg-energy-icon" data-tcg-type="lightning"></i></span>
+            <div class="game-mode-art uno-mode-art" aria-hidden="true">
+                <span class="mode-playing-card" style="--type-accent: #e8752f">
+                    <img class="mode-card-type" src="{% static 'game/img/types/fire.png' %}" alt="" width="30" height="30">
+                    <img class="mode-card-art" src="{% static 'img/hub/salameche.png' %}" alt="" loading="lazy" decoding="async">
+                    <b class="mode-card-power">+4</b>
+                </span>
+                <span class="mode-playing-card" style="--type-accent: #3d90d8">
+                    <img class="mode-card-type" src="{% static 'game/img/types/water.png' %}" alt="" width="30" height="30">
+                    <img class="mode-card-art" src="{% static 'img/hub/carapuce.png' %}" alt="" loading="lazy" decoding="async">
+                </span>
+                <span class="mode-playing-card" style="--type-accent: #e5c22b">
+                    <img class="mode-card-type" src="{% static 'game/img/types/electric.png' %}" alt="" width="30" height="30">
+                    <img class="mode-card-art" src="{% static 'img/hub/pikachu.png' %}" alt="" loading="lazy" decoding="async">
+                </span>
             </div>
             <div class="game-mode-copy">
                 <span class="game-mode-status"><i></i> Disponible</span>
@@ -51,9 +61,19 @@
         </article>
 
         <article class="game-mode-card game-mode-card--guess">
+            {# Le plateau du jeu : neuf portraits, ceux qu'on a éliminés rabattus. #}
             <div class="game-mode-art guess-mode-art" aria-hidden="true">
-                <span class="guess-silhouette">?</span>
-                <span class="guess-card-mini"></span><span class="guess-card-mini"></span><span class="guess-card-mini"></span>
+                <div class="guess-board">
+                    <span class="guess-tile is-down"></span>
+                    <span class="guess-tile"><img src="{% static 'img/hub/carapuce.png' %}" alt="" loading="lazy" decoding="async"></span>
+                    <span class="guess-tile is-down"></span>
+                    <span class="guess-tile"><img src="{% static 'img/hub/rondoudou.png' %}" alt="" loading="lazy" decoding="async"></span>
+                    <span class="guess-tile is-target"><img src="{% static 'img/hub/salameche.png' %}" alt="" loading="lazy" decoding="async"></span>
+                    <span class="guess-tile is-down"></span>
+                    <span class="guess-tile is-down"></span>
+                    <span class="guess-tile"><img src="{% static 'img/hub/bulbizarre.png' %}" alt="" loading="lazy" decoding="async"></span>
+                    <span class="guess-tile is-down"></span>
+                </div>
             </div>
             <div class="game-mode-copy">
                 <span class="game-mode-status"><i></i> Nouveau</span>
@@ -64,8 +84,10 @@
             </div>
         </article>
         <article class="game-mode-card game-mode-card--silhouette">
+            {# L'écran culte : la silhouette noire découpée dans le halo. #}
             <div class="game-mode-art silhouette-mode-art" aria-hidden="true">
-                <span class="silhouette-shape"></span>
+                <span class="silhouette-burst"></span>
+                <img class="silhouette-shape" src="{% static 'img/hub/pikachu.png' %}" alt="" loading="lazy" decoding="async">
                 <span class="silhouette-flash">?</span>
             </div>
             <div class="game-mode-copy">
@@ -78,9 +100,12 @@
         </article>
 
         <article class="game-mode-card game-mode-card--pictionary">
+            {# Un dessin en cours : le tracé s'arrête là où le crayon en est. #}
             <div class="game-mode-art pictionary-mode-art" aria-hidden="true">
-                <span class="pictionary-scribble"></span>
-                <span class="pictionary-pen"></span>
+                <span class="pictionary-canvas">
+                    <img class="pictionary-sketch" src="{% static 'img/hub/bulbizarre.png' %}" alt="" loading="lazy" decoding="async">
+                    <span class="pictionary-pen"></span>
+                </span>
             </div>
             <div class="game-mode-copy">
                 <span class="game-mode-status"><i></i> Nouveau</span>

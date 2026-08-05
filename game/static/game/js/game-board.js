@@ -390,21 +390,20 @@
         }
     }
 
-    const SVG_NS = "http://www.w3.org/2000/svg";
-
-    // Les 18 pictogrammes sont déposés une fois dans la page ({% type_sprite %}) :
-    // ici on ne fait que pointer le bon symbole.
-    function buildTypeGlyph(slug) {
-        const svg = document.createElementNS(SVG_NS, "svg");
-        svg.setAttribute("class", "type-glyph");
-        svg.setAttribute("viewBox", "0 0 24 24");
-        svg.setAttribute("fill", "currentColor");
-        svg.setAttribute("aria-hidden", "true");
-        svg.setAttribute("focusable", "false");
-        const use = document.createElementNS(SVG_NS, "use");
-        use.setAttribute("href", `#type-${slug}`);
-        svg.appendChild(use);
-        return svg;
+    // La pastille officielle du type est servie par nos statiques ; son URL
+    // arrive avec l'état de la partie, car en production elle porte une
+    // empreinte que le navigateur ne peut pas deviner.
+    function buildTypeIcon(iconUrl) {
+        const image = document.createElement("img");
+        image.className = "type-icon";
+        image.src = iconUrl || "";
+        image.width = 20;
+        image.height = 20;
+        image.alt = "";
+        image.loading = "lazy";
+        image.decoding = "async";
+        image.setAttribute("aria-hidden", "true");
+        return image;
     }
 
     function buildTypePill(cardType) {
@@ -414,7 +413,7 @@
         pill.setAttribute("role", "img");
         pill.setAttribute("aria-label", cardType.name_fr);
         pill.title = cardType.name_fr;
-        pill.appendChild(buildTypeGlyph(cardType.slug));
+        pill.appendChild(buildTypeIcon(cardType.icon_url));
         return pill;
     }
 
@@ -868,15 +867,19 @@
         curtain.removeAttribute("aria-hidden");
         document.body.classList.add("has-type-draw");
 
-        const paint = (slot, slug, name, color) => {
-            slot.style.setProperty("--type-accent", color);
-            slot.querySelector(".type-draw-name").textContent = name;
-            slot.querySelector("[data-type-glyph]").replaceChildren(buildTypeGlyph(slug));
+        const paint = (slot, pokemonType) => {
+            slot.style.setProperty("--type-accent", pokemonType.color);
+            slot.querySelector(".type-draw-name").textContent = pokemonType.name_fr;
+            slot.querySelector("[data-type-glyph]").replaceChildren(buildTypeIcon(pokemonType.icon_url));
         };
 
         const reveal = (slot) => {
             slot.classList.add("is-revealed");
-            paint(slot, slot.dataset.finalSlug, slot.dataset.finalType, slot.dataset.finalColor);
+            paint(slot, {
+                name_fr: slot.dataset.finalType,
+                color: slot.dataset.finalColor,
+                icon_url: slot.dataset.finalIcon,
+            });
         };
 
         if (reducedMotion.matches || !pool.length) {
@@ -887,7 +890,7 @@
                 slot.classList.add("is-spinning");
                 for (let tick = 0; tick < 12; tick += 1) {
                     const candidate = pool[Math.floor(Math.random() * pool.length)];
-                    paint(slot, candidate.slug, candidate.name_fr, candidate.color);
+                    paint(slot, candidate);
                     await wait(60 + tick * 8);
                 }
                 slot.classList.remove("is-spinning");

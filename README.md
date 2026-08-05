@@ -63,14 +63,20 @@ L'illustration passe par un proxy (`/qui-est-ce-pokemon/rounds/<id>/image/`) qui
 
 - Les quatre jeux alimentent des **quêtes** quotidiennes et hebdomadaires (parties jouées, victoires, silhouettes reconnues, dessins devinés). Les moteurs déclenchent des évènements ; `game/quests.py` décide de ce qu'ils font avancer.
 - Une quête terminée se récupère à la main sur `/quetes/` et crédite des **points**. La remise à zéro est implicite : chaque progression est stockée avec sa période (jour ou semaine ISO), aucune tâche planifiée n'est nécessaire.
+- Les trois quêtes **hebdomadaires** ajoutent un booster aux points : l'encaissement crée un `BoosterTicket`, qui apparaît en tête de boutique et s'ouvre gratuitement. Le ticket est marqué ouvert plutôt que supprimé, ce qui garde la trace de ce qu'une quête a rapporté.
 - Les points s'échangent contre des **boosters** sur `/boutique/`. Le tirage, le débit et l'ajout à la collection se font côté serveur (`game/shop.py`) : le navigateur ne reçoit les cartes qu'une fois l'achat enregistré.
-- L'ouverture est mise en scène : le sachet se déchire en 3D, les cartes se retournent une à une, et la rareté se voit avant l'étiquette — liseré bleu et reflet holographique pour une rare, halo doré et éclair de scène pour un légendaire.
-- La **collection** affiche les 151 cartes du Set de Base avec leurs visuels de première édition (fixture `game/fixtures/tcg_card_images.json`, régénérable via `manage.py fetch_tcg_card_images`) : possédées en couleur, les autres au dos avec un cadenas.
+- L'ouverture est mise en scène : le sachet se déchire en 3D, les cartes se retournent une à une, et la rareté se voit avant l'étiquette — liseré bleu et reflet holographique pour une rare, halo doré et éclair de scène pour un légendaire, prisme qui balaie l'illustration en boucle et salle entière au prisme pour une carte ex.
+- Les cartes se collectionnent par **saison** (`game/seasons.py`) : un même Pokémon se possède une fois par édition, la saison fait partie de la clé unique de `CollectionCard`. La collection affiche une saison à la fois, avec ses onglets d'avancement.
+  - **Saison 1 — Set de Base** : les visuels de première édition, trois raretés (fixture `game/fixtures/tcg_card_images.json`).
+  - **Saison 2 — Série 151** : la réédition moderne (set TCGdex `sv03.5`, fixture `game/fixtures/tcg_card_images_151.json`), qui ajoute une rareté au-dessus des légendaires — la **carte ex**. Douze Pokémon (3, 6, 9, 24, 38, 40, 65, 76, 115, 124, 145, 151) y prennent leur illustration pleine page. Une même espèce peut changer de rang d'une saison à l'autre : Dracaufeu est rare en saison 1 et ex en saison 2.
+- Les deux fixtures se régénèrent avec `manage.py fetch_tcg_card_images --saison 1|2` (`task tcg:refresh` et `task tcg:refresh:151`).
 
-| Booster | Prix | Contenu |
-| --- | ---: | --- |
-| Set de Base | 150 pts | 5 cartes · 82 % commune, 15 % rare, 3 % légendaire |
-| Premium | 400 pts | 5 cartes · une rare garantie, 10 % de légendaire |
+| Booster | Saison | Prix | Contenu |
+| --- | --- | ---: | --- |
+| Set de Base | 1 | 150 pts | 5 cartes · 82 % commune, 15 % rare, 3 % légendaire |
+| Premium | 1 | 400 pts | 5 cartes · une rare garantie, 10 % de légendaire |
+| 151 | 2 | 220 pts | 5 cartes · 74 % commune, 20 % rare, 4 % légendaire, 2 % ex |
+| 151 Ultra | 2 | 520 pts | 5 cartes · une rare garantie, 10 % de légendaire, 6 % d'ex |
 
 ### Jouer sans compte
 
@@ -198,9 +204,11 @@ stateDiagram-v2
 
 L’identité « salon de jeux nocturne » repose sur des tokens centralisés dans `static/tokens.css` : couleurs de marque, surfaces, contrastes, espaces, rayons, ombres et durées. Les composants suivent l’Atomic Design :
 
-- **atomes** dans `static/atoms.css` : boutons, badges, symboles d’énergie, cartes 3D, champs ;
+- **atomes** dans `static/atoms.css` : boutons, badges, pastilles de type, cartes 3D, champs ;
 - **molécules** dans `static/molecules.css` : mains en éventail, pioche, défausse, indicateurs de tour, sélecteur de type ;
 - **organismes** dans `static/organisms.css` : navigation, accueil multijeux, lobbies et tables complètes.
+
+Les 18 types s’affichent avec leurs **pastilles officielles** en PNG (`game/static/game/img/types/`, régénérables par `manage.py fetch_type_icons`) : le symbole blanc sur son disque de couleur, celui des jeux. Elles sont servies depuis nos statiques, donc aucun visuel ne dépend d’un domaine tiers. L’URL part avec l’état de la partie (`icon_url`), car en production le nom du fichier porte une empreinte que le navigateur ne peut pas deviner.
 
 Le plateau Poké‑Uno tient dans le viewport sans scroll de page. Les mains disposent de leur propre axe horizontal quand elles deviennent longues. Les cartes suivent légèrement le pointeur avec profondeur et reflet, et les actions de pioche/pose sont animées du point de vue de chaque joueur. `prefers-reduced-motion` désactive ces effets pour les personnes qui le demandent. Les contrôles conservent des cibles tactiles d’au moins 44 px, des états `focus-visible`, des annonces `aria-live` et un lien d’évitement.
 

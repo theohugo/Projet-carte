@@ -4,14 +4,14 @@
 {% block title %}Collection — PokéTable{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=3">
 
 <section class="collection-page" aria-labelledby="collection-page-title">
     <header class="collection-header">
         <div>
-            <p class="section-kicker">Première édition</p>
+            <p class="section-kicker">{{ season.kicker }} · {{ season.label }}</p>
             <h1 id="collection-page-title">Collection</h1>
-            <p>Les 151 cartes du Set de Base. Ouvre des boosters pour les débloquer une à une.</p>
+            <p>{{ season.tagline }} Ouvre des boosters pour les débloquer une à une.</p>
         </div>
 
         <div class="collection-status">
@@ -23,14 +23,27 @@
         </div>
     </header>
 
+    <nav class="season-tabs" aria-label="Saison de cartes">
+        {% for tab in seasons %}
+        <a class="season-tab {% if tab.is_current %}is-current{% endif %}"
+           href="{% url 'collection' %}?saison={{ tab.number }}"
+           {% if tab.is_current %}aria-current="page"{% endif %}>
+            <span class="season-tab-kicker">{{ tab.kicker }}</span>
+            <strong>{{ tab.label }}</strong>
+            <small>{{ tab.owned_count }} / {{ total_count }}</small>
+        </a>
+        {% endfor %}
+    </nav>
+
     <div class="collection-grid" role="list">
         {% for card in cards %}
         <figure class="collection-card {% if card.owned %}is-owned is-{{ card.rarity|lower }}{% else %}is-locked{% endif %}" role="listitem">
             {% if card.owned %}
                 <img class="collection-card-image" src="{{ card.image_url|default:card.sprite_url }}" alt="{{ card.name_fr }}" loading="lazy">
+                {% if card.rarity == "EX" %}<span class="collection-card-foil" aria-hidden="true"></span>{% endif %}
                 {% if card.copies > 1 %}<span class="collection-copies">×{{ card.copies }}</span>{% endif %}
                 <figcaption>
-                    <strong>{{ card.name_fr }}</strong>
+                    <strong>{{ card.name_fr }}{% if card.rarity == "EX" %} <span class="ex-tag">ex</span>{% endif %}</strong>
                     <small>#{{ card.pokedex_id }}</small>
                 </figcaption>
             {% else %}
@@ -40,7 +53,7 @@
                 </div>
                 <figcaption>
                     <strong>#{{ card.pokedex_id }}</strong>
-                    <small>À débloquer</small>
+                    <small>{% if card.rarity == "EX" %}Carte ex{% else %}À débloquer{% endif %}</small>
                 </figcaption>
             {% endif %}
         </figure>

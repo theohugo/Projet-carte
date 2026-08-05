@@ -17,6 +17,8 @@
     const summary = opening.querySelector("[data-summary]");
     const feedback = document.getElementById("shop-feedback");
     const pointsValue = shop.querySelector("[data-points]");
+    const packSet = opening.querySelector("[data-pack-set]");
+    const collectionLink = opening.querySelector("[data-collection-link]");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     // État de l'ouverture en cours.
@@ -30,6 +32,12 @@
         COMMUNE: "is-commune",
         RARE: "is-rare",
         LEGENDAIRE: "is-legendaire",
+        EX: "is-ex",
+    };
+
+    const SEASON_LABEL = {
+        1: '1<sup>re</sup> édition',
+        2: "Série 151",
     };
 
     function csrfToken() {
@@ -88,6 +96,19 @@
             front.appendChild(holo);
         }
 
+        // Les cartes ex ont un feuillet supplémentaire : un prisme qui balaie
+        // l'illustration en continu, plus le liseré doré autour.
+        if (card.rarity === "EX") {
+            const prism = document.createElement("span");
+            prism.className = "tcg-prism";
+            front.appendChild(prism);
+
+            const badge = document.createElement("span");
+            badge.className = "tcg-ex-badge";
+            badge.textContent = "ex";
+            front.appendChild(badge);
+        }
+
         const glare = document.createElement("span");
         glare.className = "tcg-glare";
         front.appendChild(glare);
@@ -126,9 +147,9 @@
         });
     }
 
-    function sparkle(element) {
+    function sparkle(element, count = 14) {
         if (reducedMotion.matches) return;
-        for (let i = 0; i < 14; i += 1) {
+        for (let i = 0; i < count; i += 1) {
             const spark = document.createElement("span");
             spark.className = "spark";
             spark.style.setProperty("--angle", `${Math.random() * 360}deg`);
@@ -159,10 +180,19 @@
         await wait(300);
         opening.dataset.rarity = card.rarity;
         opening.classList.toggle("is-special", card.rarity !== "COMMUNE");
+        // Une carte ex mérite sa mise en scène : la salle vire à l'or, la carte
+        // s'avance et le prisme part avant même qu'on lise le nom.
+        opening.classList.toggle("is-ex-pull", card.rarity === "EX");
         if (card.rarity !== "COMMUNE") {
             element.classList.add("is-bursting");
-            sparkle(element);
+            sparkle(element, card.rarity === "EX" ? 30 : 14);
             fireFlash();
+        }
+        if (card.rarity === "EX") {
+            element.classList.add("is-ex-reveal");
+            await wait(260);
+            fireFlash();
+            sparkle(element, 18);
         }
 
         await wait(420);
@@ -214,7 +244,7 @@
     }
 
     async function finish() {
-        opening.classList.remove("is-special");
+        opening.classList.remove("is-special", "is-ex-pull");
         opening.dataset.rarity = "COMMUNE";
         caption.classList.remove("is-visible");
         setHint("");
@@ -238,11 +268,13 @@
             }),
         );
 
-        const best = pulls.some((card) => card.rarity === "LEGENDAIRE")
-            ? "Un légendaire dans ce booster."
-            : pulls.some((card) => card.rarity === "RARE")
-              ? "Une rare dans ce booster."
-              : "Cinq cartes de plus pour la collection.";
+        const best = pulls.some((card) => card.rarity === "EX")
+            ? "Une carte ex dans ce booster."
+            : pulls.some((card) => card.rarity === "LEGENDAIRE")
+              ? "Un légendaire dans ce booster."
+              : pulls.some((card) => card.rarity === "RARE")
+                ? "Une rare dans ce booster."
+                : "Cinq cartes de plus pour la collection.";
         const fresh = pulls.filter((card) => card.is_new).length;
         summary.textContent = fresh
             ? `${best} ${fresh} nouvelle${fresh > 1 ? "s" : ""} carte${fresh > 1 ? "s" : ""}.`
@@ -351,7 +383,7 @@
     // ── Achat ─────────────────────────────────────────────────────────────
 
     function resetScene() {
-        opening.classList.remove("is-torn", "is-special");
+        opening.classList.remove("is-torn", "is-special", "is-ex-pull");
         opening.dataset.rarity = "COMMUNE";
         pack.hidden = false;
         deck.hidden = true;
@@ -373,14 +405,39 @@
         resetScene();
     }
 
-    async function buyBooster(button) {
+    // Les prix affichés se rafraîchissent après chaque ouverture : un booster
+    // acheté peut mettre les autres hors de portée, et inversement.
+    function refreshAffordability() {
+        const points = Number(pointsValue.textContent);
+        shop.querySelectorAll("[data-open-booster]").forEach((button) => {
+            const price = Number(button.dataset.price);
+            const affordable = points >= price;
+            button.disabled = !affordable;
+            const label = button.querySelector("[data-label]");
+            if (label) label.textContent = affordable ? "Ouvrir" : `Il manque ${price - points} pts`;
+        });
+    }
+
+    // Un ticket est consommé à l'ouverture : sa carte disparaît de la boutique.
+    function consumeTicket(button) {
+        const card = button.closest("[data-ticket-card]");
+        card?.remove();
+        const shelf = shop.querySelector("[data-tickets]");
+        if (shelf && !shelf.querySelector("[data-ticket-card]")) shelf.remove();
+    }
+
+    async function openPack(button) {
         if (isBusy) return;
         isBusy = true;
         button.disabled = true;
         showFeedback("");
 
+        const ticketId = button.dataset.openTicket;
+        const url = ticketId
+            ? shop.dataset.ticketUrlTemplate.replace("/0/", `/${ticketId}/`)
+            : shop.dataset.openUrlTemplate.replace("KEY", button.dataset.openBooster);
+
         try {
-            const url = shop.dataset.openUrlTemplate.replace("KEY", button.dataset.openBooster);
             const response = await fetch(url, {
                 method: "POST",
                 headers: {
@@ -395,12 +452,18 @@
                 return;
             }
 
+            if (ticketId) consumeTicket(button);
             pointsValue.textContent = String(payload.points_left);
             resetScene();
             pulls = payload.cards;
             cardElements = pulls.map(buildCard);
             deck.replaceChildren(...cardElements);
             layout();
+
+            const season = payload.season || 1;
+            opening.dataset.season = String(season);
+            packSet.innerHTML = SEASON_LABEL[season] || SEASON_LABEL[1];
+            collectionLink.href = `${collectionLink.pathname}?saison=${season}`;
 
             opening.hidden = false;
             document.body.classList.add("has-opening");
@@ -414,15 +477,13 @@
             showFeedback("Connexion perdue : le booster n’a pas été ouvert.");
         } finally {
             isBusy = false;
-            const price = Number(button.dataset.price);
-            button.disabled = Number(pointsValue.textContent) < price;
-            if (button.disabled) button.textContent = "Points insuffisants";
+            refreshAffordability();
         }
     }
 
     shop.addEventListener("click", (event) => {
-        const button = event.target.closest("[data-open-booster]");
-        if (button && !button.disabled) buyBooster(button);
+        const button = event.target.closest("[data-open-booster], [data-open-ticket]");
+        if (button && !button.disabled) openPack(button);
     });
 
     pack.addEventListener("click", tearPack);

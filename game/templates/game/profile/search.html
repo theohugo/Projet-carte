@@ -66,14 +66,17 @@
         </p>
     </form>
 
-    {% if query %}
         <section
             class="friends-section"
             aria-labelledby="search-results-title"
         >
             <div class="friends-section-heading">
                 <h2 id="search-results-title">
-                    Résultats pour « {{ query }} »
+                    {% if query %}
+                        Résultats pour « {{ query }} »
+                    {% else %}
+                        Derniers inscrits
+                    {% endif %}
                 </h2>
 
                 <span
@@ -83,6 +86,13 @@
                     {{ search_results|length }}
                 </span>
             </div>
+
+            {% if not query %}
+                <p class="friends-section-note">
+                    Les joueurs qui viennent de rejoindre PokéTable.
+                    Cherche un pseudo pour trouver quelqu’un en particulier.
+                </p>
+            {% endif %}
 
             {% if search_results %}
                 <div class="player-grid">
@@ -199,30 +209,27 @@
                 </div>
             {% else %}
                 <div class="friends-empty">
-                    <h3>
-                        Aucun joueur trouvé
-                    </h3>
+                    {% if query %}
+                        <h3>
+                            Aucun joueur trouvé
+                        </h3>
 
-                    <p>
-                        Essaie avec un autre pseudo,
-                        prénom ou nom.
-                    </p>
+                        <p>
+                            Essaie avec un autre pseudo,
+                            prénom ou nom.
+                        </p>
+                    {% else %}
+                        <h3>
+                            Tu es le premier
+                        </h3>
+
+                        <p>
+                            Personne d’autre n’a encore de compte.
+                            Reviens quand tes amis auront rejoint la table.
+                        </p>
+                    {% endif %}
                 </div>
             {% endif %}
         </section>
-    {% else %}
-        <section class="friends-section">
-            <div class="friends-empty">
-                <h3>
-                    Recherche un autre joueur
-                </h3>
-
-                <p>
-                    Saisis un pseudo, un prénom ou un nom
-                    pour afficher les résultats.
-                </p>
-            </div>
-        </section>
-    {% endif %}
 </section>
 {% endblock %}

@@ -423,20 +423,21 @@ a:focus-visible {
     backdrop-filter: blur(5px);
 }
 
-/* Symboles d'énergie du JCC : décor des pages vitrines (accueil, lobby), sans
-   rapport avec la règle du jeu, qui s'appuie sur les types des jeux vidéo. */
+/* Décor des pages vitrines (accueil, lobby) : les mêmes pastilles officielles
+   de type que sur le plateau, servies depuis nos statiques. Elles portent déjà
+   leur disque de couleur, on ne leur ajoute aucun fond. */
 .tcg-energy-icon {
     display: block;
     width: 20px;
     height: 20px;
     background: center / contain no-repeat;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.42));
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.42));
 }
 
-.tcg-energy-icon[data-tcg-type="grass"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/grass.png"); }
-.tcg-energy-icon[data-tcg-type="fire"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/fire.png"); }
-.tcg-energy-icon[data-tcg-type="water"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/water.png"); }
-.tcg-energy-icon[data-tcg-type="lightning"] { background-image: url("https://assets.pokemon.com/static/_ui/img/sections/tcg/card-database/energy-symbols/25x25/lightning.png"); }
+.tcg-energy-icon[data-tcg-type="grass"] { background-image: url("game/img/types/grass.png"); }
+.tcg-energy-icon[data-tcg-type="fire"] { background-image: url("game/img/types/fire.png"); }
+.tcg-energy-icon[data-tcg-type="water"] { background-image: url("game/img/types/water.png"); }
+.tcg-energy-icon[data-tcg-type="lightning"] { background-image: url("game/img/types/electric.png"); }
 
 [data-tcg-type="grass"] { --type-accent: var(--color-tcg-grass); }
 [data-tcg-type="fire"] { --type-accent: var(--color-tcg-fire); }
@@ -455,45 +456,49 @@ a:focus-visible {
     max-width: calc(100% - 12px);
 }
 
-/* Sur une carte, le type se lit à son symbole : une pastille de la couleur du
-   type, le pictogramme sombre par-dessus. Le nom reste dans l'aria-label. */
+/* Sur une carte, le type se lit à son symbole. La pastille officielle du type
+   porte déjà son disque de couleur : on ne l'habille que d'un liseré blanc et
+   d'une ombre pour la détacher du visuel. Le nom reste dans l'aria-label. */
 .type-pill {
     display: inline-grid;
     width: 20px;
     height: 20px;
     place-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.72);
     border-radius: 999px;
-    color: #10202f;
-    background: var(--type-accent);
-    box-shadow: 0 2px 6px rgba(10, 21, 35, 0.28);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72), 0 2px 6px rgba(10, 21, 35, 0.32);
 }
 
-.type-glyph {
-    width: 13px;
-    height: 13px;
+.type-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 /* Hors des cartes, on garde le nom à côté du symbole : le tableau de bord a
-   la place, et une pastille seule y serait une devinette. */
+   la place, et une pastille seule y serait une devinette. Le fond reste sombre
+   pour ne pas rivaliser avec le disque coloré du pictogramme. */
 .type-pill--labelled {
     display: inline-flex;
     width: auto;
     height: auto;
     align-items: center;
-    gap: 4px;
-    padding: 2px 8px 2px 4px;
+    gap: 5px;
+    padding: 2px 10px 2px 3px;
     border-radius: 999px;
-    color: #0d1726;
+    color: #fff;
+    background: rgba(6, 15, 28, 0.72);
+    box-shadow: inset 0 0 0 1px var(--type-accent), 0 2px 8px rgba(4, 10, 20, 0.4);
     font-size: 0.625rem;
     font-weight: 800;
     line-height: 1.2;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
     white-space: nowrap;
 }
 
-.type-sprite {
-    display: none;
+.type-pill--labelled .type-icon {
+    width: 18px;
+    height: 18px;
 }
 
 .card-unit-lock {

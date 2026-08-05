@@ -3,7 +3,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -25,8 +25,18 @@ from game.models import CollectionCard, Friendship, Game, GameCard, PokemonCard,
 from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID
 from game.pokemon_types import POKEMON_TYPES
 from game.quests import QuestError, claim_reward, quest_board
-from game.shop import BOOSTERS, ShopError, open_booster, rarity_of
+from game.seasons import SEASONS, get_season
+from game.shop import (
+    BOOSTERS,
+    BOOSTERS_BY_KEY,
+    ShopError,
+    open_booster,
+    open_ticket,
+    pending_tickets,
+    rarity_of,
+)
 from game.tcg_card_images import get_tcg_image_url
+from game.type_icons import type_icon_url
 
 OPPONENT_CARD_BACK_LIMIT = 10
 
@@ -127,15 +137,38 @@ def hub(request):
     return render(request, "hub.html")
 
 
+def _season_tabs(user, current):
+    """Les onglets de saison, avec l'avancement de chacune."""
+
+    counts = {
+        row["season"]: row["total"]
+        for row in CollectionCard.objects.filter(user=user).values("season").annotate(total=Count("season"))
+    }
+    return [
+        {
+            "number": season.number,
+            "label": season.label,
+            "kicker": season.kicker,
+            "owned_count": counts.get(season.number, 0),
+            "is_current": season.number == current.number,
+        }
+        for season in SEASONS
+    ]
+
+
 @members_only
 @member_feature(
     "Ta collection",
     "Les 151 cartes de la première génération, débloquées au fil de tes quêtes.",
 )
 def collection(request):
-    """Les 151 cartes de la première édition, débloquées par les boosters."""
+    """Les 151 cartes d'une saison, débloquées par les boosters."""
 
-    owned = {row.pokemon_card_id: row.copies for row in CollectionCard.objects.filter(user=request.user)}
+    season = get_season(request.GET.get("saison"))
+    owned = {
+        row.pokemon_card_id: row.copies
+        for row in CollectionCard.objects.filter(user=request.user, season=season.number)
+    }
 
     cards = []
     for card in PokemonCard.objects.filter(
@@ -147,8 +180,8 @@ def collection(request):
                 "pokedex_id": card.pokedex_id,
                 "name_fr": card.name_fr,
                 "sprite_url": card.sprite_url,
-                "image_url": get_tcg_image_url(card.pokedex_id),
-                "rarity": rarity_of(card),
+                "image_url": get_tcg_image_url(card.pokedex_id, season.number),
+                "rarity": rarity_of(card, season.number),
                 "copies": copies,
                 "owned": copies > 0,
             }
@@ -160,6 +193,8 @@ def collection(request):
         request,
         "game/collection.html",
         {
+            "season": season,
+            "seasons": _season_tabs(request.user, season),
             "cards": cards,
             "owned_count": owned_count,
             "total_count": len(cards),
@@ -197,11 +232,14 @@ def claim_quest(request, quest_key):
     """Encaisse la récompense d'une quête terminée."""
 
     try:
-        reward = claim_reward(request.user, quest_key)
+        claim = claim_reward(request.user, quest_key)
     except QuestError as exc:
         messages.error(request, str(exc))
     else:
-        messages.success(request, f"Quête accomplie : +{reward} points.")
+        gain = f"+{claim.points} points"
+        if claim.booster_label:
+            gain += f" et un {claim.booster_label} à ouvrir en boutique"
+        messages.success(request, f"Quête accomplie : {gain}.")
 
     return redirect("quests")
 
@@ -216,29 +254,58 @@ def shop(request):
 
     points = request.user.profile.points
 
+    def describe(booster, *, affordable):
+        return {
+            "key": booster.key,
+            "label": booster.label,
+            "description": booster.description,
+            "price": booster.price,
+            "card_count": booster.card_count,
+            "season": booster.season,
+            "affordable": affordable,
+            "missing": max(0, booster.price - points),
+            "odds": [{"rarity": rarity, "percent": round(100 * odds)} for rarity, odds in booster.odds],
+            "guaranteed": booster.guaranteed,
+        }
+
+    shelves = [
+        {
+            "season": season,
+            "boosters": [
+                describe(booster, affordable=points >= booster.price)
+                for booster in BOOSTERS
+                if booster.season == season.number
+            ],
+        }
+        for season in SEASONS
+    ]
+
+    tickets = [
+        {
+            "id": ticket.pk,
+            "booster": describe(BOOSTERS_BY_KEY[ticket.booster_key], affordable=True),
+        }
+        for ticket in pending_tickets(request.user)
+        if ticket.booster_key in BOOSTERS_BY_KEY
+    ]
+
     return render(
         request,
         "game/shop.html",
         {
-            "boosters": [
-                {
-                    "key": booster.key,
-                    "label": booster.label,
-                    "description": booster.description,
-                    "price": booster.price,
-                    "card_count": booster.card_count,
-                    "affordable": points >= booster.price,
-                    "missing": max(0, booster.price - points),
-                    "odds": [
-                        {"rarity": rarity, "percent": round(100 * odds)} for rarity, odds in booster.odds
-                    ],
-                    "guaranteed": booster.guaranteed,
-                }
-                for booster in BOOSTERS
-            ],
+            "shelves": shelves,
+            "tickets": tickets,
             "points": points,
         },
     )
+
+
+def _opening_payload(result):
+    """Complète le tirage avec le visuel de la saison ouverte."""
+
+    for card in result["cards"]:
+        card["image_url"] = get_tcg_image_url(card["pokedex_id"], result["season"])
+    return result
 
 
 @members_only
@@ -251,10 +318,20 @@ def api_open_booster(request, booster_key):
     except ShopError as exc:
         return JsonResponse({"error": str(exc)}, status=400)
 
-    for card in result["cards"]:
-        card["image_url"] = get_tcg_image_url(card["pokedex_id"])
+    return JsonResponse(_opening_payload(result))
 
-    return JsonResponse(result)
+
+@members_only
+@require_POST
+def api_open_ticket(request, ticket_id):
+    """Ouvre un booster gagné en quête : rien à payer, le ticket est consommé."""
+
+    try:
+        result = open_ticket(request.user, ticket_id)
+    except ShopError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+
+    return JsonResponse(_opening_payload(result))
 
 
 @guest_allowed
@@ -511,7 +588,10 @@ def game_detail(request, game_id):
                 if game_state
                 else []
             ),
-            "all_types": [pokemon_type.as_dict() for pokemon_type in POKEMON_TYPES],
+            "all_types": [
+                pokemon_type.as_dict() | {"icon_url": type_icon_url(pokemon_type.slug)}
+                for pokemon_type in POKEMON_TYPES
+            ],
         },
     )
 
@@ -697,51 +777,59 @@ def friends(request):
     )
 
 
+SEARCH_RESULT_LIMIT = 30
+# Sans recherche, on montre quand même du monde : une page vide n'apprend rien
+# de qui est là, et ajouter un ami commence souvent par « qui vient d'arriver ».
+NEWCOMERS_LIMIT = 12
+
+
+def _player_cards(current_user, players):
+    """Décore une liste de joueurs de leur profil et de la relation en cours."""
+
+    cards = []
+    for player in players:
+        profile, _ = Profile.objects.get_or_create(user=player)
+        friendship, status = _get_relationship(current_user, player)
+        cards.append(
+            {
+                "user": player,
+                "profile": profile,
+                "friendship": friendship,
+                "status": status,
+            }
+        )
+    return cards
+
+
 @members_only
 def player_search(request):
-    """Recherche des joueurs par pseudo, prénom ou nom."""
+    """Recherche des joueurs par pseudo, prénom ou nom.
+
+    Tant qu'aucune recherche n'est saisie, la page propose les derniers
+    inscrits plutôt qu'un écran vide.
+    """
 
     query = request.GET.get(
         "q",
         "",
     ).strip()
 
-    search_results = []
+    # Les invités ne sont pas des joueurs qu'on ajoute : leur compte disparaît.
+    players = User.objects.exclude(pk=request.user.pk).exclude(profile__is_guest=True)
 
     if query:
-        players = (
-            User.objects.filter(
-                Q(username__icontains=query) | Q(first_name__icontains=query) | Q(last_name__icontains=query)
-            )
-            .exclude(pk=request.user.pk)
-            .order_by("username")[:30]
-        )
-
-        for player in players:
-            profile, _ = Profile.objects.get_or_create(
-                user=player,
-            )
-
-            friendship, status = _get_relationship(
-                request.user,
-                player,
-            )
-
-            search_results.append(
-                {
-                    "user": player,
-                    "profile": profile,
-                    "friendship": friendship,
-                    "status": status,
-                }
-            )
+        players = players.filter(
+            Q(username__icontains=query) | Q(first_name__icontains=query) | Q(last_name__icontains=query)
+        ).order_by("username")[:SEARCH_RESULT_LIMIT]
+    else:
+        players = players.order_by("-date_joined")[:NEWCOMERS_LIMIT]
 
     return render(
         request,
         "game/profile/search.html",
         {
             "query": query,
-            "search_results": search_results,
+            "search_results": _player_cards(request.user, players),
         },
     )
 
