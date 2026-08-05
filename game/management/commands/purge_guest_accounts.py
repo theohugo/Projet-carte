@@ -7,14 +7,17 @@ grossit à chaque visiteur. On ne supprime que les comptes inactifs depuis
 
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
-from django.db.models import Q
 from django.utils import timezone
 
 from game.guests import GUEST_RETENTION_DAYS
 from game.models import Game
 from guesswho.models import GuessWhoGame
+from islands.models import IslandGame
+from metamorph.models import MetamorphGame
 from pictionary.models import PictionaryGame
+from rocket.models import RocketGame
 from silhouette.models import SilhouetteGame
+from starterrace.models import Game as StarterRaceGame
 
 
 class Command(BaseCommand):
@@ -54,12 +57,20 @@ class Command(BaseCommand):
     def _busy_guest_ids(guests):
         """Invités encore attendus dans un salon ou une partie en cours."""
 
-        en_cours = Q(status__in=["EN_ATTENTE", "EN_COURS", "CHOIX"])
         busy = set()
-        for model in (Game, GuessWhoGame, SilhouetteGame, PictionaryGame):
+        for model in (
+            Game,
+            GuessWhoGame,
+            SilhouetteGame,
+            PictionaryGame,
+            MetamorphGame,
+            RocketGame,
+            IslandGame,
+            StarterRaceGame,
+        ):
             busy.update(
-                model.objects.filter(en_cours, players__user__in=guests).values_list(
-                    "players__user_id", flat=True
-                )
+                model.objects.exclude(status="TERMINEE")
+                .filter(players__user__in=guests)
+                .values_list("players__user_id", flat=True)
             )
         return busy

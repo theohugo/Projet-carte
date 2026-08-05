@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static icons %}
+
+{% block title %}Course des Starters — PokéTable{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'starterrace/css/starterrace.css' %}?v=1">
+
+<div
+    id="starterrace-lobby"
+    class="sr-lobby"
+    data-state-url="{% url 'starterrace:api_lobby_state' %}"
+>
+    <section class="sr-lobby-hero" aria-labelledby="starterrace-title">
+        <div class="sr-lobby-copy">
+            <a class="back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} Tous les jeux</a>
+            <p class="sr-kicker"><span aria-hidden="true"></span> Course de plateau · 2 à 4 joueurs</p>
+            <h1 id="starterrace-title">Mène tes Starters<br><em>jusqu’à la Ligue.</em></h1>
+            <p class="sr-lobby-lead">
+                Fais sortir tes quatre Pokémon, emprunte les raccourcis et renvoie tes rivaux au camp.
+                Le premier dresseur qui rassemble toute son équipe à l’arrivée remporte la course.
+            </p>
+
+            <form method="post" action="{% url 'starterrace:create_game' %}" class="sr-create-form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-large">{% icon "play" %} Créer une course</button>
+                <span>Une partie dure environ 15 minutes</span>
+            </form>
+
+            <ol class="sr-rules-preview" aria-label="Règles essentielles">
+                <li><strong>6</strong><span>Sors un pion<br>et rejoue</span></li>
+                <li><strong>⇱</strong><span>Prends les<br>raccourcis</span></li>
+                <li><strong>◇</strong><span>Les refuges<br>te protègent</span></li>
+                <li><strong>4</strong><span>Starters à<br>faire arriver</span></li>
+            </ol>
+        </div>
+
+        <div class="sr-starter-art" aria-label="Les quatre équipes : Bulbizarre, Salamèche, Carapuce et Pikachu">
+            <span class="sr-art-orbit" aria-hidden="true"></span>
+            {% for card in starter_cards %}
+                <figure class="sr-art-card sr-art-card--{{ forloop.counter }}">
+                    <span class="sr-art-number">0{{ forloop.counter }}</span>
+                    <img
+                        src="{{ card.sprite_url }}"
+                        alt="{{ card.name_fr }}"
+                        width="220"
+                        height="220"
+                        loading="eager"
+                    >
+                    <figcaption>{{ card.name_fr }}</figcaption>
+                </figure>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="sr-lobby-grid">
+        <section class="sr-lobby-panel" aria-labelledby="sr-open-title">
+            <header class="sr-panel-heading">
+                <div>
+                    <p class="sr-kicker">Courses publiques</p>
+                    <h2 id="sr-open-title">Salons ouverts</h2>
+                </div>
+                <span class="sr-count">{{ lobby_state.open_games|length }}</span>
+            </header>
+            <ul class="sr-room-list">
+                {% for game in lobby_state.open_games %}
+                    <li>
+                        <span class="sr-room-avatar" aria-hidden="true">{{ game.host|first|upper }}</span>
+                        <span class="sr-room-copy">
+                            <strong>Course de {{ game.host }}</strong>
+                            <small>{{ game.player_count }}/{{ game.max_players }} dresseurs · En préparation</small>
+                        </span>
+                        <form method="post" action="{% url 'starterrace:join_game' game_id=game.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary">
+                                {% if game.is_mine %}Ouvrir{% else %}Rejoindre{% endif %}
+                            </button>
+                        </form>
+                    </li>
+                {% empty %}
+                    <li class="sr-empty-room">
+                        <span aria-hidden="true">⚑</span>
+                        <p><strong>Aucune course n’attend.</strong><br>Crée la première ligne de départ !</p>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="sr-lobby-panel" aria-labelledby="sr-mine-title">
+            <header class="sr-panel-heading">
+                <div>
+                    <p class="sr-kicker">Ton espace</p>
+                    <h2 id="sr-mine-title">Mes courses</h2>
+                </div>
+                <span class="sr-count">{{ lobby_state.my_games|length }}</span>
+            </header>
+            <ul class="sr-room-list">
+                {% for game in lobby_state.my_games %}
+                    <li>
+                        <span class="sr-status-dot sr-status-dot--{{ game.status|lower }}" aria-hidden="true"></span>
+                        <span class="sr-room-copy">
+                            <strong>Course de {{ game.host }}</strong>
+                            <small>
+                                {% if game.status == "EN_ATTENTE" %}En attente
+                                {% elif game.status == "EN_COURS" %}En piste
+                                {% elif game.winner %}Victoire de {{ game.winner }}
+                                {% else %}Terminée{% endif %}
+                                · {{ game.player_count }} dresseur{{ game.player_count|pluralize }}
+                            </small>
+                        </span>
+                        <a class="btn btn-ghost" href="{% url 'starterrace:game_detail' game_id=game.id %}">Ouvrir</a>
+                    </li>
+                {% empty %}
+                    <li class="sr-empty-room">
+                        <span aria-hidden="true">◎</span>
+                        <p><strong>Pas encore de course.</strong><br>Ton historique apparaîtra ici.</p>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+</div>
+
+{{ lobby_state|json_script:"starterrace-lobby-state" }}
+<script src="{% static 'starterrace/js/lobby.js' %}?v=1"></script>
+{% endblock %}
+

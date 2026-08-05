@@ -44,6 +44,10 @@ INSTALLED_APPS = [
     "guesswho",
     "silhouette",
     "pictionary",
+    "metamorph",
+    "rocket",
+    "islands",
+    "starterrace",
 ]
 
 MIDDLEWARE = [

@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from game.models import PokemonCard
 from game.quests import EVENT_GAME_PLAYED, EVENT_GAME_WON, record_event
+from game.type_icons import type_icon_url
 
 from .models import (
     GuessWhoCandidateState,
@@ -306,6 +307,7 @@ def _serialize_card(pokemon_card: PokemonCard) -> dict:
         "name_en": pokemon_card.name_en,
         "sprite_url": pokemon_card.sprite_url,
         "primary_type": pokemon_card.primary_type.slug,
+        "type_icon_url": type_icon_url(pokemon_card.primary_type.slug),
         "secondary_type": pokemon_card.secondary_type.slug if pokemon_card.secondary_type else None,
     }
 

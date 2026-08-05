@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Table Métamorph Mystère — PokéTable{% endblock %}
+{% block html_class %}metamorph-document{% endblock %}
+{% block body_class %}metamorph-game-shell{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'metamorph/css/metamorph.css' %}?v=1">
+
+<main class="mm-game-page">
+    <header class="mm-game-header">
+        <div class="mm-game-heading">
+            <a class="mm-back" href="{% url 'metamorph:lobby' %}"><span aria-hidden="true">‹</span> Quitter la table</a>
+            <span class="mm-heading-line" aria-hidden="true"></span>
+            <div><p>Métamorph Mystère</p><h1>Table <span translate="no">#{{ game.id|stringformat:"s"|slice:":6" }}</span></h1></div>
+        </div>
+        <div class="mm-game-meta">
+            <span class="mm-sync" data-sync><i aria-hidden="true"></i><span>Synchronisé</span></span>
+            <span class="mm-status" data-status>Connexion…</span>
+        </div>
+    </header>
+
+    <div
+        id="metamorph-game"
+        class="mm-game"
+        data-state-url="{% url 'metamorph:api_state' game_id=game.id %}"
+        data-start-url="{% url 'metamorph:api_start' game_id=game.id %}"
+        data-draw-url="{% url 'metamorph:api_draw' game_id=game.id %}"
+        aria-busy="false"
+    >
+        <form class="mm-csrf" aria-hidden="true">{% csrf_token %}</form>
+        <p class="mm-feedback" data-feedback role="alert" hidden></p>
+        <p class="visually-hidden" data-announcer aria-live="polite"></p>
+
+        <section class="mm-waiting" data-view="waiting" hidden aria-labelledby="waiting-title">
+            <div class="mm-waiting-visual" aria-hidden="true">
+                <span class="mm-waiting-ring"></span><span class="mm-waiting-ring mm-waiting-ring--two"></span>
+                <span class="mm-waiting-core"><strong data-waiting-count>1</strong><small>/ 6</small></span>
+            </div>
+            <div class="mm-waiting-copy">
+                <p class="mm-kicker"><span class="mm-live-dot" aria-hidden="true"></span> Salon ouvert</p>
+                <h2 id="waiting-title">Rassemble les dresseurs</h2>
+                <p>Deux joueurs suffisent. L'hôte peut lancer quand tout le monde est prêt.</p>
+                <div class="mm-invite"><span data-invite-url></span><button class="btn btn-ghost" type="button" data-copy-link>Copier le lien</button></div>
+                <div class="mm-waiting-actions">
+                    <button class="btn btn-primary" type="button" data-start-game hidden>Lancer la partie</button>
+                    {% if game.created_by_id == user.id %}<a class="btn btn-ghost" href="{% url 'invite_friends_to_game' mode='metamorph-mystere' room_id=game.id %}">Inviter un ami</a>{% endif %}
+                    <small data-start-hint></small>
+                </div>
+                <ul class="mm-waiting-players" data-waiting-players></ul>
+            </div>
+        </section>
+
+        <section class="mm-board" data-view="board" hidden aria-labelledby="board-title">
+            <div class="mm-table-top">
+                <div>
+                    <p class="mm-kicker" data-turn-kicker>Tour en cours</p>
+                    <h2 id="board-title" data-turn-title>Observe bien les dos…</h2>
+                    <p data-turn-help>La main cible apparaît ici.</p>
+                </div>
+                <span class="mm-direction" data-direction aria-label="Sens du jeu"><b aria-hidden="true">↻</b> Sens du jeu</span>
+            </div>
+
+            <ul class="mm-player-track" data-players aria-label="Joueurs"></ul>
+
+            <div class="mm-play-grid">
+                <section class="mm-draw-zone" aria-labelledby="draw-zone-title">
+                    <header>
+                        <div><p class="mm-kicker">Main précédente</p><h3 id="draw-zone-title" data-source-title>Cartes face cachée</h3></div>
+                        <span data-source-count>0 carte</span>
+                    </header>
+                    <div class="mm-card-backs" data-draw-cards></div>
+                    <p class="mm-zone-hint" data-draw-hint>En attente du joueur actif…</p>
+                </section>
+
+                <aside class="mm-side-stack">
+                    <section class="mm-pairs" aria-labelledby="pairs-title">
+                        <header><div><p class="mm-kicker">Paires posées</p><h3 id="pairs-title">Collection commune</h3></div><span data-pair-count>0</span></header>
+                        <div class="mm-pair-list" data-pairs></div>
+                    </section>
+                    <section class="mm-history" aria-labelledby="history-title">
+                        <header><div><p class="mm-kicker">Derniers coups</p><h3 id="history-title">Journal</h3></div></header>
+                        <ol data-history></ol>
+                        <p class="mm-history-empty" data-history-empty>Aucune carte piochée pour l'instant.</p>
+                    </section>
+                </aside>
+            </div>
+
+            <section class="mm-my-hand" aria-labelledby="my-hand-title">
+                <header>
+                    <div><p class="mm-kicker">Zone privée</p><h3 id="my-hand-title">Ta main</h3></div>
+                    <span data-hand-count>0 carte</span>
+                </header>
+                <div class="mm-hand-cards" data-my-hand></div>
+                <p class="mm-hand-empty" data-hand-empty hidden>Toutes tes paires sont posées : tu es classé·e !</p>
+            </section>
+        </section>
+
+        <section class="mm-result" data-view="result" hidden aria-labelledby="result-title">
+            <div class="mm-result-art" aria-hidden="true"><span>?</span><i></i></div>
+            <p class="mm-kicker">Partie terminée</p>
+            <h2 id="result-title" tabindex="-1" data-result-title>Le mystère est levé</h2>
+            <p data-result-copy></p>
+            <ol class="mm-standings" data-standings></ol>
+            <div class="mm-result-actions"><a class="btn btn-primary" href="{% url 'metamorph:lobby' %}">Rejouer</a><a class="btn btn-ghost" href="{% url 'home' %}">Tous les jeux</a></div>
+        </section>
+
+        <details class="mm-rules-inline">
+            <summary>Rappel des règles</summary>
+            <p>Pioche chez le joueur précédent. Chaque paire disparaît aussitôt. Les mains vides sont classées et sautées. Le dernier joueur avec Métamorph perd.</p>
+        </details>
+    </div>
+</main>
+
+{{ game_state|json_script:"metamorph-initial-state" }}
+<script src="{% static 'metamorph/js/game.js' %}?v=1"></script>
+{% endblock %}

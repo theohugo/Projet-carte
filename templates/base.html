@@ -44,7 +44,7 @@
 
     <link
         rel="stylesheet"
-        href="{% static 'organisms.css' %}?v=31"
+        href="{% static 'organisms.css' %}?v=32"
     >
 
     <script
@@ -99,6 +99,14 @@
                                 {% icon "silhouette" %}
                             {% elif request.resolver_match.namespace == "pictionary" %}
                                 {% icon "brush" %}
+                            {% elif request.resolver_match.namespace == "metamorph" %}
+                                {% icon "metamorph" %}
+                            {% elif request.resolver_match.namespace == "rocket" %}
+                                {% icon "rocket" %}
+                            {% elif request.resolver_match.namespace == "islands" %}
+                                {% icon "islands" %}
+                            {% elif request.resolver_match.namespace == "starterrace" %}
+                                {% icon "race" %}
                             {% elif request.resolver_match.url_name == "lobby" or request.resolver_match.url_name == "game_detail" %}
                                 {% icon "cards" %}
                             {% else %}
@@ -112,6 +120,14 @@
                                     Qui est ce Pokémon ?
                                 {% elif request.resolver_match.namespace == "pictionary" %}
                                     Pictionary
+                                {% elif request.resolver_match.namespace == "metamorph" %}
+                                    Métamorph Mystère
+                                {% elif request.resolver_match.namespace == "rocket" %}
+                                    Infiltration Rocket
+                                {% elif request.resolver_match.namespace == "islands" %}
+                                    Bataille des Îles
+                                {% elif request.resolver_match.namespace == "starterrace" %}
+                                    Course des Starters
                                 {% elif request.resolver_match.url_name == "lobby" or request.resolver_match.url_name == "game_detail" %}
                                     Poké-Uno
                                 {% else %}
@@ -195,6 +211,30 @@
                                     <small>Dessin et devinette</small>
                                 </span>
                             </a>
+
+                            {% url 'metamorph:lobby' as metamorph_lobby_url %}
+                            {% url 'rocket:lobby' as rocket_lobby_url %}
+                            {% url 'islands:lobby' as islands_lobby_url %}
+                            {% url 'starterrace:lobby' as starterrace_lobby_url %}
+                            {% if metamorph_lobby_url %}<a href="{{ metamorph_lobby_url }}" {% if request.resolver_match.namespace == "metamorph" %}aria-current="page"{% endif %}>
+                                {% icon "metamorph" %}
+                                <span class="nav-panel-text"><span class="nav-panel-label">Métamorph Mystère</span><small>Paires et carte impaire</small></span>
+                            </a>{% endif %}
+
+                            {% if rocket_lobby_url %}<a href="{{ rocket_lobby_url }}" {% if request.resolver_match.namespace == "rocket" %}aria-current="page"{% endif %}>
+                                {% icon "rocket" %}
+                                <span class="nav-panel-text"><span class="nav-panel-label">Infiltration Rocket</span><small>Rôles cachés</small></span>
+                            </a>{% endif %}
+
+                            {% if islands_lobby_url %}<a href="{{ islands_lobby_url }}" {% if request.resolver_match.namespace == "islands" %}aria-current="page"{% endif %}>
+                                {% icon "islands" %}
+                                <span class="nav-panel-text"><span class="nav-panel-label">Bataille des Îles</span><small>Duel de coordonnées</small></span>
+                            </a>{% endif %}
+
+                            {% if starterrace_lobby_url %}<a href="{{ starterrace_lobby_url }}" {% if request.resolver_match.namespace == "starterrace" %}aria-current="page"{% endif %}>
+                                {% icon "race" %}
+                                <span class="nav-panel-text"><span class="nav-panel-label">Course des Starters</span><small>2 à 4 dresseurs</small></span>
+                            </a>{% endif %}
                         </div>
                     </details>
 

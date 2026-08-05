@@ -26,6 +26,10 @@ urlpatterns = [
     path("qui-est-ce/", include("guesswho.urls")),
     path("qui-est-ce-pokemon/", include("silhouette.urls")),
     path("pictionary/", include("pictionary.urls")),
+    path("metamorph-mystere/", include("metamorph.urls")),
+    path("infiltration-rocket/", include("rocket.urls")),
+    path("bataille-des-iles/", include("islands.urls")),
+    path("course-des-starters/", include("starterrace.urls")),
     path("", include("game.urls")),
 ]
 

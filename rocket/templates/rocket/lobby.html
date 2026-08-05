@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static icons %}
+
+{% block title %}Infiltration Rocket — rôles cachés Pokémon{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'rocket/css/rocket.css' %}?v=1">
+
+<main class="rk-lobby">
+    <section class="rk-hero" aria-labelledby="rocket-title">
+        <div class="rk-hero-copy">
+            <a class="back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} Tous les jeux</a>
+            <p class="section-kicker"><span class="live-pulse" aria-hidden="true"></span> Mission multijoueur</p>
+            <h1 id="rocket-title">Infiltration<br><span>Rocket</span></h1>
+            <p class="rk-lead">La Team Rocket s’est glissée parmi les Dresseurs. La nuit, les rôles secrets agissent. Le jour, débattez puis éliminez un suspect.</p>
+            <div class="rk-facts" aria-label="Caractéristiques">
+                <span>6 à 12 joueurs</span><span>Rôles cachés</span><span>Difficulté élevée</span>
+            </div>
+            <form method="post" action="{% url 'rocket:create_game' %}" class="rk-create">
+                {% csrf_token %}
+                <button class="btn btn-primary btn-large" type="submit">Créer une infiltration</button>
+            </form>
+        </div>
+        <div class="rk-hero-scene" aria-hidden="true">
+            <span class="rk-moon"></span>
+            <img class="rk-art rk-art--meowth" src="{% static 'img/games/artwork/meowth.png' %}" alt="">
+            <img class="rk-art rk-art--lucario" src="{% static 'img/games/artwork/lucario.png' %}" alt="">
+            <span class="rk-r-mark">R</span>
+        </div>
+    </section>
+
+    <section class="rk-rules" aria-labelledby="rk-rules-title">
+        <div>
+            <p class="section-kicker">Une manche en trois temps</p>
+            <h2 id="rk-rules-title">Observe. Argumente. Vote.</h2>
+        </div>
+        <ol>
+            <li><b>01</b><span><strong>Nuit</strong>Rocket sabote, Looker enquête, Leuphorie protège.</span></li>
+            <li><b>02</b><span><strong>Discussion</strong>Les survivants confrontent leurs indices en direct.</span></li>
+            <li><b>03</b><span><strong>Conseil</strong>Chacun vote en secret ; les égalités n’éliminent personne.</span></li>
+        </ol>
+    </section>
+
+    <div class="rk-lobby-columns">
+        <section class="rk-panel" aria-labelledby="rk-open-title">
+            <div class="rk-panel-head"><div><p class="section-kicker">À rejoindre</p><h2 id="rk-open-title">Infiltrations ouvertes</h2></div><span>{{ lobby_state.open_games|length }}</span></div>
+            <ul class="game-list">
+                {% for room in lobby_state.open_games %}
+                <li class="game-list-item">
+                    <span class="game-list-copy"><strong>Mission de {{ room.host }}</strong><span>{{ room.player_count }}/{{ room.max_players }} agents en place</span></span>
+                    {% if room.can_join %}
+                    <form method="post" action="{% url 'rocket:join_game' game_id=room.id %}">{% csrf_token %}<button class="btn btn-secondary" type="submit">Rejoindre</button></form>
+                    {% else %}
+                    <a class="btn btn-ghost" href="{% url 'rocket:game_detail' game_id=room.id %}">Ouvrir</a>
+                    {% endif %}
+                </li>
+                {% empty %}
+                <li class="empty-state">Aucune mission ouverte. Crée la première infiltration.</li>
+                {% endfor %}
+            </ul>
+        </section>
+        <section class="rk-panel" aria-labelledby="rk-mine-title">
+            <div class="rk-panel-head"><div><p class="section-kicker">Ton espace</p><h2 id="rk-mine-title">Mes missions</h2></div><span>{{ lobby_state.my_games|length }}</span></div>
+            <ul class="game-list">
+                {% for room in lobby_state.my_games %}
+                <li class="game-list-item"><span class="game-list-copy"><strong>Nuit {{ room.round|default:"—" }}</strong><span>{{ room.status_label }}</span></span><a class="btn btn-ghost" href="{% url 'rocket:game_detail' game_id=room.id %}">Ouvrir</a></li>
+                {% empty %}
+                <li class="empty-state">Tes missions commencées apparaîtront ici.</li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+</main>
+{% endblock %}
+

@@ -24,6 +24,12 @@ from guesswho.services import (
 from guesswho.services import (
     join_game as join_guesswho_game,
 )
+from islands.models import IslandGame
+from islands.services import IslandError
+from islands.services import join_game as join_islands_game
+from metamorph.models import MetamorphGame
+from metamorph.services import MetamorphError
+from metamorph.services import join_game as join_metamorph_game
 from pictionary.models import PictionaryGame
 from pictionary.services import (
     PictionaryError,
@@ -31,6 +37,9 @@ from pictionary.services import (
 from pictionary.services import (
     join_game as join_pictionary_game,
 )
+from rocket.models import RocketGame
+from rocket.services import RocketError
+from rocket.services import join_game as join_rocket_game
 from silhouette.models import SilhouetteGame
 from silhouette.services import (
     SilhouetteError,
@@ -38,6 +47,9 @@ from silhouette.services import (
 from silhouette.services import (
     join_game as join_silhouette_game,
 )
+from starterrace.models import Game as StarterRaceGame
+from starterrace.services import StarterRaceError
+from starterrace.services import join_game as join_starterrace_game
 
 User = get_user_model()
 
@@ -65,6 +77,22 @@ def _join_pictionary(room, user):
     """Ajoute un joueur à une partie Pictionary."""
 
     join_pictionary_game(room.pk, user)
+
+
+def _join_metamorph(room, user):
+    join_metamorph_game(room.pk, user)
+
+
+def _join_rocket(room, user):
+    join_rocket_game(room.pk, user)
+
+
+def _join_islands(room, user):
+    join_islands_game(room.pk, user)
+
+
+def _join_starterrace(room, user):
+    join_starterrace_game(room.pk, user)
 
 
 MODE_CONFIG = {
@@ -108,6 +136,46 @@ MODE_CONFIG = {
         "joiner": _join_pictionary,
         "errors": (PictionaryError,),
     },
+    GameInvitation.Mode.METAMORPH: {
+        "slug": "metamorph-mystere",
+        "model": MetamorphGame,
+        "room_field": "metamorph_game",
+        "waiting_status": MetamorphGame.Status.EN_ATTENTE,
+        "detail_url": "metamorph:game_detail",
+        "lobby_url": "metamorph:lobby",
+        "joiner": _join_metamorph,
+        "errors": (MetamorphError,),
+    },
+    GameInvitation.Mode.ROCKET: {
+        "slug": "infiltration-rocket",
+        "model": RocketGame,
+        "room_field": "rocket_game",
+        "waiting_status": RocketGame.Status.EN_ATTENTE,
+        "detail_url": "rocket:game_detail",
+        "lobby_url": "rocket:lobby",
+        "joiner": _join_rocket,
+        "errors": (RocketError,),
+    },
+    GameInvitation.Mode.ISLANDS: {
+        "slug": "bataille-des-iles",
+        "model": IslandGame,
+        "room_field": "islands_game",
+        "waiting_status": IslandGame.Status.EN_ATTENTE,
+        "detail_url": "islands:game_detail",
+        "lobby_url": "islands:lobby",
+        "joiner": _join_islands,
+        "errors": (IslandError,),
+    },
+    GameInvitation.Mode.STARTER_RACE: {
+        "slug": "course-des-starters",
+        "model": StarterRaceGame,
+        "room_field": "starterrace_game",
+        "waiting_status": StarterRaceGame.Status.EN_ATTENTE,
+        "detail_url": "starterrace:game_detail",
+        "lobby_url": "starterrace:lobby",
+        "joiner": _join_starterrace,
+        "errors": (StarterRaceError,),
+    },
 }
 
 
@@ -119,6 +187,10 @@ INVITATION_SELECT_RELATED = (
     "guesswho_game",
     "silhouette_game",
     "pictionary_game",
+    "metamorph_game",
+    "rocket_game",
+    "islands_game",
+    "starterrace_game",
     "sender",
     "sender__profile",
     "recipient",

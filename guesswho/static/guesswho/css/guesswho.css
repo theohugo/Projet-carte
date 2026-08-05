@@ -1239,29 +1239,33 @@
     background: rgba(117, 29, 50, 0.92);
 }
 
-/* Couleurs et symboles d’énergie officiels des types du JCC Pokémon. */
-[data-tcg-type="grass"] { --tcg-color: #58c77b; --tcg-glyph: "✶"; }
-[data-tcg-type="fire"] { --tcg-color: #ff775b; --tcg-glyph: "▲"; }
-[data-tcg-type="water"] { --tcg-color: #56a7f3; --tcg-glyph: "●"; }
+/* Couleurs de cadre, associées aux véritables icônes PNG des types Pokémon. */
+[data-tcg-type="grass"] { --tcg-color: #58c77b; }
+[data-tcg-type="fire"] { --tcg-color: #ff775b; }
+[data-tcg-type="water"] { --tcg-color: #56a7f3; }
 [data-tcg-type="lightning"],
-[data-tcg-type="electric"] { --tcg-color: #f6cf4b; --tcg-glyph: "ϟ"; }
-[data-tcg-type="psychic"] { --tcg-color: #c36dda; --tcg-glyph: "◉"; }
-[data-tcg-type="fighting"] { --tcg-color: #d89158; --tcg-glyph: "✹"; }
+[data-tcg-type="electric"] { --tcg-color: #f6cf4b; }
+[data-tcg-type="psychic"] { --tcg-color: #c36dda; }
+[data-tcg-type="fighting"] { --tcg-color: #d89158; }
 [data-tcg-type="darkness"],
-[data-tcg-type="dark"] { --tcg-color: #606780; --tcg-glyph: "☾"; }
+[data-tcg-type="dark"] { --tcg-color: #606780; }
 [data-tcg-type="metal"],
-[data-tcg-type="steel"] { --tcg-color: #aebdca; --tcg-glyph: "◈"; }
-[data-tcg-type="dragon"] { --tcg-color: #b6a432; --tcg-glyph: "◆"; }
+[data-tcg-type="steel"] { --tcg-color: #aebdca; }
+[data-tcg-type="dragon"] { --tcg-color: #b6a432; }
 [data-tcg-type="colorless"],
-[data-tcg-type="normal"] { --tcg-color: #aab4bd; --tcg-glyph: "☆"; }
+[data-tcg-type="normal"] { --tcg-color: #aab4bd; }
 
-[data-tcg-type="lightning"] .gw-tcg-symbol,
-.gw-tcg-symbol[data-tcg-type="lightning"],
-[data-tcg-type="electric"] .gw-tcg-symbol,
-.gw-tcg-symbol[data-tcg-type="electric"],
-[data-tcg-type="metal"] .gw-tcg-symbol,
-.gw-tcg-symbol[data-tcg-type="metal"],
-[data-tcg-type="steel"] .gw-tcg-symbol,
+.gw-tcg-symbol {
+    position: absolute;
+    top: 5px;
+    left: 6px;
+    z-index: 4;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    filter: drop-shadow(0 2px 2px rgba(7, 19, 33, 0.28));
+    object-fit: contain;
+}
 
 /* Colonne d’enquête */
 .gw-side-panel {

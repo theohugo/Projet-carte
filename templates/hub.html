@@ -16,7 +16,7 @@
                     <button type="submit" class="btn btn-primary btn-large">Jouer sans compte</button>
                 </form>
                 <a class="btn btn-ghost" href="{% url 'signup' %}">Créer mon compte</a>
-                <p class="hub-cta-note">Les quatre jeux sont ouverts en invité. Le compte garde tes scores et débloque collection, quêtes et amis.</p>
+                <p class="hub-cta-note">Les huit jeux sont ouverts en invité. Le compte garde tes scores et débloque collection, quêtes et amis.</p>
             </div>
             {% elif is_guest %}
             <div class="hub-cta">
@@ -75,6 +75,50 @@
                 <h2>Pictionary Pokémon</h2>
                 <p>Un joueur dessine son Pokémon, les autres devinent au clavier. Le dessinateur marque à chaque bonne réponse.</p>
                 {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'pictionary:lobby' %}">Prendre le crayon</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'pictionary:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Prendre le crayon</button></form>{% endif %}
+            </div>
+        </article>
+
+        <article class="game-mode-card game-mode-card--metamorph">
+            <div class="game-mode-art game-mode-art--metamorph">{% include "partials/art/metamorph.html" %}</div>
+            <div class="game-mode-copy">
+                <span class="game-mode-status"><i></i> Nouveau</span>
+                <p class="section-kicker">2 à 6 joueurs · Paires & bluff</p>
+                <h2>Métamorph Mystère</h2>
+                <p>Forme toutes tes paires en piochant chez ton voisin. Le dernier joueur avec Métamorph perd la manche.</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'metamorph:lobby' %}">Mélanger les cartes</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'metamorph:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Mélanger les cartes</button></form>{% endif %}
+            </div>
+        </article>
+
+        <article class="game-mode-card game-mode-card--rocket">
+            <div class="game-mode-art game-mode-art--rocket">{% include "partials/art/rocket.html" %}</div>
+            <div class="game-mode-copy">
+                <span class="game-mode-status"><i></i> Nouveau</span>
+                <p class="section-kicker">6 à 12 joueurs · Rôles cachés</p>
+                <h2>Infiltration Rocket</h2>
+                <p>La nuit, chaque rôle agit en secret. Le jour, débattez et votez avant que la Team Rocket ne prenne le contrôle.</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'rocket:lobby' %}">Rejoindre la mission</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'rocket:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Rejoindre la mission</button></form>{% endif %}
+            </div>
+        </article>
+
+        <article class="game-mode-card game-mode-card--islands">
+            <div class="game-mode-art game-mode-art--islands">{% include "partials/art/islands.html" %}</div>
+            <div class="game-mode-copy">
+                <span class="game-mode-status"><i></i> Nouveau</span>
+                <p class="section-kicker">2 joueurs · Stratégie navale</p>
+                <h2>Bataille des Îles</h2>
+                <p>Cache tes formations aquatiques sur une grille, annonce tes coordonnées et coule l’équipe adverse.</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'islands:lobby' %}">Préparer la flotte</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'islands:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Préparer la flotte</button></form>{% endif %}
+            </div>
+        </article>
+
+        <article class="game-mode-card game-mode-card--starterrace">
+            <div class="game-mode-art game-mode-art--starterrace">{% include "partials/art/starterrace.html" %}</div>
+            <div class="game-mode-copy">
+                <span class="game-mode-status"><i></i> Nouveau</span>
+                <p class="section-kicker">2 à 4 joueurs · Course tactique</p>
+                <h2>Course des Starters</h2>
+                <p>Fais sortir tes quatre Pokémon, prends les raccourcis, renvoie les rivaux au départ et atteins la Ligue.</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'starterrace:lobby' %}">Choisir un starter</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'starterrace:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Choisir un starter</button></form>{% endif %}
             </div>
         </article>
     </section>

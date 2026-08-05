@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load static icons %}
+
+{% block title %}Bataille des Îles — PokéTable{% endblock %}
+{% block body_class %}islands-shell{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'islands/css/islands.css' %}?v=1">
+
+<main id="islands-lobby" class="is-lobby" data-state-url="{% url 'islands:api_lobby_state' %}">
+    <section class="is-hero" aria-labelledby="islands-title">
+        <div class="is-hero__copy">
+            <a class="is-back" href="{% url 'home' %}">{% icon "back" "icon-sm" %} Tous les jeux</a>
+            <p class="is-eyebrow"><span class="is-pulse" aria-hidden="true"></span> Archipel Pokémon</p>
+            <h1 id="islands-title">Bataille<br><span>des Îles.</span></h1>
+            <p class="is-hero__lead">Déploie secrètement ton escouade aquatique, explore la carte adverse et capture ses quatre Pokémon avant qu’elle ne trouve les tiens.</p>
+            <div class="is-hero__actions">
+                <form method="post" action="{% url 'islands:create_game' %}">
+                    {% csrf_token %}
+                    <button class="btn btn-primary is-main-action" type="submit">
+                        <span aria-hidden="true">+</span> Créer un archipel
+                    </button>
+                </form>
+                <button class="btn btn-ghost" type="button" data-rules-toggle aria-expanded="false" aria-controls="islands-rules">Comment jouer</button>
+            </div>
+            <ul class="is-features" aria-label="Caractéristiques du jeu">
+                <li><span aria-hidden="true">◇</span> 2 joueurs</li>
+                <li><span aria-hidden="true">◇</span> Grille 8 × 8</li>
+                <li><span aria-hidden="true">◇</span> Placement secret</li>
+            </ul>
+        </div>
+
+        <div class="is-hero__art" aria-label="Escouade de Pokémon aquatiques">
+            <div class="is-radar" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="is-island is-island--one" aria-hidden="true"></div>
+            <div class="is-island is-island--two" aria-hidden="true"></div>
+            {% for card in hero_cards %}
+                <figure class="is-hero-pokemon is-hero-pokemon--{{ forloop.counter }}">
+                    <img src="{{ card.sprite_url }}" alt="{{ card.name_fr }}" width="180" height="180">
+                    <figcaption>{{ card.name_fr }}</figcaption>
+                </figure>
+            {% empty %}
+                <div class="is-sonar-empty" aria-hidden="true">≋</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section id="islands-rules" class="is-rules" hidden aria-labelledby="islands-rules-title">
+        <div>
+            <p class="is-eyebrow">Briefing</p>
+            <h2 id="islands-rules-title">Lis la mer. Protège ton équipe.</h2>
+        </div>
+        <ol>
+            <li><b>01</b><strong>Déploie</strong><span>Place 4 Pokémon de tailles 2, 3, 3 et 4, sans les superposer.</span></li>
+            <li><b>02</b><strong>Explore</strong><span>À ton tour, choisis une coordonnée de l’archipel adverse.</span></li>
+            <li><b>03</b><strong>Capture</strong><span>Touche toutes les cases d’un Pokémon pour le capturer.</span></li>
+            <li><b>04</b><strong>Triomphe</strong><span>Capture l’escouade entière avant ton adversaire.</span></li>
+        </ol>
+    </section>
+
+    <div class="is-lobby-grid">
+        <section class="is-panel" aria-labelledby="open-islands-title">
+            <header class="is-panel__heading">
+                <div><p class="is-eyebrow">Canaux ouverts</p><h2 id="open-islands-title">Archipels à rejoindre</h2></div>
+                <span class="is-count">{{ open_games|length }}</span>
+            </header>
+            {% if open_games %}
+                <ul class="is-table-list">
+                    {% for table in open_games %}
+                        <li>
+                            <span class="is-captain" aria-hidden="true">{{ table.created_by.username|first|upper }}</span>
+                            <span class="is-table-copy"><strong>Archipel de {{ table.created_by.username }}</strong><small><i aria-hidden="true"></i> En attente d’un rival</small></span>
+                            <form method="post" action="{% url 'islands:join_game' game_id=table.id %}">
+                                {% csrf_token %}
+                                <button class="btn btn-secondary" type="submit">{% if table.created_by_id == user.id %}Ouvrir{% else %}Rejoindre{% endif %}</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="is-empty"><span aria-hidden="true">≋</span><div><strong>La mer est calme</strong><p>Crée le premier archipel et invite un adversaire.</p></div></div>
+            {% endif %}
+        </section>
+
+        <section class="is-panel" aria-labelledby="my-islands-title">
+            <header class="is-panel__heading">
+                <div><p class="is-eyebrow">Journal de bord</p><h2 id="my-islands-title">Mes batailles</h2></div>
+                <span class="is-count">{{ my_games|length }}</span>
+            </header>
+            {% if my_games %}
+                <ul class="is-table-list">
+                    {% for table in my_games %}
+                        <li>
+                            <span class="is-status" data-status="{{ table.status|lower }}" aria-hidden="true"></span>
+                            <span class="is-table-copy"><strong>Bataille #{{ table.id|stringformat:"s"|slice:":6" }}</strong><small>{{ table.get_status_display }} · {{ table.player_count }}/2</small></span>
+                            <a class="btn btn-ghost" href="{% url 'islands:game_detail' game_id=table.id %}">Ouvrir</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="is-empty"><span aria-hidden="true">◇</span><div><strong>Aucune expédition</strong><p>Tes parties apparaîtront ici.</p></div></div>
+            {% endif %}
+        </section>
+    </div>
+</main>
+
+{{ lobby_state|json_script:"islands-lobby-state" }}
+<script src="{% static 'islands/js/lobby.js' %}?v=1"></script>
+{% endblock %}
+

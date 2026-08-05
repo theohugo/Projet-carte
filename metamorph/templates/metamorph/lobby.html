@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Métamorph Mystère — PokéTable{% endblock %}
+{% block body_class %}metamorph-lobby-shell{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'metamorph/css/metamorph.css' %}?v=1">
+
+<main id="metamorph-lobby" class="mm-lobby" data-state-url="{% url 'metamorph:api_lobby_state' %}">
+    <section class="mm-hero" aria-labelledby="metamorph-title">
+        <div class="mm-hero-copy">
+            <a class="mm-back" href="{% url 'home' %}"><span aria-hidden="true">‹</span> Tous les jeux</a>
+            <p class="mm-kicker"><span class="mm-live-dot" aria-hidden="true"></span> PokéTable présente</p>
+            <h1 id="metamorph-title">Métamorph<br><span>Mystère.</span></h1>
+            <p class="mm-lead">Forme tes paires, pioche à l'aveugle et surtout… ne termine pas avec Métamorph.</p>
+            <div class="mm-hero-actions">
+                <form method="post" action="{% url 'metamorph:create_game' %}">
+                    {% csrf_token %}
+                    <button class="btn btn-primary mm-primary-action" type="submit" data-create-game>
+                        <span aria-hidden="true">+</span> Créer une table
+                    </button>
+                </form>
+                <button class="btn btn-ghost" type="button" data-toggle-rules aria-controls="metamorph-rules" aria-expanded="false">Comment jouer</button>
+            </div>
+            <ul class="mm-features" aria-label="Caractéristiques du jeu">
+                <li><span aria-hidden="true">◇</span> 2 à 6 joueurs</li>
+                <li><span aria-hidden="true">◇</span> Paires automatiques</li>
+                <li><span aria-hidden="true">◇</span> Cartes secrètes</li>
+            </ul>
+        </div>
+        <div class="mm-hero-art" aria-hidden="true">
+            <span class="mm-hero-halo"></span>
+            <span class="mm-show-card mm-show-card--left"><i></i><b>?</b></span>
+            <span class="mm-show-card mm-show-card--right"><i></i><b>?</b></span>
+            <span class="mm-ditto-orb">
+                {% if ditto_art %}<img src="{{ ditto_art.sprite_url }}" alt="" width="240" height="240">{% else %}<b>?</b>{% endif %}
+            </span>
+            <span class="mm-spark mm-spark--one">✦</span>
+            <span class="mm-spark mm-spark--two">✦</span>
+        </div>
+    </section>
+
+    <section id="metamorph-rules" class="mm-rules" hidden aria-labelledby="metamorph-rules-title">
+        <div class="mm-rules-heading">
+            <p class="mm-kicker">Règles express</p>
+            <h2 id="metamorph-rules-title">Pose toutes tes paires. Garde ton sang-froid.</h2>
+        </div>
+        <ol>
+            <li><strong>Distribue</strong><span>Les paires déjà dans ta main sont posées automatiquement.</span></li>
+            <li><strong>Pioche</strong><span>À ton tour, choisis un dos numéroté chez le joueur précédent.</span></li>
+            <li><strong>Associe</strong><span>Si la carte rejoint sa jumelle, la paire quitte aussitôt ta main.</span></li>
+            <li><strong>Évite</strong><span>Tout le monde gagne sauf le dernier détenteur de Métamorph.</span></li>
+        </ol>
+    </section>
+
+    <div class="mm-lobby-grid">
+        <section class="mm-panel" aria-labelledby="open-tables-title">
+            <header class="mm-panel-header">
+                <div><p class="mm-kicker">Parties publiques</p><h2 id="open-tables-title">Tables ouvertes</h2></div>
+                <span class="mm-count">{{ open_games|length }}</span>
+            </header>
+            {% if open_games %}
+                <ul class="mm-table-list">
+                    {% for table in open_games %}
+                        <li class="mm-table-row">
+                            <span class="mm-avatar" aria-hidden="true">{{ table.created_by.username|default:"?"|first|upper }}</span>
+                            <span class="mm-table-copy">
+                                <strong>Table de {{ table.created_by.username|default:"Dresseur" }}</strong>
+                                <small><i aria-hidden="true"></i> {{ table.player_count }}/6 joueurs</small>
+                            </span>
+                            <form method="post" action="{% url 'metamorph:join_game' game_id=table.id %}">
+                                {% csrf_token %}
+                                <button class="btn btn-secondary" type="submit">{% if table.created_by_id == user.id %}Ouvrir{% else %}Rejoindre{% endif %}</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="mm-empty"><span aria-hidden="true">?</span><div><strong>Aucune table ouverte</strong><p>Crée une partie et invite jusqu'à cinq amis.</p></div></div>
+            {% endif %}
+        </section>
+
+        <section class="mm-panel" aria-labelledby="my-games-title">
+            <header class="mm-panel-header">
+                <div><p class="mm-kicker">Ton espace</p><h2 id="my-games-title">Mes parties</h2></div>
+                <span class="mm-count">{{ my_games|length }}</span>
+            </header>
+            {% if my_games %}
+                <ul class="mm-table-list">
+                    {% for table in my_games %}
+                        <li class="mm-table-row">
+                            <span class="mm-game-dot" data-status="{{ table.status|lower }}" aria-hidden="true"></span>
+                            <span class="mm-table-copy"><strong>Partie {{ forloop.counter }}</strong><small>{{ table.get_status_display }} · {{ table.player_count }}/6</small></span>
+                            <a class="btn btn-ghost" href="{% url 'metamorph:game_detail' game_id=table.id %}">Ouvrir</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="mm-empty mm-empty--small"><span aria-hidden="true">◇</span><div><strong>Aucune partie</strong><p>Ton historique apparaîtra ici.</p></div></div>
+            {% endif %}
+        </section>
+    </div>
+</main>
+
+{{ lobby_state|json_script:"metamorph-lobby-state" }}
+<script src="{% static 'metamorph/js/lobby.js' %}?v=1"></script>
+{% endblock %}
+

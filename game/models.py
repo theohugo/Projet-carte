@@ -472,6 +472,10 @@ class GameInvitation(models.Model):
         GUESSWHO = "GUESSWHO", "Qui est-ce ?"
         SILHOUETTE = "SILHOUETTE", "Silhouette"
         PICTIONARY = "PICTIONARY", "Pictionary"
+        METAMORPH = "METAMORPH", "Métamorph Mystère"
+        ROCKET = "ROCKET", "Infiltration Rocket"
+        ISLANDS = "ISLANDS", "Bataille des Îles"
+        STARTER_RACE = "STARTER_RACE", "Course des Starters"
 
     class Status(models.TextChoices):
         PENDING = "PENDING", "En attente"
@@ -481,7 +485,7 @@ class GameInvitation(models.Model):
         EXPIRED = "EXPIRED", "Expirée"
 
     mode = models.CharField(
-        max_length=12,
+        max_length=16,
         choices=Mode.choices,
         default=Mode.POKE_UNO,
     )
@@ -516,6 +520,39 @@ class GameInvitation(models.Model):
     # Salon Pictionary
     pictionary_game = models.ForeignKey(
         "pictionary.PictionaryGame",
+        on_delete=models.CASCADE,
+        related_name="invitations",
+        null=True,
+        blank=True,
+    )
+
+    # Nouveaux salons de la seconde collection de jeux.
+    metamorph_game = models.ForeignKey(
+        "metamorph.MetamorphGame",
+        on_delete=models.CASCADE,
+        related_name="invitations",
+        null=True,
+        blank=True,
+    )
+
+    rocket_game = models.ForeignKey(
+        "rocket.RocketGame",
+        on_delete=models.CASCADE,
+        related_name="invitations",
+        null=True,
+        blank=True,
+    )
+
+    islands_game = models.ForeignKey(
+        "islands.IslandGame",
+        on_delete=models.CASCADE,
+        related_name="invitations",
+        null=True,
+        blank=True,
+    )
+
+    starterrace_game = models.ForeignKey(
+        "starterrace.Game",
         on_delete=models.CASCADE,
         related_name="invitations",
         null=True,
@@ -567,6 +604,10 @@ class GameInvitation(models.Model):
                         guesswho_game__isnull=True,
                         silhouette_game__isnull=True,
                         pictionary_game__isnull=True,
+                        metamorph_game__isnull=True,
+                        rocket_game__isnull=True,
+                        islands_game__isnull=True,
+                        starterrace_game__isnull=True,
                     )
                     | models.Q(
                         mode="GUESSWHO",
@@ -574,6 +615,10 @@ class GameInvitation(models.Model):
                         guesswho_game__isnull=False,
                         silhouette_game__isnull=True,
                         pictionary_game__isnull=True,
+                        metamorph_game__isnull=True,
+                        rocket_game__isnull=True,
+                        islands_game__isnull=True,
+                        starterrace_game__isnull=True,
                     )
                     | models.Q(
                         mode="SILHOUETTE",
@@ -581,6 +626,10 @@ class GameInvitation(models.Model):
                         guesswho_game__isnull=True,
                         silhouette_game__isnull=False,
                         pictionary_game__isnull=True,
+                        metamorph_game__isnull=True,
+                        rocket_game__isnull=True,
+                        islands_game__isnull=True,
+                        starterrace_game__isnull=True,
                     )
                     | models.Q(
                         mode="PICTIONARY",
@@ -588,6 +637,54 @@ class GameInvitation(models.Model):
                         guesswho_game__isnull=True,
                         silhouette_game__isnull=True,
                         pictionary_game__isnull=False,
+                        metamorph_game__isnull=True,
+                        rocket_game__isnull=True,
+                        islands_game__isnull=True,
+                        starterrace_game__isnull=True,
+                    )
+                    | models.Q(
+                        mode="METAMORPH",
+                        game__isnull=True,
+                        guesswho_game__isnull=True,
+                        silhouette_game__isnull=True,
+                        pictionary_game__isnull=True,
+                        metamorph_game__isnull=False,
+                        rocket_game__isnull=True,
+                        islands_game__isnull=True,
+                        starterrace_game__isnull=True,
+                    )
+                    | models.Q(
+                        mode="ROCKET",
+                        game__isnull=True,
+                        guesswho_game__isnull=True,
+                        silhouette_game__isnull=True,
+                        pictionary_game__isnull=True,
+                        metamorph_game__isnull=True,
+                        rocket_game__isnull=False,
+                        islands_game__isnull=True,
+                        starterrace_game__isnull=True,
+                    )
+                    | models.Q(
+                        mode="ISLANDS",
+                        game__isnull=True,
+                        guesswho_game__isnull=True,
+                        silhouette_game__isnull=True,
+                        pictionary_game__isnull=True,
+                        metamorph_game__isnull=True,
+                        rocket_game__isnull=True,
+                        islands_game__isnull=False,
+                        starterrace_game__isnull=True,
+                    )
+                    | models.Q(
+                        mode="STARTER_RACE",
+                        game__isnull=True,
+                        guesswho_game__isnull=True,
+                        silhouette_game__isnull=True,
+                        pictionary_game__isnull=True,
+                        metamorph_game__isnull=True,
+                        rocket_game__isnull=True,
+                        islands_game__isnull=True,
+                        starterrace_game__isnull=False,
                     )
                 ),
                 name="game_invitation_has_one_valid_room",
@@ -640,6 +737,26 @@ class GameInvitation(models.Model):
                 ),
                 name="unique_pending_pictionary_invitation",
             ),
+            models.UniqueConstraint(
+                fields=["metamorph_game", "recipient"],
+                condition=models.Q(status="PENDING", metamorph_game__isnull=False),
+                name="unique_pending_metamorph_invitation",
+            ),
+            models.UniqueConstraint(
+                fields=["rocket_game", "recipient"],
+                condition=models.Q(status="PENDING", rocket_game__isnull=False),
+                name="unique_pending_rocket_invitation",
+            ),
+            models.UniqueConstraint(
+                fields=["islands_game", "recipient"],
+                condition=models.Q(status="PENDING", islands_game__isnull=False),
+                name="unique_pending_islands_invitation",
+            ),
+            models.UniqueConstraint(
+                fields=["starterrace_game", "recipient"],
+                condition=models.Q(status="PENDING", starterrace_game__isnull=False),
+                name="unique_pending_starterrace_invitation",
+            ),
         ]
 
         indexes = [
@@ -679,6 +796,18 @@ class GameInvitation(models.Model):
         if self.mode == self.Mode.PICTIONARY:
             return self.pictionary_game
 
+        if self.mode == self.Mode.METAMORPH:
+            return self.metamorph_game
+
+        if self.mode == self.Mode.ROCKET:
+            return self.rocket_game
+
+        if self.mode == self.Mode.ISLANDS:
+            return self.islands_game
+
+        if self.mode == self.Mode.STARTER_RACE:
+            return self.starterrace_game
+
         return None
 
     @property
@@ -697,6 +826,10 @@ class GameInvitation(models.Model):
             self.Mode.GUESSWHO: "qui-est-ce",
             self.Mode.SILHOUETTE: "silhouette",
             self.Mode.PICTIONARY: "pictionary",
+            self.Mode.METAMORPH: "metamorph-mystere",
+            self.Mode.ROCKET: "infiltration-rocket",
+            self.Mode.ISLANDS: "bataille-des-iles",
+            self.Mode.STARTER_RACE: "course-des-starters",
         }
 
         return slugs.get(self.mode, "")

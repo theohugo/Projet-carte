@@ -365,8 +365,14 @@
         const frame = document.createElement("span");
         frame.className = "gw-card-frame";
 
-        const symbol = document.createElement("span");
+        const symbol = document.createElement("img");
         symbol.className = "gw-tcg-symbol";
+        symbol.alt = "";
+        symbol.width = 22;
+        symbol.height = 22;
+        symbol.loading = "lazy";
+        symbol.decoding = "async";
+        symbol.draggable = false;
         symbol.setAttribute("aria-hidden", "true");
 
         const number = document.createElement("span");
@@ -407,7 +413,10 @@
     function updateCardElement(button, card, context, ownTargetId) {
         const type = tcgType(card);
         button.dataset.tcgType = type;
-        button.querySelector(".gw-tcg-symbol").dataset.tcgType = type;
+        const symbol = button.querySelector(".gw-tcg-symbol");
+        symbol.dataset.tcgType = type;
+        symbol.src = card.type_icon_url;
+        symbol.hidden = !card.type_icon_url;
         button.classList.toggle("is-eliminated", Boolean(card.is_eliminated));
         button.classList.toggle("is-choice-target", context.hasChosen && sameId(card.id, ownTargetId));
         button.classList.toggle("is-guess-target", false);

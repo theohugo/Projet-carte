@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load static icons %}
+
+{% block title %}Mission en cours — Infiltration Rocket{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'rocket/css/rocket.css' %}?v=1">
+
+<main id="rocket-game" class="rk-game"
+      data-state-url="{% url 'rocket:api_state' game_id=game.id %}"
+      data-night-url="{% url 'rocket:api_night_action' game_id=game.id %}"
+      data-start-vote-url="{% url 'rocket:api_start_vote' game_id=game.id %}"
+      data-vote-url="{% url 'rocket:api_vote' game_id=game.id %}"
+      data-message-url="{% url 'rocket:api_message' game_id=game.id %}">
+    <header class="rk-game-header">
+        <div>
+            <a class="back-link" href="{% url 'rocket:lobby' %}">{% icon "back" "icon-sm" %} Retour aux missions</a>
+            <p class="section-kicker">Canal sécurisé · mission <span class="rk-room-code">{{ game.id|stringformat:"s"|slice:":8" }}</span></p>
+            <h1>Infiltration Rocket</h1>
+        </div>
+        <div class="rk-phase-pill" data-phase-pill><span aria-hidden="true"></span><b data-phase>—</b><small data-round>—</small></div>
+    </header>
+
+    <p class="message message-error" data-error role="alert" hidden></p>
+    <p class="visually-hidden" data-announcer aria-live="polite"></p>
+
+    <section class="rk-waiting" data-waiting hidden>
+        <div class="rk-wait-copy">
+            <p class="section-kicker"><span class="live-pulse" aria-hidden="true"></span> Briefing en cours</p>
+            <h2>Rassemble 6 à 12 joueurs.</h2>
+            <p>Les rôles seront mélangés au lancement. Chaque joueur ne verra que sa propre carte ; les agents Rocket reconnaîtront leurs complices.</p>
+            <div class="rk-wait-actions">
+                <form method="post" action="{% url 'rocket:start_game' game_id=game.id %}" data-host-only>{% csrf_token %}<button class="btn btn-primary btn-large" type="submit">Distribuer les rôles</button></form>
+                <a class="btn btn-ghost" href="{% url 'invite_friends_to_game' mode='infiltration-rocket' room_id=game.id %}" data-host-only>Inviter des amis</a>
+                <button class="btn btn-secondary" type="button" data-copy-link>Copier le lien</button>
+            </div>
+            <p class="rk-minimum" data-minimum></p>
+        </div>
+        <div class="rk-briefcase" aria-hidden="true"><span class="rk-r-mark">R</span><img src="{% static 'img/games/artwork/meowth.png' %}" alt=""></div>
+    </section>
+
+    <section class="rk-board" data-board hidden>
+        <aside class="rk-role-card" data-role-card>
+            <p class="section-kicker">Dossier confidentiel</p>
+            <div class="rk-role-art"><img data-role-art alt=""></div>
+            <h2 data-role-name>—</h2>
+            <p class="rk-side" data-role-side>—</p>
+            <p data-role-mission>—</p>
+            <div class="rk-detective-log" data-detective-log hidden>
+                <strong>Rapports de Looker</strong><ul data-detective-results></ul>
+            </div>
+        </aside>
+
+        <div class="rk-command">
+            <section class="rk-event" data-event hidden><span class="rk-event-icon" aria-hidden="true">!</span><div><p class="section-kicker">Dernier rapport</p><p data-event-text></p></div></section>
+            <section class="rk-directive" aria-labelledby="rk-directive-title">
+                <p class="section-kicker" data-directive-kicker>Mission</p>
+                <h2 id="rk-directive-title" data-directive-title>—</h2>
+                <p data-directive-text>—</p>
+                <div class="rk-progress" data-progress hidden><span data-progress-bar></span><small data-progress-label></small></div>
+            </section>
+
+            <section class="rk-agents" aria-labelledby="rk-agents-title">
+                <div class="rk-section-head"><h2 id="rk-agents-title">Agents sur le terrain</h2><span data-alive-count></span></div>
+                <div class="rk-agent-grid" data-player-grid></div>
+            </section>
+
+            <section class="rk-chat" data-chat hidden aria-labelledby="rk-chat-title">
+                <div class="rk-section-head"><h2 id="rk-chat-title">Canal de discussion</h2><span>Nuit <b data-chat-round></b></span></div>
+                <ol class="rk-messages" data-messages></ol>
+                <form class="rk-chat-form" data-chat-form><label class="visually-hidden" for="rk-message">Ton message</label><input id="rk-message" name="body" maxlength="300" autocomplete="off" placeholder="Partage un indice ou défends-toi…"><button class="btn btn-primary" type="submit">Envoyer</button></form>
+                <button class="btn btn-secondary rk-open-vote" type="button" data-open-vote data-host-only>Ouvrir le vote</button>
+            </section>
+
+            <section class="rk-finished" data-finished hidden>
+                <p class="section-kicker">Mission terminée</p><h2 data-winner>—</h2><p data-result-copy></p><a class="btn btn-primary btn-large" href="{% url 'rocket:lobby' %}">Nouvelle mission</a>
+            </section>
+        </div>
+
+        <aside class="rk-roster"><div class="rk-section-head"><h2>Escouade</h2><span data-player-count></span></div><ol data-roster></ol></aside>
+    </section>
+</main>
+
+{{ game_state|json_script:"rocket-initial-state" }}
+<script defer src="{% static 'rocket/js/game.js' %}?v=1"></script>
+{% endblock %}

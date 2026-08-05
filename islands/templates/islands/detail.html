@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static icons %}
+
+{% block title %}Bataille des Îles — PokéTable{% endblock %}
+{% block html_class %}islands-document{% endblock %}
+{% block body_class %}islands-game-shell{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'islands/css/islands.css' %}?v=1">
+
+<main class="is-game-page">
+    <header class="is-game-header">
+        <div class="is-game-heading">
+            <a class="is-back" href="{% url 'islands:lobby' %}">{% icon "back" "icon-sm" %} Quitter l’archipel</a>
+            <span class="is-header-line" aria-hidden="true"></span>
+            <div><p>Bataille des Îles</p><h1>Carte <span translate="no">#{{ game.id|stringformat:"s"|slice:":6" }}</span></h1></div>
+        </div>
+        <div class="is-game-meta">
+            <span class="is-sync" data-sync><i aria-hidden="true"></i><span>Synchronisé</span></span>
+            <span class="is-game-status" data-status>Connexion…</span>
+        </div>
+    </header>
+
+    <div
+        id="islands-game"
+        class="is-game"
+        data-state-url="{% url 'islands:api_state' game_id=game.id %}"
+        data-place-url="{% url 'islands:api_place' game_id=game.id %}"
+        data-ready-url="{% url 'islands:api_ready' game_id=game.id %}"
+        data-fire-url="{% url 'islands:api_fire' game_id=game.id %}"
+        aria-busy="false"
+    >
+        <form class="is-csrf" aria-hidden="true">{% csrf_token %}</form>
+        <p class="is-alert" data-feedback role="alert" hidden></p>
+        <p class="visually-hidden" data-announcer aria-live="polite"></p>
+
+        <section class="is-waiting" data-view="waiting" hidden aria-labelledby="is-wait-title">
+            <div class="is-waiting__visual" aria-hidden="true"><i></i><i></i><i></i><strong>1<small>/2</small></strong></div>
+            <div class="is-waiting__copy">
+                <p class="is-eyebrow"><span class="is-pulse" aria-hidden="true"></span> Canal ouvert</p>
+                <h2 id="is-wait-title" tabindex="-1">Un rival manque à l’appel</h2>
+                <p>Partage ce lien. Le déploiement secret commencera dès que l’adversaire rejoindra la table.</p>
+                <div class="is-invite">
+                    <code data-invite-url></code>
+                    <button class="btn btn-primary" type="button" data-copy>Copier le lien</button>
+                    {% if game.created_by_id == user.id and game.status == "EN_ATTENTE" %}
+                        <a class="btn btn-ghost" href="{% url 'invite_friends_to_game' mode='bataille-des-iles' room_id=game.id %}">Inviter un ami</a>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="is-placement" data-view="placement" hidden aria-labelledby="is-placement-title">
+            <header class="is-section-heading">
+                <div><p class="is-eyebrow">Phase 1 · confidentiel</p><h2 id="is-placement-title" tabindex="-1">Déploie ton escouade</h2><p>Choisis un Pokémon, son orientation, puis sa case de départ.</p></div>
+                <div class="is-orientation" role="group" aria-label="Orientation de la formation">
+                    <button type="button" data-orientation="H" aria-pressed="true"><span aria-hidden="true">↔</span> Horizontal</button>
+                    <button type="button" data-orientation="V" aria-pressed="false"><span aria-hidden="true">↕</span> Vertical</button>
+                </div>
+            </header>
+            <div class="is-placement-layout">
+                <aside class="is-squad" aria-labelledby="is-squad-title">
+                    <div class="is-squad__heading"><div><p class="is-eyebrow">Ton équipe</p><h3 id="is-squad-title">4 Pokémon aquatiques</h3></div><span data-placement-count>0/4</span></div>
+                    <div class="is-formation-list" data-formations></div>
+                    <button class="btn btn-primary is-ready" type="button" data-ready disabled>Verrouiller mon équipe</button>
+                    <p class="is-private-note"><span aria-hidden="true">◈</span> Les positions restent invisibles pour ton adversaire.</p>
+                </aside>
+                <div class="is-board-card">
+                    <div class="is-board-top"><div><p class="is-eyebrow">Zone privée</p><h3>Ton archipel</h3></div><span class="is-board-chip" data-placement-hint>Sélectionne un Pokémon</span></div>
+                    <div class="is-grid-wrap">
+                        <div class="is-axis is-axis--cols" aria-hidden="true"><i>A</i><i>B</i><i>C</i><i>D</i><i>E</i><i>F</i><i>G</i><i>H</i></div>
+                        <div class="is-axis is-axis--rows" aria-hidden="true"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
+                        <div class="is-grid is-grid--placement" data-placement-grid role="grid" aria-label="Grille de placement, 8 colonnes par 8 lignes"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="is-battle" data-view="battle" hidden aria-labelledby="is-battle-title">
+            <header class="is-battle-banner">
+                <div><p class="is-eyebrow">Phase 2 · exploration</p><h2 id="is-battle-title" tabindex="-1" data-battle-title>Repère l’escouade adverse</h2></div>
+                <div class="is-turn" data-turn><i aria-hidden="true"></i><span>Chargement…</span></div>
+            </header>
+            <div class="is-dual-board">
+                <section class="is-board-card is-board-card--enemy" aria-labelledby="is-enemy-title">
+                    <div class="is-board-top"><div><p class="is-eyebrow">Zone adverse</p><h3 id="is-enemy-title">Archipel de <span data-opponent-name>l’adversaire</span></h3></div><span class="is-board-chip" data-enemy-score>0 / 12 touches</span></div>
+                    <div class="is-grid-wrap">
+                        <div class="is-axis is-axis--cols" aria-hidden="true"><i>A</i><i>B</i><i>C</i><i>D</i><i>E</i><i>F</i><i>G</i><i>H</i></div>
+                        <div class="is-axis is-axis--rows" aria-hidden="true"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
+                        <div class="is-grid is-grid--enemy" data-enemy-grid role="grid" aria-label="Archipel adverse. Utilise les flèches pour te déplacer et Entrée pour attaquer."></div>
+                    </div>
+                    <p class="is-board-help" data-enemy-help>Choisis une coordonnée à explorer.</p>
+                </section>
+
+                <section class="is-board-card is-board-card--own" aria-labelledby="is-own-title">
+                    <div class="is-board-top"><div><p class="is-eyebrow">Zone protégée</p><h3 id="is-own-title">Ton archipel</h3></div><span class="is-board-chip" data-own-score>12 cases intactes</span></div>
+                    <div class="is-grid-wrap">
+                        <div class="is-axis is-axis--cols" aria-hidden="true"><i>A</i><i>B</i><i>C</i><i>D</i><i>E</i><i>F</i><i>G</i><i>H</i></div>
+                        <div class="is-axis is-axis--rows" aria-hidden="true"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
+                        <div class="is-grid is-grid--own" data-own-grid role="img" aria-label="Ton placement et les tirs adverses"></div>
+                    </div>
+                    <div class="is-captured-strip" data-own-squad aria-label="État de ton escouade"></div>
+                </section>
+            </div>
+            <aside class="is-log" aria-labelledby="is-log-title">
+                <div><p class="is-eyebrow">Dernier signal</p><h3 id="is-log-title">Journal radar</h3></div>
+                <p data-last-shot>Aucun tir pour le moment.</p>
+                <div class="is-legend" aria-label="Légende"><span><i class="miss"></i> Raté</span><span><i class="hit"></i> Touché</span><span><i class="captured"></i> Capturé</span></div>
+            </aside>
+        </section>
+
+        <section class="is-result" data-view="result" hidden aria-labelledby="is-result-title">
+            <div class="is-result__radar" aria-hidden="true"><i></i><i></i><i></i></div>
+            <p class="is-eyebrow">Exploration terminée</p>
+            <h2 id="is-result-title" tabindex="-1" data-result-title>Archipel conquis</h2>
+            <p data-result-copy></p>
+            <div class="is-reveal" data-reveal aria-label="Escouade adverse révélée"></div>
+            <div class="is-result__actions">
+                <form method="post" action="{% url 'islands:create_game' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Nouvelle bataille</button></form>
+                <a class="btn btn-ghost" href="{% url 'islands:lobby' %}">{% icon "back" %} Retour au salon</a>
+            </div>
+        </section>
+    </div>
+</main>
+
+{{ game_state|json_script:"islands-initial-state" }}
+<script src="{% static 'islands/js/game.js' %}?v=1"></script>
+{% endblock %}

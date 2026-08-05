@@ -65,6 +65,10 @@ class GuestAccessTests(TestCase):
             reverse("guesswho:lobby"),
             reverse("silhouette:lobby"),
             reverse("pictionary:lobby"),
+            reverse("metamorph:lobby"),
+            reverse("rocket:lobby"),
+            reverse("islands:lobby"),
+            reverse("starterrace:lobby"),
         ):
             with self.subTest(url=url):
                 response = self.client.get(url)
@@ -81,6 +85,10 @@ class GuestAccessTests(TestCase):
             reverse("guesswho:lobby"),
             reverse("silhouette:lobby"),
             reverse("pictionary:lobby"),
+            reverse("metamorph:lobby"),
+            reverse("rocket:lobby"),
+            reverse("islands:lobby"),
+            reverse("starterrace:lobby"),
         ):
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)

@@ -8,20 +8,28 @@ from game.models import (
     Game,
     GameInvitation,
     GamePlayer,
+    PokemonCard,
+    PokemonType,
     Profile,
 )
 from guesswho.models import (
     GuessWhoGame,
     GuessWhoPlayer,
 )
+from islands.models import Formation, IslandGame, IslandPlayer
+from metamorph.models import MetamorphGame, MetamorphPlayer
 from pictionary.models import (
     PictionaryGame,
     PictionaryPlayer,
 )
+from rocket.models import RocketGame, RocketPlayer
 from silhouette.models import (
     SilhouetteGame,
     SilhouettePlayer,
 )
+from starterrace.models import Game as StarterRaceGame
+from starterrace.models import Pawn as StarterRacePawn
+from starterrace.models import Player as StarterRacePlayer
 
 User = get_user_model()
 
@@ -49,6 +57,26 @@ class GameInvitationTests(TestCase):
             "slug": "pictionary",
             "field": "pictionary_game",
             "detail_url": "pictionary:game_detail",
+        },
+        GameInvitation.Mode.METAMORPH: {
+            "slug": "metamorph-mystere",
+            "field": "metamorph_game",
+            "detail_url": "metamorph:game_detail",
+        },
+        GameInvitation.Mode.ROCKET: {
+            "slug": "infiltration-rocket",
+            "field": "rocket_game",
+            "detail_url": "rocket:game_detail",
+        },
+        GameInvitation.Mode.ISLANDS: {
+            "slug": "bataille-des-iles",
+            "field": "islands_game",
+            "detail_url": "islands:game_detail",
+        },
+        GameInvitation.Mode.STARTER_RACE: {
+            "slug": "course-des-starters",
+            "field": "starterrace_game",
+            "detail_url": "starterrace:game_detail",
         },
     }
 
@@ -80,6 +108,48 @@ class GameInvitationTests(TestCase):
             addressee=self.friend,
             status=Friendship.Status.ACCEPTED,
         )
+
+        # Bataille des Îles et Course des Starters construisent leurs pions à
+        # partir du catalogue partagé. Ces quatre entrées rendent les salons de
+        # test aussi valides que ceux créés depuis leur lobby, avec de vrais
+        # ``sprite_url`` et les quatre numéros de Pokédex attendus.
+        grass = PokemonType.objects.create(
+            slug="grass",
+            name_fr="Plante",
+            name_en="Grass",
+        )
+        fire = PokemonType.objects.create(
+            slug="fire",
+            name_fr="Feu",
+            name_en="Fire",
+        )
+        water = PokemonType.objects.create(
+            slug="water",
+            name_fr="Eau",
+            name_en="Water",
+        )
+        electric = PokemonType.objects.create(
+            slug="electric",
+            name_fr="Électrik",
+            name_en="Electric",
+        )
+        starter_rows = (
+            (1, "Bulbizarre", grass),
+            (4, "Salamèche", fire),
+            (7, "Carapuce", water),
+            (25, "Pikachu", electric),
+        )
+        self.starter_cards = [
+            PokemonCard.objects.create(
+                pokedex_id=pokedex_id,
+                slug=f"invitation-starter-{pokedex_id}",
+                name_fr=name,
+                name_en=name,
+                primary_type=pokemon_type,
+                sprite_url=f"https://example.com/pokemon/{pokedex_id}.png",
+            )
+            for pokedex_id, name, pokemon_type in starter_rows
+        ]
 
     def _create_room(
         self,
@@ -140,6 +210,74 @@ class GameInvitationTests(TestCase):
                 game=room,
                 user=creator,
                 turn_order=0,
+            )
+
+            return room
+
+        if mode == GameInvitation.Mode.METAMORPH:
+            room = MetamorphGame.objects.create(
+                created_by=creator,
+            )
+
+            MetamorphPlayer.objects.create(
+                game=room,
+                user=creator,
+                turn_order=0,
+            )
+
+            return room
+
+        if mode == GameInvitation.Mode.ROCKET:
+            room = RocketGame.objects.create(
+                created_by=creator,
+                max_players=12,
+            )
+
+            RocketPlayer.objects.create(
+                game=room,
+                user=creator,
+                turn_order=0,
+            )
+
+            return room
+
+        if mode == GameInvitation.Mode.ISLANDS:
+            room = IslandGame.objects.create(
+                created_by=creator,
+            )
+
+            player = IslandPlayer.objects.create(
+                game=room,
+                user=creator,
+                turn_order=0,
+            )
+            Formation.objects.bulk_create(
+                [
+                    Formation(
+                        player=player,
+                        pokemon_card=card,
+                        slot=slot,
+                        size=size,
+                    )
+                    for slot, (card, size) in enumerate(zip(self.starter_cards, (2, 3, 3, 4), strict=True))
+                ]
+            )
+
+            return room
+
+        if mode == GameInvitation.Mode.STARTER_RACE:
+            room = StarterRaceGame.objects.create(
+                created_by=creator,
+            )
+
+            player = StarterRacePlayer.objects.create(
+                game=room,
+                user=creator,
+                starter_card=self.starter_cards[0],
+                turn_order=0,
+            )
+            StarterRacePawn.objects.bulk_create(
+                [StarterRacePawn(player=player, number=number) for number in range(4)]
             )
 
             return room
@@ -304,6 +442,34 @@ class GameInvitationTests(TestCase):
                 self.assertEqual(
                     invitation.room,
                     room,
+                )
+
+    def test_new_mode_factories_room_and_slugs_match_the_generic_contract(self):
+        expected_models = {
+            GameInvitation.Mode.METAMORPH: MetamorphGame,
+            GameInvitation.Mode.ROCKET: RocketGame,
+            GameInvitation.Mode.ISLANDS: IslandGame,
+            GameInvitation.Mode.STARTER_RACE: StarterRaceGame,
+        }
+
+        for mode, model in expected_models.items():
+            with self.subTest(mode=mode):
+                room = self._create_room(mode)
+                invitation = self._create_invitation(mode, room)
+                mode_data = self.MODE_DATA[mode]
+
+                self.assertIsInstance(room, model)
+                self.assertEqual(room.created_by, self.host)
+                self.assertTrue(room.players.filter(user=self.host).exists())
+                self.assertEqual(invitation.room, room)
+                self.assertEqual(
+                    getattr(invitation, f"{mode_data['field']}_id"),
+                    room.pk,
+                )
+                self.assertEqual(invitation.mode_slug, mode_data["slug"])
+                self.assertIn(
+                    f"/invitations/{mode_data['slug']}/",
+                    self._invite_page_url(mode, room),
                 )
 
     def test_non_friend_cannot_be_invited(self):

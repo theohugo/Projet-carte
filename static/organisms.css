@@ -434,6 +434,14 @@
     --art-scale: 1.5;
 }
 
+/* Les cartes de l'illustration Uno sont toutes positionnées en absolu :
+   sans dimensions définies, leur conteneur s'effondre et les masque. */
+.lobby-hero-art .game-art {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+}
+
 /* Le lobby laisse l'illustration suivre le pointeur (voir lobby.js). */
 .lobby-hero-art .game-art-stage {
     transform: scale(var(--art-scale, 1)) rotateX(var(--hero-rx, 0deg)) rotateY(var(--hero-ry, 0deg));
@@ -451,6 +459,10 @@
 .game-art--guess { --art-glow: rgba(170, 140, 255, 0.32); }
 .game-art--silhouette { --art-glow: rgba(117, 216, 255, 0.34); }
 .game-art--pictionary { --art-glow: rgba(170, 140, 255, 0.3); }
+.game-art--metamorph { --art-glow: rgba(214, 128, 255, 0.34); }
+.game-art--rocket { --art-glow: rgba(255, 80, 105, 0.3); }
+.game-art--islands { --art-glow: rgba(76, 197, 255, 0.34); }
+.game-art--starterrace { --art-glow: rgba(255, 207, 84, 0.3); }
 
 /* Fonds pleins des vignettes de l'accueil. */
 .game-mode-art--uno {
@@ -468,6 +480,103 @@
 .game-mode-art--pictionary {
     background: radial-gradient(circle at 50% 120%, rgba(170, 140, 255, 0.4), transparent 60%), #16123a;
 }
+
+.game-mode-art--metamorph {
+    background: radial-gradient(circle at 50% 115%, rgba(214, 128, 255, 0.42), transparent 62%), #24113b;
+}
+
+.game-mode-art--rocket {
+    background: radial-gradient(circle at 55% 105%, rgba(255, 80, 105, 0.34), transparent 60%), #1c101d;
+}
+
+.game-mode-art--islands {
+    background: radial-gradient(circle at 50% 115%, rgba(76, 197, 255, 0.46), transparent 62%), #071f36;
+}
+
+.game-mode-art--starterrace {
+    background: radial-gradient(circle at 50% 120%, rgba(255, 207, 84, 0.36), transparent 60%), #172039;
+}
+
+/* Métamorph Mystère : une paire déjà formée et la carte impaire qui reste. */
+.metamorph-deck,
+.metamorph-odd {
+    position: absolute;
+    display: grid;
+    width: 82px;
+    height: 114px;
+    place-items: center;
+    overflow: hidden;
+    border: 3px solid rgba(255, 255, 255, 0.72);
+    border-radius: 13px;
+    background: linear-gradient(155deg, #faf7ff, #d8c8ef);
+    box-shadow: 0 11px 0 #0b0715, 0 22px 28px rgba(0, 0, 0, 0.42);
+}
+
+.metamorph-deck img,
+.metamorph-odd img {
+    width: 76px;
+    height: 76px;
+    object-fit: contain;
+    filter: drop-shadow(0 5px 5px rgba(29, 8, 44, 0.32));
+}
+
+.metamorph-deck--left { transform: translateX(-69px) rotate(-14deg); }
+.metamorph-deck--right { transform: translateX(69px) rotate(14deg); }
+.metamorph-odd { z-index: 2; width: 92px; height: 126px; border-color: #d986ff; transform: translateY(-6px); }
+.metamorph-odd b { position: absolute; right: 7px; bottom: 5px; color: #7f3fa1; font-size: 1.5rem; }
+
+/* Infiltration Rocket : deux camps coupés par une ligne de surveillance. */
+.rocket-art {
+    position: absolute;
+    bottom: -32px;
+    width: 154px;
+    height: 174px;
+    object-fit: contain;
+    filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.55));
+}
+
+.rocket-art--agent { right: calc(50% - 145px); z-index: 2; transform: scaleX(-1) rotate(4deg); }
+.rocket-art--detective { left: calc(50% - 145px); filter: brightness(0.5) saturate(0.68) drop-shadow(0 12px 12px rgba(0, 0, 0, 0.6)); transform: rotate(-4deg); }
+.rocket-art-divider { position: absolute; width: 2px; height: 125px; background: linear-gradient(transparent, rgba(255,255,255,.7), transparent); transform: rotate(14deg); }
+.rocket-art-mark { position: absolute; z-index: 4; top: 11px; color: #fff; font-family: Impact, sans-serif; font-size: 3.4rem; text-shadow: 4px 4px 0 #ab1838; transform: rotate(-8deg); }
+
+/* Bataille des Îles : mini-grille et deux formations aquatiques adverses. */
+.islands-mini-grid {
+    position: absolute;
+    width: 172px;
+    height: 138px;
+    border: 1px solid rgba(120, 221, 255, 0.58);
+    border-radius: 8px;
+    background-image:
+        linear-gradient(rgba(120, 221, 255, 0.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(120, 221, 255, 0.2) 1px, transparent 1px);
+    background-size: 17px 17px;
+    box-shadow: 0 16px 28px rgba(0, 0, 0, 0.32);
+    transform: perspective(500px) rotateX(56deg) translateY(15px);
+}
+
+.islands-art { position: absolute; z-index: 2; width: 110px; height: 110px; object-fit: contain; filter: drop-shadow(0 9px 8px rgba(0,0,0,.48)); }
+.islands-art--lapras { left: calc(50% - 126px); bottom: 17px; }
+.islands-art--sharpedo { right: calc(50% - 126px); top: 8px; transform: scaleX(-1) rotate(-5deg); }
+.islands-target { position: absolute; z-index: 3; right: calc(50% - 95px); bottom: 25px; display: grid; width: 39px; height: 39px; place-items: center; border: 2px solid #ff6d7d; border-radius: 50%; color: #fff; background: rgba(255, 73, 96, .74); box-shadow: 0 0 18px rgba(255, 73, 96, .5); font-size: .74rem; font-weight: 950; }
+
+/* Course des Starters : quatre concurrents autour d'une piste compacte. */
+.starter-mini-track {
+    position: absolute;
+    width: 166px;
+    height: 126px;
+    border: 16px dotted rgba(255, 255, 255, 0.32);
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 3px rgba(255, 207, 84, .48), 0 12px 24px rgba(0,0,0,.32);
+    transform: rotate(-5deg);
+}
+
+.starter-art { position: absolute; z-index: 2; width: 78px; height: 78px; object-fit: contain; filter: drop-shadow(0 6px 6px rgba(0,0,0,.46)); }
+.starter-art--bulbasaur { left: calc(50% - 126px); top: 0; }
+.starter-art--charmander { right: calc(50% - 126px); top: 2px; }
+.starter-art--squirtle { left: calc(50% - 120px); bottom: -2px; }
+.starter-art--pikachu { right: calc(50% - 120px); bottom: -3px; }
+.starter-die { position: absolute; z-index: 4; display: grid; width: 42px; height: 42px; place-items: center; border: 3px solid #fff; border-radius: 10px; color: #13213b; background: #ffdd67; box-shadow: 0 8px 16px rgba(0,0,0,.45); font-size: 1.35rem; font-weight: 950; transform: rotate(9deg); }
 
 /* Poké-Uno : trois vraies cartes en éventail, chacune de la couleur de son
    type, avec la pastille officielle en haut et le Pokémon dessous. */
@@ -759,7 +868,6 @@
     pointer-events: none;
 }
 
-.lobby-hero-copy,
 .lobby-hero h1 {
     margin: 0;
     font-size: clamp(3rem, 7vw, 6rem);
@@ -2073,6 +2181,12 @@
         height: 16px;
     }
 
+    .game-shell--active .center-row .type-pill--labelled {
+        gap: 0;
+        padding: 0;
+        font-size: 0;
+    }
+
     .game-shell--active .center-row .type-icon {
         width: 16px;
         height: 16px;
@@ -2160,6 +2274,65 @@
     .game-shell--active .my-hand-row .card-unit img {
         width: 58px;
         height: 58px;
+    }
+}
+
+/* Un petit écran en paysage ne peut pas contenir simultanément l'en-tête,
+   les adversaires, le centre de table et la main. Dans ce seul cas, la page
+   redevient scrollable afin qu'aucune zone de jeu ne soit masquée. */
+@media (max-width: 900px) and (max-height: 680px) and (orientation: landscape) {
+    html.game-document {
+        height: auto;
+        min-height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    body.game-shell--active {
+        height: auto;
+        min-height: 100dvh;
+        overflow: visible;
+        overscroll-behavior-y: auto;
+    }
+
+    .game-shell--active .page-content {
+        min-height: auto;
+        flex: 0 0 auto;
+        overflow: visible;
+    }
+
+    .game-shell--active .game-page {
+        height: auto;
+        min-height: auto;
+    }
+
+    .game-shell--active .game-table {
+        min-height: 0;
+        flex: none;
+        grid-template-rows: 304px auto;
+        overflow: hidden;
+    }
+
+    .game-shell--active .arena-stage {
+        height: 304px;
+        min-height: 304px;
+    }
+
+    .game-shell--active .center-row .table-rule {
+        display: none;
+    }
+
+    .game-shell--active .center-row .table-meta {
+        width: 150px;
+        gap: 4px;
+    }
+
+    .game-shell--active .center-row .game-types {
+        display: grid;
+        grid-template-columns: repeat(2, max-content);
+        justify-content: center;
+        gap: 3px;
+        margin: 0;
     }
 }
 
