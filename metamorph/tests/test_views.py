@@ -48,6 +48,29 @@ class MetamorphViewTests(TestCase):
         self.assertContains(response, reverse("metamorph:api_lobby_state"))
         self.assertContains(response, reverse("home"))
 
+    def test_anonymous_visitors_can_read_the_lobby_and_public_state(self):
+        game = create_game(self.host)
+
+        page = self.client.get(reverse("metamorph:lobby"))
+        state = self.client.get(reverse("metamorph:api_lobby_state"))
+
+        self.assertEqual(page.status_code, 200)
+        self.assertTemplateUsed(page, "metamorph/lobby.html")
+        self.assertEqual(state.status_code, 200)
+        self.assertEqual(state.json()["my_games"], [])
+        self.assertEqual(state.json()["my_game_ids"], [])
+        self.assertIn(str(game.id), [entry["id"] for entry in state.json()["open_games"]])
+        self.assertContains(page, f'action="{reverse("metamorph:create_game")}"', html=False)
+        self.assertContains(
+            page,
+            f'action="{reverse("metamorph:join_game", kwargs={"game_id": game.id})}"',
+            html=False,
+        )
+
+        joined = self.client.post(reverse("metamorph:join_game", kwargs={"game_id": game.id}))
+        self.assertRedirects(joined, reverse("metamorph:game_detail", kwargs={"game_id": game.id}))
+        self.assertTrue(game.players.filter(user__profile__is_guest=True).exists())
+
     def test_create_and_join_are_post_only(self):
         self.client.force_login(self.host)
         create_url = reverse("metamorph:create_game")
@@ -94,6 +117,51 @@ class MetamorphViewTests(TestCase):
         self.assertContains(response, reverse("metamorph:api_state", kwargs={"game_id": game.id}))
         self.assertContains(response, reverse("metamorph:api_start", kwargs={"game_id": game.id}))
         self.assertContains(response, reverse("metamorph:api_draw", kwargs={"game_id": game.id}))
+        self.assertContains(response, reverse("metamorph:api_add_bot", kwargs={"game_id": game.id}))
+        self.assertContains(response, reverse("metamorph:api_bot_turn", kwargs={"game_id": game.id}))
+
+    def test_host_manages_a_bot_and_api_plays_its_turn(self):
+        game = create_game(self.host)
+        added = self.post_json(
+            "api_add_bot",
+            self.host,
+            game,
+            {"expected_turn_revision": game.turn_revision},
+        )
+        self.assertEqual(added.status_code, 200)
+        bot = next(player for player in added.json()["players"] if player["is_bot"])
+
+        with (
+            patch("metamorph.services.random.sample", return_value=self.species[:PAIR_COUNT]),
+            patch("metamorph.services.random.shuffle", side_effect=lambda deck: None),
+        ):
+            started = self.post_json(
+                "api_start",
+                self.host,
+                game,
+                {"expected_turn_revision": added.json()["turn_revision"]},
+            )
+        drawn = self.post_json(
+            "api_draw",
+            self.host,
+            game,
+            {
+                "card_position": 1,
+                "expected_turn_revision": started.json()["turn_revision"],
+            },
+        )
+        self.assertEqual(drawn.status_code, 200)
+        self.assertEqual(drawn.json()["current_turn"]["id"], bot["id"])
+
+        with patch("metamorph.services.random.randint", return_value=1):
+            played = self.post_json(
+                "api_bot_turn",
+                self.host,
+                game,
+                {"expected_turn_revision": drawn.json()["turn_revision"]},
+            )
+        self.assertEqual(played.status_code, 200)
+        self.assertTrue(played.json()["moves"][-1]["actor"]["is_bot"])
 
     def test_state_requires_login_and_participation(self):
         game = self.make_waiting_game()

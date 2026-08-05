@@ -288,6 +288,10 @@
     text-align: center;
 }
 
+.pic-reveal.is-popping {
+    animation: pic-reveal-in 360ms ease-out both;
+}
+
 .pic-reveal-word {
     margin: var(--space-2) 0 0;
     color: var(--color-positive);
@@ -302,6 +306,10 @@
 @keyframes pic-pop {
     0% { opacity: 0; transform: scale(0.86); }
     100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pic-reveal-in {
+    from { opacity: 0; }
 }
 
 .pic-tools {
@@ -451,6 +459,196 @@
     font-size: var(--font-size-sm);
 }
 
+.pic-board.is-round-entering {
+    animation: pic-board-enter 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pic-stage.is-entering,
+.pic-game.is-correct-answer .pic-guess-form {
+    animation: pic-stage-enter 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pic-game.is-correct-answer .pic-board {
+    animation: pic-correct-glow 760ms ease-out both;
+}
+
+.timer-ring.is-warning {
+    filter: drop-shadow(0 0 8px rgba(255, 209, 102, 0.2));
+}
+
+@keyframes pic-board-enter {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.99);
+    }
+}
+
+@keyframes pic-stage-enter {
+    from {
+        opacity: 0;
+        transform: translateY(7px);
+    }
+}
+
+@keyframes pic-correct-glow {
+    35% { filter: drop-shadow(0 0 18px rgba(98, 230, 166, 0.5)); }
+}
+
+/* Pendant une manche, le bureau devient un vrai plateau : le document reste
+   fixe et seuls le classement (ou les contrôles qui débordent) défilent. */
+@media (min-width: 801px) and (min-height: 601px) {
+    html.pic-game-document--active {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    body.pic-game-shell--active {
+        display: flex;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        flex-direction: column;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    .pic-game-shell--active .site-header {
+        position: relative;
+        flex: 0 0 auto;
+    }
+
+    .pic-game-shell--active .site-header-inner {
+        min-height: 54px;
+        padding-block: 5px;
+    }
+
+    .pic-game-shell--active .site-title .brand-mark,
+    .pic-game-shell--active .site-user .user-avatar {
+        width: 34px;
+        height: 34px;
+    }
+
+    .pic-game-shell--active .page-content {
+        flex: 1 1 auto;
+        width: min(100%, 1540px);
+        min-height: 0;
+        overflow: hidden;
+        padding: 8px clamp(8px, 1.4vw, var(--space-5));
+    }
+
+    .pic-game-shell--active .pic-game {
+        position: relative;
+        display: grid;
+        width: 100%;
+        max-width: none;
+        height: 100%;
+        min-height: 0;
+        grid-template-columns: minmax(0, 1fr) clamp(260px, 23vw, 340px);
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: 8px clamp(8px, 1.2vw, var(--space-4));
+        padding: 0;
+    }
+
+    .pic-game-shell--active .pic-game .room-header {
+        min-height: 44px;
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    .pic-game-shell--active .pic-game .room-header .back-link {
+        min-height: 40px;
+        margin: 0;
+    }
+
+    .pic-game-shell--active .pic-game > .message {
+        position: absolute;
+        top: 48px;
+        right: 12px;
+        left: 12px;
+        z-index: 30;
+        width: min(600px, calc(100% - 24px));
+        margin-inline: auto;
+    }
+
+    .pic-game-shell--active .pic-game .pic-stage {
+        display: grid;
+        height: 100%;
+        min-height: 0;
+        grid-column: 1;
+        grid-row: 2;
+        grid-template-rows: auto minmax(0, 1fr) auto auto;
+        align-items: stretch;
+        gap: clamp(5px, 0.9vh, 10px);
+        overflow: hidden;
+        padding: clamp(9px, 1.4vh, var(--space-4));
+    }
+
+    .pic-game-shell--active .pic-game .pic-stage-top {
+        min-height: 58px;
+        flex-wrap: nowrap;
+    }
+
+    .pic-game-shell--active .pic-game .timer-ring {
+        width: 62px;
+        height: 62px;
+    }
+
+    .pic-game-shell--active .pic-game .timer-value {
+        font-size: 1.08rem;
+    }
+
+    .pic-game-shell--active .pic-game .pic-board {
+        width: min(100%, calc((100dvh - 245px) * 1.5));
+        height: auto;
+        min-height: 0;
+        max-height: 100%;
+        aspect-ratio: 3 / 2;
+        align-self: center;
+        justify-self: center;
+    }
+
+    .pic-game-shell--active .pic-game .pic-board canvas {
+        width: 100%;
+        height: 100%;
+    }
+
+    .pic-game-shell--active .pic-game .pic-tools {
+        max-height: 110px;
+        gap: 6px;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        padding: 7px;
+    }
+
+    .pic-game-shell--active .pic-game .pic-guess-feed {
+        max-height: 52px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .pic-game-shell--active .pic-game .pic-scores {
+        display: flex;
+        min-height: 0;
+        grid-column: 2;
+        grid-row: 2;
+        flex-direction: column;
+        overflow: hidden;
+        padding: var(--space-3);
+    }
+
+    .pic-game-shell--active .pic-game .pic-scores-head {
+        flex: 0 0 auto;
+    }
+
+    .pic-game-shell--active .pic-game .score-board-list {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+    }
+}
+
 @media (max-width: 760px) {
     .pic-hero {
         grid-template-columns: minmax(0, 1fr);
@@ -469,7 +667,13 @@
 
 @media (prefers-reduced-motion: reduce) {
     .pic-easel-stroke,
-    .pic-reveal.is-popping .pic-reveal-word {
+    .pic-reveal.is-popping,
+    .pic-reveal.is-popping .pic-reveal-word,
+    .pic-board.is-round-entering,
+    .pic-stage.is-entering,
+    .pic-game.is-correct-answer .pic-guess-form,
+    .pic-game.is-correct-answer .pic-board,
+    .timer-ring.is-urgent {
         animation: none;
     }
 

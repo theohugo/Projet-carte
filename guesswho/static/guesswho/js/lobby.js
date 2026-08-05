@@ -9,7 +9,9 @@
     const initialStateNode = document.getElementById("guesswho-lobby-state");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const precisePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const knownState = JSON.stringify(JSON.parse(initialStateNode.textContent));
+    const initialState = JSON.parse(initialStateNode.textContent);
+    const knownState = JSON.stringify(initialState);
+    const t = (french, english) => (initialState.language === "en" ? english : french);
     const reloadContextKey = `guesswho:lobby-reload:${window.location.pathname}`;
     let pollPending = false;
     let reloadRequested = false;
@@ -44,7 +46,7 @@
         if (context.rulesOpen) {
             rules.hidden = false;
             rulesButton?.setAttribute("aria-expanded", "true");
-            if (rulesButton) rulesButton.textContent = "Masquer les règles";
+            if (rulesButton) rulesButton.textContent = t("Masquer les règles", "Hide rules");
         }
         window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
             window.scrollTo(context.scrollX || 0, context.scrollY || 0);
@@ -85,7 +87,7 @@
         const shouldOpen = rules.hidden;
         rules.hidden = !shouldOpen;
         rulesButton.setAttribute("aria-expanded", String(shouldOpen));
-        rulesButton.textContent = shouldOpen ? "Masquer les règles" : "Comment jouer";
+        rulesButton.textContent = shouldOpen ? t("Masquer les règles", "Hide rules") : t("Comment jouer", "How to play");
         if (shouldOpen) {
             rules.scrollIntoView({
                 behavior: reducedMotion.matches ? "auto" : "smooth",
@@ -100,7 +102,7 @@
             if (!submitButton || submitButton.disabled) return;
             submitButton.disabled = true;
             submitButton.setAttribute("aria-busy", "true");
-            submitButton.textContent = form.action.includes("join") ? "Connexion…" : "Création…";
+            submitButton.textContent = form.action.includes("join") ? t("Connexion…", "Joining…") : t("Création…", "Creating…");
         });
     });
 

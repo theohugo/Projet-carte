@@ -37,10 +37,14 @@
     const RING_LENGTH = 2 * Math.PI * 44;
 
     let state = JSON.parse(initialStateElement.textContent);
+    const t = (french, english) => (state.language === "en" ? english : french);
     let lastSequence = 0;
     let renderedRound = null;
+    let revealedRound = null;
+    let renderedStatus = null;
     let secondsLeftAt = performance.now();
     let pollTimer = null;
+    let celebrationTimer = null;
     let isSending = false;
 
     // Trait en cours de tracé : envoyé au serveur quand le doigt/la souris se lève.
@@ -79,14 +83,18 @@
             name.className = "room-player-name";
             name.textContent = player.username;
             const role = document.createElement("small");
-            role.textContent = index === 0 ? "Premier au crayon" : `Dessine à la manche ${index + 1}`;
+            role.textContent = index === 0
+                ? t("Premier au crayon", "First to draw")
+                : state.language === "en"
+                  ? `Draws in round ${index + 1}`
+                  : `Dessine à la manche ${index + 1}`;
             name.appendChild(role);
             item.append(avatar(player.username), name);
             return item;
         });
         const seat = document.createElement("li");
         seat.className = "room-player room-seat";
-        seat.textContent = "Place libre — le lien suffit pour rejoindre";
+        seat.textContent = t("Place libre — le lien suffit pour rejoindre", "Open seat — use the link to join");
         rows.push(seat);
         waitingPlayers.replaceChildren(...rows);
     }
@@ -163,12 +171,12 @@
                     if (round && !round.am_drawer && round.drawer === player.username) {
                         const flag = document.createElement("span");
                         flag.className = "score-found-flag";
-                        flag.textContent = "dessine";
+                        flag.textContent = t("dessine", "drawing");
                         item.appendChild(flag);
                     } else if (foundNames.has(player.username)) {
                         const flag = document.createElement("span");
                         flag.className = "score-found-flag";
-                        flag.textContent = "trouvé";
+                        flag.textContent = t("trouvé", "found");
                         item.appendChild(flag);
                     }
                     item.appendChild(points);
@@ -179,34 +187,69 @@
         if (!scoresNote) return;
         if (state.status === "TERMINEE") {
             const best = [...state.players].sort((a, b) => b.score - a.score)[0];
-            scoresNote.textContent = best ? `Partie terminée — ${best.username} l'emporte.` : "";
+            scoresNote.textContent = best
+                ? state.language === "en"
+                    ? `Game over — ${best.username} wins.`
+                    : `Partie terminée — ${best.username} l'emporte.`
+                : "";
         } else {
-            scoresNote.textContent = "Le dessinateur marque à chaque joueur qui trouve.";
+            scoresNote.textContent = t(
+                "Le dessinateur marque à chaque joueur qui trouve.",
+                "The artist scores for every player who guesses correctly.",
+            );
         }
     }
 
     function renderRound() {
         const round = state.round;
-        const isPlaying = state.status === "EN_COURS" && round;
+        const isActive = state.status === "EN_COURS";
+        const isPlaying = isActive && round;
+        const statusChanged = renderedStatus !== state.status;
+        root.dataset.gameStatus = state.status || "";
+        document.documentElement.classList.toggle("pic-game-document--active", isActive);
+        document.body.classList.toggle("pic-game-shell--active", isActive);
         stage.hidden = !isPlaying;
         waiting.hidden = state.status !== "EN_ATTENTE";
         if (statusBadge) {
             statusBadge.textContent =
-                { EN_ATTENTE: "En attente", EN_COURS: "En cours", TERMINEE: "Terminée" }[state.status] || "";
+                {
+                    EN_ATTENTE: t("En attente", "Waiting"),
+                    EN_COURS: t("En cours", "In progress"),
+                    TERMINEE: t("Terminée", "Finished"),
+                }[state.status] || "";
             statusBadge.dataset.status = state.status.toLowerCase();
         }
         renderRoundDots();
-        if (!isPlaying) return;
+        if (!isPlaying) {
+            renderedStatus = state.status;
+            return;
+        }
+
+        if (statusChanged && !reducedMotion.matches) {
+            stage.classList.remove("is-entering");
+            void stage.offsetWidth;
+            stage.classList.add("is-entering");
+        }
+        renderedStatus = state.status;
 
         // Nouvelle manche : la toile repart vierge et le curseur de traits aussi.
         if (renderedRound !== round.number) {
             renderedRound = round.number;
             lastSequence = 0;
             clearCanvas();
+            board.classList.remove("is-round-entering");
+            if (!reducedMotion.matches) {
+                void board.offsetWidth;
+                board.classList.add("is-round-entering");
+            }
         }
 
-        roundLabel.textContent = `Manche ${round.number} / ${round.total}`;
-        turnLabel.textContent = round.am_drawer ? "À toi de dessiner" : `${round.drawer} dessine`;
+        roundLabel.textContent = `${t("Manche", "Round")} ${round.number} / ${round.total}`;
+        turnLabel.textContent = round.am_drawer
+            ? t("À toi de dessiner", "Your turn to draw")
+            : state.language === "en"
+              ? `${round.drawer} is drawing`
+              : `${round.drawer} dessine`;
 
         tools.hidden = !round.am_drawer || round.ended;
         board.classList.toggle("is-drawing", Boolean(round.am_drawer) && !round.ended);
@@ -216,17 +259,22 @@
         // quand le dessinateur réfléchit : un badge « en direct » le dit.
         if (watchBadge) {
             watchBadge.hidden = round.am_drawer || round.ended;
-            if (watchText) watchText.textContent = `${round.drawer} dessine`;
+            if (watchText) {
+                watchText.textContent = state.language === "en" ? `${round.drawer} is drawing` : `${round.drawer} dessine`;
+            }
         }
 
         reveal.hidden = !round.ended;
         if (round.ended) {
             wordLabel.textContent = round.word;
-            if (!reducedMotion.matches) {
+            if (revealedRound !== round.number && !reducedMotion.matches) {
+                revealedRound = round.number;
                 reveal.classList.remove("is-popping");
                 void reveal.offsetWidth;
                 reveal.classList.add("is-popping");
             }
+        } else {
+            reveal.classList.remove("is-popping");
         }
 
         const canGuess = !round.am_drawer && !round.ended && !round.i_found;
@@ -234,7 +282,9 @@
         guessForm.classList.toggle("is-found", Boolean(round.i_found));
         guessInput.disabled = !canGuess;
         guessSubmit.disabled = !canGuess;
-        guessInput.placeholder = round.i_found ? "Trouvé ! On attend les autres…" : "C’est quel Pokémon ?";
+        guessInput.placeholder = round.i_found
+            ? t("Trouvé ! On attend les autres…", "Found! Waiting for the others…")
+            : t("C’est quel Pokémon ?", "Which Pokémon is it?");
 
         myGuesses.replaceChildren(
             ...round.my_guesses
@@ -273,7 +323,19 @@
         const color =
             secondsLeft <= 10 ? "var(--color-danger)" : secondsLeft <= 30 ? "#ffd166" : "var(--color-accent)";
         timerRing.style.setProperty("--timer-color", color);
+        timerRing.classList.toggle("is-warning", secondsLeft > 10 && secondsLeft <= 30);
         timerRing.classList.toggle("is-urgent", secondsLeft > 0 && secondsLeft <= 10);
+    }
+
+    function celebrateCorrectGuess() {
+        if (reducedMotion.matches) return;
+        window.clearTimeout(celebrationTimer);
+        root.classList.remove("is-correct-answer");
+        void root.offsetWidth;
+        root.classList.add("is-correct-answer");
+        celebrationTimer = window.setTimeout(() => {
+            root.classList.remove("is-correct-answer");
+        }, 900);
     }
 
     function applyState(nextState) {
@@ -285,7 +347,11 @@
         renderRound();
         renderTimer();
         if (state.round?.ended && previousRound && !previousRound.ended) {
-            announce(`Manche terminée : c'était ${state.round.word}.`);
+            announce(
+                state.language === "en"
+                    ? `Round over: it was ${state.round.word}.`
+                    : `Manche terminée : c'était ${state.round.word}.`,
+            );
         }
     }
 
@@ -344,7 +410,7 @@
                 lastSequence = Math.max(lastSequence, sequence);
             }
         } catch (_) {
-            showFeedback("Un trait n'a pas pu être envoyé.");
+            showFeedback(t("Un trait n'a pas pu être envoyé.", "A stroke could not be sent."));
         }
     }
 
@@ -431,15 +497,22 @@
             if (response.ok) {
                 guessInput.value = "";
                 applyState(payload.state);
-                announce(payload.is_correct ? `Trouvé, +${payload.points} points.` : "Raté.");
+                if (payload.is_correct) celebrateCorrectGuess();
+                announce(
+                    payload.is_correct
+                        ? state.language === "en"
+                            ? `Found it, +${payload.points} points.`
+                            : `Trouvé, +${payload.points} points.`
+                        : t("Raté.", "Wrong guess."),
+                );
             } else if (payload.state) {
                 applyState(payload.state);
                 showFeedback(payload.error || "");
             } else {
-                showFeedback(payload.error || "Impossible d'envoyer la proposition.");
+                showFeedback(payload.error || t("Impossible d'envoyer la proposition.", "Could not send the guess."));
             }
         } catch (_) {
-            showFeedback("Connexion perdue, réessaie.");
+            showFeedback(t("Connexion perdue, réessaie.", "Connection lost. Try again."));
         } finally {
             isSending = false;
             guessInput.focus();
@@ -451,12 +524,12 @@
         const label = button.querySelector("[data-copy-label]");
         try {
             await navigator.clipboard.writeText(window.location.href);
-            label.textContent = "Lien copié";
+            label.textContent = t("Lien copié", "Link copied");
         } catch (_) {
             label.textContent = window.location.href;
         }
         window.setTimeout(() => {
-            label.textContent = "Copier le lien d’invitation";
+            label.textContent = t("Copier le lien d’invitation", "Copy invitation link");
         }, 2500);
     });
 

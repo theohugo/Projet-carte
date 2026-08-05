@@ -1,40 +1,41 @@
 {% extends "base.html" %}
-{% load static icons %}
+{% load static icons poketable_i18n %}
 
-{% block title %}Qui est ce Pokémon ? — PokéTable{% endblock %}
+{% block title %}{% bilingual "Qui est ce Pokémon ?" "Who’s That Pokémon?" %} — PokéTable{% endblock %}
+{% block meta_description %}{% bilingual "Reconnais les silhouettes des Pokémon de la première génération, débloque des indices et réponds plus vite que tes adversaires." "Recognize first-generation Pokémon silhouettes, unlock hints and answer faster than your opponents." %}{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'silhouette/css/silhouette.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'silhouette/css/silhouette.css' %}?v=4">
 
 <div id="silhouette-lobby" class="sil-lobby" data-state-url="{% url 'silhouette:api_lobby_state' %}">
     <section class="sil-hero" aria-labelledby="silhouette-title">
         <div>
-            <a class="back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} Tous les jeux</a>
-            <p class="section-kicker">Réflexe · déduction</p>
-            <h1 id="silhouette-title">Qui est ce Pokémon ?</h1>
-            <p class="sil-lead">Une silhouette apparaît, tout le monde répond en même temps. Plus tu trouves tôt, plus la manche rapporte.</p>
+            <a class="back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} {% bilingual "Tous les jeux" "All games" %}</a>
+            <p class="section-kicker">{% bilingual "Réflexe · déduction" "Reflexes · deduction" %}</p>
+            <h1 id="silhouette-title">{% bilingual "Qui est ce Pokémon ?" "Who’s That Pokémon?" %}</h1>
+            <p class="sil-lead">{% bilingual "Une silhouette apparaît, tout le monde répond en même temps. Plus tu trouves tôt, plus la manche rapporte." "A silhouette appears and everyone answers at once. The faster you guess, the more points you earn." %}</p>
             <ol class="sil-steps">
-                <li><b>0 s</b> La silhouette</li>
-                <li><b>5 s</b> Son type</li>
-                <li><b>10 s</b> Ses initiales</li>
-                <li><b>30 s</b> Réponse</li>
+                <li><b>0 s</b> {% bilingual "La silhouette" "Silhouette" %}</li>
+                <li><b>5 s</b> {% bilingual "Son type" "Its type" %}</li>
+                <li><b>10 s</b> {% bilingual "Ses initiales" "Letter hint" %}</li>
+                <li><b>30 s</b> {% bilingual "Réponse" "Answer" %}</li>
             </ol>
 
             <form method="post" action="{% url 'silhouette:create_game' %}" class="sil-create">
                 {% csrf_token %}
                 <fieldset>
-                    <legend class="section-kicker">Longueur de la partie</legend>
+                    <legend class="section-kicker">{% bilingual "Longueur de la partie" "Game length" %}</legend>
                     <div class="sil-round-choices">
                         {% for value, label in round_choices %}
                         <label class="sil-round-choice">
                             <input type="radio" name="round_count" value="{{ value }}" {% if value == 10 %}checked{% endif %}>
-                            <span>{{ label }}</span>
+                            <span>{{ value }} {% bilingual "manches" "rounds" %}</span>
                             <small>≈ {{ value }} min</small>
                         </label>
                         {% endfor %}
                     </div>
                 </fieldset>
-                <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="create-game">Ouvrir un salon</button>
+                <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="create-game">{% bilingual "Ouvrir un salon" "Open a room" %}</button>
             </form>
         </div>
 
@@ -42,36 +43,36 @@
     </section>
 
     <section class="sil-section" aria-labelledby="sil-open-title">
-        <h2 id="sil-open-title">Salons ouverts</h2>
+        <h2 id="sil-open-title">{% bilingual "Salons ouverts" "Open rooms" %}</h2>
         <ul class="game-list" data-open-games>
             {% for game in lobby_state.open_games %}
             <li class="game-list-item">
                 <span class="game-list-copy">
-                    <strong>Salon de {{ game.host }}</strong>
-                    <span>{{ game.player_count }} joueur{{ game.player_count|pluralize }} · {{ game.round_count }} manches</span>
+                    <strong>{% bilingual "Salon de" "Room hosted by" %} {{ game.host }}</strong>
+                    <span>{{ game.player_count }} {% bilingual "joueur(s)" "player(s)" %} · {{ game.round_count }} {% bilingual "manches" "rounds" %}</span>
                 </span>
                 <form method="post" action="{% url 'silhouette:join_game' game_id=game.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-secondary" data-reload-focus-key="join-{{ game.id }}">{% if game.is_mine %}Rejoindre mon salon{% else %}Rejoindre{% endif %}</button>
+                    <button type="submit" class="btn btn-secondary" data-reload-focus-key="join-{{ game.id }}">{% if game.is_mine %}{% bilingual "Rejoindre mon salon" "Open my room" %}{% else %}{% bilingual "Rejoindre" "Join" %}{% endif %}</button>
                 </form>
             </li>
             {% empty %}
-            <li class="empty-state">Aucun salon ouvert pour l’instant. Ouvre le tien !</li>
+            <li class="empty-state">{% bilingual "Aucun salon ouvert pour l’instant. Ouvre le tien !" "No open rooms yet. Open yours!" %}</li>
             {% endfor %}
         </ul>
     </section>
 
     {% if my_games %}
     <section class="sil-section" aria-labelledby="sil-mine-title">
-        <h2 id="sil-mine-title">Mes parties</h2>
+        <h2 id="sil-mine-title">{% bilingual "Mes parties" "My games" %}</h2>
         <ul class="game-list">
             {% for game in my_games %}
             <li class="game-list-item">
                 <span class="game-list-copy">
-                    <strong>Salon de {{ game.created_by.username }}</strong>
-                    <span>{{ game.get_status_display }} · {{ game.round_count }} manches</span>
+                    <strong>{% bilingual "Salon de" "Room hosted by" %} {{ game.created_by.username }}</strong>
+                    <span>{% if game.status == "EN_COURS" %}{% bilingual "En cours" "In progress" %}{% else %}{% bilingual "Terminée" "Finished" %}{% endif %} · {{ game.round_count }} {% bilingual "manches" "rounds" %}</span>
                 </span>
-                <a class="btn btn-ghost" href="{% url 'silhouette:game_detail' game_id=game.id %}">Ouvrir</a>
+                <a class="btn btn-ghost" href="{% url 'silhouette:game_detail' game_id=game.id %}">{% bilingual "Ouvrir" "Open" %}</a>
             </li>
             {% endfor %}
         </ul>

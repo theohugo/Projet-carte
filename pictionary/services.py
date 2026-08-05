@@ -12,7 +12,13 @@ from django.db.models import Count, Max
 from django.utils import timezone
 
 from game.models import PokemonCard
-from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID, name_matches
+from game.pokemon_names import (
+    GEN_ONE_MAX_POKEDEX_ID,
+    active_language,
+    bilingual_text,
+    localized_pokemon_name,
+    name_matches,
+)
 from game.quests import EVENT_PICTIONARY_DRAWN, EVENT_PICTIONARY_FOUND, record_event
 from pictionary.models import (
     PictionaryGame,
@@ -63,7 +69,7 @@ def _bump_revision(game: PictionaryGame):
 @transaction.atomic
 def create_game(user, round_count: int) -> PictionaryGame:
     if round_count not in PictionaryGame.RoundCount.values:
-        raise PictionaryError("Nombre de manches invalide.")
+        raise PictionaryError(bilingual_text("Nombre de manches invalide.", "Invalid number of rounds."))
     game = PictionaryGame.objects.create(created_by=user, round_count=round_count)
     PictionaryPlayer.objects.create(game=game, user=user, turn_order=0)
     return game
@@ -73,7 +79,9 @@ def create_game(user, round_count: int) -> PictionaryGame:
 def join_game(game_id, user) -> PictionaryGame:
     game = PictionaryGame.objects.select_for_update().get(pk=game_id)
     if game.status != PictionaryGame.Status.EN_ATTENTE:
-        raise PictionaryError("Cette partie a déjà commencé.")
+        raise PictionaryError(
+            bilingual_text("Cette partie a déjà commencé.", "This game has already started.")
+        )
     if not game.players.filter(user=user).exists():
         PictionaryPlayer.objects.create(game=game, user=user, turn_order=game.players.count())
     _bump_revision(game)
@@ -84,11 +92,20 @@ def join_game(game_id, user) -> PictionaryGame:
 def start_game(game_id, user) -> PictionaryGame:
     game = PictionaryGame.objects.select_for_update().get(pk=game_id)
     if game.created_by_id != user.id:
-        raise PictionaryPermissionError("Seul l'hôte peut lancer la partie.")
+        raise PictionaryPermissionError(
+            bilingual_text("Seul l'hôte peut lancer la partie.", "Only the host can start the game.")
+        )
     if game.status != PictionaryGame.Status.EN_ATTENTE:
-        raise PictionaryError("Cette partie a déjà commencé.")
+        raise PictionaryError(
+            bilingual_text("Cette partie a déjà commencé.", "This game has already started.")
+        )
     if game.players.count() < MIN_PLAYERS:
-        raise PictionaryError(f"Il faut au moins {MIN_PLAYERS} joueurs : un dessine, les autres devinent.")
+        raise PictionaryError(
+            bilingual_text(
+                f"Il faut au moins {MIN_PLAYERS} joueurs : un dessine, les autres devinent.",
+                f"At least {MIN_PLAYERS} players are required: one draws and the others guess.",
+            )
+        )
 
     game.status = PictionaryGame.Status.EN_COURS
     game.started_at = timezone.now()
@@ -109,7 +126,12 @@ def _open_round(game: PictionaryGame, number: int) -> PictionaryRound:
     if not pool:
         pool = list(_pokemon_pool().values_list("pk", flat=True))
     if not pool:
-        raise PictionaryError("Le catalogue ne contient aucun Pokémon de la première génération.")
+        raise PictionaryError(
+            bilingual_text(
+                "Le catalogue ne contient aucun Pokémon de la première génération.",
+                "The catalogue contains no first-generation Pokémon.",
+            )
+        )
 
     return PictionaryRound.objects.create(
         game=game,
@@ -171,7 +193,7 @@ def advance_if_needed(game_id) -> PictionaryGame:
 def _active_round_for(game: PictionaryGame) -> PictionaryRound:
     round_obj = current_round(game)
     if round_obj is None or round_obj.ended_at is not None:
-        raise PictionaryError("Cette manche est terminée.")
+        raise PictionaryError(bilingual_text("Cette manche est terminée.", "This round is over."))
     return round_obj
 
 
@@ -182,18 +204,25 @@ def add_stroke(game_id, user, stroke: dict) -> int:
     game = PictionaryGame.objects.select_for_update().get(pk=game_id)
     player = game.players.filter(user=user).first()
     if player is None:
-        raise PictionaryPermissionError("Vous ne participez pas à cette partie.")
+        raise PictionaryPermissionError(
+            bilingual_text(
+                "Vous ne participez pas à cette partie.",
+                "You are not taking part in this game.",
+            )
+        )
     if game.status != PictionaryGame.Status.EN_COURS:
-        raise PictionaryError("La partie n'est pas en cours.")
+        raise PictionaryError(bilingual_text("La partie n'est pas en cours.", "The game is not in progress."))
 
     round_obj = _active_round_for(game)
     if round_obj.drawer_id != player.pk:
-        raise PictionaryPermissionError("Seul le dessinateur peut dessiner.")
+        raise PictionaryPermissionError(
+            bilingual_text("Seul le dessinateur peut dessiner.", "Only the drawer can draw.")
+        )
 
     is_clear = bool(stroke.get("is_clear"))
     points = [] if is_clear else _clean_points(stroke.get("points"))
     if not is_clear and len(points) < 1:
-        raise PictionaryError("Trait vide.")
+        raise PictionaryError(bilingual_text("Trait vide.", "Empty stroke."))
 
     next_sequence = (round_obj.strokes.aggregate(top=Max("sequence"))["top"] or 0) + 1
     PictionaryStroke.objects.create(
@@ -246,23 +275,45 @@ def submit_guess(game_id, user, text: str, expected_revision=None) -> dict:
     game = PictionaryGame.objects.select_for_update().get(pk=game_id)
     player = game.players.filter(user=user).first()
     if player is None:
-        raise PictionaryPermissionError("Vous ne participez pas à cette partie.")
+        raise PictionaryPermissionError(
+            bilingual_text(
+                "Vous ne participez pas à cette partie.",
+                "You are not taking part in this game.",
+            )
+        )
     if expected_revision is not None and expected_revision != game.turn_revision:
-        raise StaleRevisionError("La partie a changé entre-temps.")
+        raise StaleRevisionError(
+            bilingual_text(
+                "La partie a changé entre-temps.",
+                "The game changed in the meantime.",
+            )
+        )
     if game.status != PictionaryGame.Status.EN_COURS:
-        raise PictionaryError("La partie n'est pas en cours.")
+        raise PictionaryError(bilingual_text("La partie n'est pas en cours.", "The game is not in progress."))
 
     round_obj = _active_round_for(game)
     if round_obj.drawer_id == player.pk:
-        raise PictionaryError("Le dessinateur ne peut pas proposer de réponse.")
+        raise PictionaryError(
+            bilingual_text(
+                "Le dessinateur ne peut pas proposer de réponse.",
+                "The drawer cannot submit a guess.",
+            )
+        )
     if round_obj.guesses.filter(player=player, is_correct=True).exists():
-        raise PictionaryError("Tu as déjà trouvé cette manche.")
+        raise PictionaryError(
+            bilingual_text("Tu as déjà trouvé cette manche.", "You already solved this round.")
+        )
 
     normalized_text = (text or "").strip()
     if not normalized_text:
-        raise PictionaryError("Écris un nom de Pokémon.")
+        raise PictionaryError(bilingual_text("Écris un nom de Pokémon.", "Enter a Pokémon name."))
     if len(normalized_text) > MAX_GUESS_LENGTH:
-        raise PictionaryError(f"Une proposition fait au plus {MAX_GUESS_LENGTH} caractères.")
+        raise PictionaryError(
+            bilingual_text(
+                f"Une proposition fait au plus {MAX_GUESS_LENGTH} caractères.",
+                f"A guess can contain at most {MAX_GUESS_LENGTH} characters.",
+            )
+        )
 
     now = timezone.now()
     elapsed = (now - round_obj.started_at).total_seconds()
@@ -328,7 +379,7 @@ def serialize_game_state(game: PictionaryGame, user, *, since_sequence: int = 0)
             "am_drawer": am_drawer,
             # Le mot n'est envoyé qu'au dessinateur, ou à tous une fois la
             # manche terminée.
-            "word": round_obj.pokemon_card.name_fr if (am_drawer or ended) else None,
+            "word": localized_pokemon_name(round_obj.pokemon_card) if (am_drawer or ended) else None,
             "seconds_left": 0 if ended else max(0, round(ROUND_SECONDS - elapsed)),
             "round_seconds": ROUND_SECONDS,
             "ended": ended,
@@ -362,6 +413,7 @@ def serialize_game_state(game: PictionaryGame, user, *, since_sequence: int = 0)
 
     return {
         "game_id": str(game.id),
+        "language": active_language(),
         "status": game.status,
         "turn_revision": game.turn_revision,
         "round_count": game.round_count,
@@ -374,6 +426,7 @@ def serialize_game_state(game: PictionaryGame, user, *, since_sequence: int = 0)
 
 
 def get_lobby_state(user) -> dict:
+    is_authenticated = getattr(user, "is_authenticated", False)
     open_games = (
         PictionaryGame.objects.filter(status=PictionaryGame.Status.EN_ATTENTE)
         .select_related("created_by")
@@ -386,7 +439,7 @@ def get_lobby_state(user) -> dict:
                 "host": game.created_by.get_username(),
                 "player_count": game.player_count,
                 "round_count": game.round_count,
-                "is_mine": game.players.filter(user=user).exists(),
+                "is_mine": is_authenticated and game.players.filter(user=user).exists(),
             }
             for game in open_games
         ]

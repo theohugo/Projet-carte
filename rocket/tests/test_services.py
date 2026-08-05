@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from rocket.models import RocketGame, RocketPlayer
 from rocket.services import (
@@ -198,3 +198,26 @@ class RocketLobbyServiceTests(TestCase):
             join_game(game.id, user)
         with self.assertRaisesMessage(RocketError, "complète"):
             join_game(game.id, users[12])
+
+
+class RocketLanguageTests(TestCase):
+    def setUp(self):
+        self.users = [User.objects.create_user(username=f"i18n-agent-{index}") for index in range(6)]
+        self.game = create_game(self.users[0])
+        for user in self.users[1:]:
+            join_game(self.game.id, user)
+        with patch("rocket.services.random.shuffle", side_effect=lambda values: None):
+            start_game(self.game.id, self.users[0])
+        self.game.refresh_from_db()
+
+    def test_state_localizes_status_roles_and_errors_in_english(self):
+        with translation.override("en"):
+            rocket_state = serialize_game_state(self.game, self.users[0])
+            detective_state = serialize_game_state(self.game, self.users[1])
+
+            self.assertEqual(rocket_state["game"]["status_label"], "Night")
+            self.assertEqual(rocket_state["me"]["role"]["name"], "Team Rocket Agent")
+            self.assertEqual(detective_state["me"]["role"]["name"], "Detective Looker")
+            self.assertEqual(detective_state["me"]["role"]["side"], "Trainer Alliance")
+            with self.assertRaisesMessage(RocketPermissionError, "not part of this infiltration"):
+                serialize_game_state(self.game, User.objects.create_user(username="i18n-outsider"))

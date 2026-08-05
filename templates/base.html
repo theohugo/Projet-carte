@@ -1,7 +1,8 @@
-{% load static icons %}
+{% load static icons i18n poketable_i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
 <!DOCTYPE html>
 <html
-    lang="fr"
+    lang="{% block html_lang %}{{ CURRENT_LANGUAGE|default:'fr' }}{% endblock %}"
     class="{% block html_class %}{% endblock %}"
 >
 <head>
@@ -17,9 +18,47 @@
         content="#050b14"
     >
 
-    <title>
-        {% block title %}PokéTable{% endblock %}
-    </title>
+    <meta
+        http-equiv="content-language"
+        content="{{ CURRENT_LANGUAGE|default:'fr' }}"
+    >
+
+    <title>{% block title %}{% bilingual "PokéTable — jeux de société Pokémon en ligne" "PokéTable — online Pokémon party games" %}{% endblock %}</title>
+
+    <meta
+        name="description"
+        content="{% block meta_description %}{% block description %}{% bilingual "PokéTable réunit huit jeux de société multijoueurs dans l’univers Pokémon, à lancer en ligne avec ses amis, avec ou sans compte." "PokéTable brings together eight multiplayer party games in the Pokémon universe. Play online with friends, with or without an account." %}{% endblock %}{% endblock %}"
+    >
+
+    <meta
+        name="robots"
+        content="{% block meta_robots %}{% if request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'lobby' %}index, follow, max-image-preview:large{% else %}noindex, nofollow, noarchive{% endif %}{% endblock %}"
+    >
+
+    <link
+        rel="canonical"
+        href="{% block canonical_url %}{{ request.scheme }}://{{ request.get_host }}{{ request.path }}{% endblock %}"
+    >
+
+    <link
+        rel="alternate"
+        hreflang="{{ CURRENT_LANGUAGE|default:'fr' }}"
+        href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}"
+    >
+
+    <meta property="og:locale" content="{% if CURRENT_LANGUAGE|slice:':2' == 'en' %}en_US{% else %}fr_FR{% endif %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:site_name" content="PokéTable">
+    <meta property="og:title" content="{% block og_title %}{% bilingual "PokéTable — huit jeux Pokémon entre amis" "PokéTable — eight Pokémon games with friends" %}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{% bilingual "Créez une table et jouez en ligne à huit jeux de société multijoueurs dans l’univers Pokémon." "Create a table and play eight multiplayer party games online in the Pokémon universe." %}{% endblock %}">
+    <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+    <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'img/hub/pikachu.png' %}{% endblock %}">
+    <meta property="og:image:alt" content="{% bilingual "PokéTable, salon de jeux Pokémon en ligne" "PokéTable, an online Pokémon game room" %}">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{% block twitter_title %}{% bilingual "PokéTable — huit jeux Pokémon entre amis" "PokéTable — eight Pokémon games with friends" %}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{% bilingual "Créez une table et jouez en ligne avec vos amis, sans installation." "Create a table and play online with friends, with nothing to install." %}{% endblock %}">
+    <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/hub/pikachu.png' %}">
 
     <link
         rel="icon"
@@ -34,18 +73,22 @@
 
     <link
         rel="stylesheet"
-        href="{% static 'atoms.css' %}?v=14"
+        href="{% static 'atoms.css' %}?v=15"
     >
 
     <link
         rel="stylesheet"
-        href="{% static 'molecules.css' %}?v=15"
+        href="{% static 'molecules.css' %}?v=16"
     >
 
     <link
         rel="stylesheet"
-        href="{% static 'organisms.css' %}?v=32"
+        href="{% static 'organisms.css' %}?v=33"
     >
+
+    {% if request.resolver_match.url_name == "home" %}
+        {% include "seo/home_json_ld.html" %}
+    {% endif %}
 
     <script
         defer
@@ -59,7 +102,7 @@
         class="skip-link"
         href="#main-content"
     >
-        Aller au contenu
+        {% bilingual "Aller au contenu" "Skip to content" %}
     </a>
 
     <header class="site-header">
@@ -67,7 +110,7 @@
             <a
                 class="site-title"
                 href="{% url 'home' %}"
-                aria-label="PokéTable — accueil"
+                aria-label="PokéTable — {% bilingual "accueil" "home" %}"
                 translate="no"
             >
                 <span
@@ -84,7 +127,7 @@
 
             <nav
                 class="site-actions"
-                aria-label="Navigation principale"
+                aria-label="{% bilingual "Navigation principale" "Main navigation" %}"
             >
                 {% if user.is_authenticated %}
                     {# Deux menus au lieu de neuf liens : les jeux d'un côté, le compte de l'autre. #}
@@ -115,23 +158,23 @@
 
                             <span class="nav-trigger-label">
                                 {% if request.resolver_match.namespace == "guesswho" %}
-                                    Qui est-ce ?
+                                    {% bilingual "Qui est-ce ?" "Guess Who?" %}
                                 {% elif request.resolver_match.namespace == "silhouette" %}
-                                    Qui est ce Pokémon ?
+                                    {% bilingual "Qui est ce Pokémon ?" "Who’s That Pokémon?" %}
                                 {% elif request.resolver_match.namespace == "pictionary" %}
                                     Pictionary
                                 {% elif request.resolver_match.namespace == "metamorph" %}
-                                    Métamorph Mystère
+                                    {% bilingual "Métamorph Mystère" "Ditto Mystery" %}
                                 {% elif request.resolver_match.namespace == "rocket" %}
-                                    Infiltration Rocket
+                                    {% bilingual "Infiltration Rocket" "Team Rocket Infiltration" %}
                                 {% elif request.resolver_match.namespace == "islands" %}
-                                    Bataille des Îles
+                                    {% bilingual "Bataille des Îles" "Island Battle" %}
                                 {% elif request.resolver_match.namespace == "starterrace" %}
-                                    Course des Starters
+                                    {% bilingual "Course des Starters" "Starter Race" %}
                                 {% elif request.resolver_match.url_name == "lobby" or request.resolver_match.url_name == "game_detail" %}
                                     Poké-Uno
                                 {% else %}
-                                    Jeux
+                                    {% bilingual "Jeux" "Games" %}
                                 {% endif %}
                             </span>
 
@@ -151,8 +194,8 @@
                                 {% icon "home" %}
 
                                 <span class="nav-panel-text">
-                                    <span class="nav-panel-label">Tous les jeux</span>
-                                    <small>Retour au salon</small>
+                                    <span class="nav-panel-label">{% bilingual "Tous les jeux" "All games" %}</span>
+                                    <small>{% bilingual "Retour au salon" "Back to the game room" %}</small>
                                 </span>
                             </a>
 
@@ -166,7 +209,7 @@
 
                                 <span class="nav-panel-text">
                                     <span class="nav-panel-label">Poké-Uno</span>
-                                    <small>2 à 6 joueurs · IA</small>
+                                    <small>{% bilingual "2 à 6 joueurs · IA" "2–6 players · AI" %}</small>
                                 </span>
                             </a>
 
@@ -179,8 +222,8 @@
                                 {% icon "guesswho" %}
 
                                 <span class="nav-panel-text">
-                                    <span class="nav-panel-label">Qui est-ce ?</span>
-                                    <small>Duel de déduction</small>
+                                    <span class="nav-panel-label">{% bilingual "Qui est-ce ?" "Guess Who?" %}</span>
+                                    <small>{% bilingual "Duel de déduction" "Deduction duel" %}</small>
                                 </span>
                             </a>
 
@@ -193,8 +236,8 @@
                                 {% icon "silhouette" %}
 
                                 <span class="nav-panel-text">
-                                    <span class="nav-panel-label">Qui est ce Pokémon ?</span>
-                                    <small>Silhouette chronométrée</small>
+                                    <span class="nav-panel-label">{% bilingual "Qui est ce Pokémon ?" "Who’s That Pokémon?" %}</span>
+                                    <small>{% bilingual "Silhouette chronométrée" "Timed silhouette" %}</small>
                                 </span>
                             </a>
 
@@ -208,7 +251,7 @@
 
                                 <span class="nav-panel-text">
                                     <span class="nav-panel-label">Pictionary</span>
-                                    <small>Dessin et devinette</small>
+                                    <small>{% bilingual "Dessin et devinette" "Draw and guess" %}</small>
                                 </span>
                             </a>
 
@@ -218,22 +261,22 @@
                             {% url 'starterrace:lobby' as starterrace_lobby_url %}
                             {% if metamorph_lobby_url %}<a href="{{ metamorph_lobby_url }}" {% if request.resolver_match.namespace == "metamorph" %}aria-current="page"{% endif %}>
                                 {% icon "metamorph" %}
-                                <span class="nav-panel-text"><span class="nav-panel-label">Métamorph Mystère</span><small>Paires et carte impaire</small></span>
+                                <span class="nav-panel-text"><span class="nav-panel-label">{% bilingual "Métamorph Mystère" "Ditto Mystery" %}</span><small>{% bilingual "Paires et carte impaire" "Pairs and the odd card" %}</small></span>
                             </a>{% endif %}
 
                             {% if rocket_lobby_url %}<a href="{{ rocket_lobby_url }}" {% if request.resolver_match.namespace == "rocket" %}aria-current="page"{% endif %}>
                                 {% icon "rocket" %}
-                                <span class="nav-panel-text"><span class="nav-panel-label">Infiltration Rocket</span><small>Rôles cachés</small></span>
+                                <span class="nav-panel-text"><span class="nav-panel-label">{% bilingual "Infiltration Rocket" "Team Rocket Infiltration" %}</span><small>{% bilingual "Rôles cachés" "Hidden roles" %}</small></span>
                             </a>{% endif %}
 
                             {% if islands_lobby_url %}<a href="{{ islands_lobby_url }}" {% if request.resolver_match.namespace == "islands" %}aria-current="page"{% endif %}>
                                 {% icon "islands" %}
-                                <span class="nav-panel-text"><span class="nav-panel-label">Bataille des Îles</span><small>Duel de coordonnées</small></span>
+                                <span class="nav-panel-text"><span class="nav-panel-label">{% bilingual "Bataille des Îles" "Island Battle" %}</span><small>{% bilingual "Duel de coordonnées" "Coordinate duel" %}</small></span>
                             </a>{% endif %}
 
                             {% if starterrace_lobby_url %}<a href="{{ starterrace_lobby_url }}" {% if request.resolver_match.namespace == "starterrace" %}aria-current="page"{% endif %}>
                                 {% icon "race" %}
-                                <span class="nav-panel-text"><span class="nav-panel-label">Course des Starters</span><small>2 à 4 dresseurs</small></span>
+                                <span class="nav-panel-text"><span class="nav-panel-label">{% bilingual "Course des Starters" "Starter Race" %}</span><small>{% bilingual "2 à 4 dresseurs" "2–4 trainers" %}</small></span>
                             </a>{% endif %}
                         </div>
                     </details>
@@ -244,7 +287,7 @@
                     >
                         <summary
                             class="nav-trigger nav-trigger--user"
-                            aria-label="Compte de {{ user.username }}"
+                            aria-label="{% bilingual "Compte de" "Account for" %} {{ user.username }}"
                         >
                             {% if user.profile.avatar %}
                                 <img
@@ -266,7 +309,7 @@
 
                             <span class="site-user-copy">
                                 <small>
-                                    {% if is_guest %}Mode invité{% else %}Joueur connecté{% endif %}
+                                    {% if is_guest %}{% bilingual "Mode invité" "Guest mode" %}{% else %}{% bilingual "Joueur connecté" "Signed-in player" %}{% endif %}
                                 </small>
 
                                 {{ user.username }}
@@ -287,8 +330,8 @@
                                     {% icon "signup" %}
 
                                     <span class="nav-panel-text">
-                                        <span class="nav-panel-label">Créer mon compte</span>
-                                        <small>Garde tes parties et débloque tout</small>
+                                        <span class="nav-panel-label">{% bilingual "Créer mon compte" "Create my account" %}</span>
+                                        <small>{% bilingual "Garde tes parties et débloque tout" "Keep your games and unlock everything" %}</small>
                                     </span>
                                 </a>
                             {% else %}
@@ -300,7 +343,7 @@
 
                                     <span class="nav-panel-text">
                                         <span class="nav-panel-label">{{ user.profile.points }} points</span>
-                                        <small>À dépenser en boosters</small>
+                                        <small>{% bilingual "À dépenser en boosters" "Spend on booster packs" %}</small>
                                     </span>
                                 </a>
                             {% endif %}
@@ -314,8 +357,8 @@
                                 {% icon "user" %}
 
                                 <span class="nav-panel-text">
-                                    <span class="nav-panel-label">Mon profil{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                    <small>Avatar et description</small>
+                                    <span class="nav-panel-label">{% bilingual "Mon profil" "My profile" %}{% if is_guest %}<span class="lock-glyph" aria-label="{% bilingual "réservé aux comptes" "account only" %}"></span>{% endif %}</span>
+                                    <small>{% bilingual "Avatar et description" "Avatar and bio" %}</small>
                                 </span>
                             </a>
 
@@ -328,8 +371,8 @@
                                 {% icon "friends" %}
 
                                 <span class="nav-panel-text">
-                                    <span class="nav-panel-label">Amis{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                    <small>Demandes et recherche</small>
+                                    <span class="nav-panel-label">{% bilingual "Amis" "Friends" %}{% if is_guest %}<span class="lock-glyph" aria-label="{% bilingual "réservé aux comptes" "account only" %}"></span>{% endif %}</span>
+                                    <small>{% bilingual "Demandes et recherche" "Requests and search" %}</small>
                                 </span>
                             </a>
 
@@ -342,8 +385,8 @@
                                 {% icon "mail" %}
 
                                 <span class="nav-panel-text">
-                                    <span class="nav-panel-label">Invitations{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                    <small>Parties auxquelles on te convie</small>
+                                    <span class="nav-panel-label">{% bilingual "Invitations" "Invitations" %}{% if is_guest %}<span class="lock-glyph" aria-label="{% bilingual "réservé aux comptes" "account only" %}"></span>{% endif %}</span>
+                                    <small>{% bilingual "Parties auxquelles on te convie" "Games you were invited to" %}</small>
                                 </span>
                             </a>
 
@@ -356,8 +399,8 @@
                                 {% icon "quest" %}
 
                                 <span class="nav-panel-text">
-                                    <span class="nav-panel-label">Quêtes{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                    <small>Objectifs en cours</small>
+                                    <span class="nav-panel-label">{% bilingual "Quêtes" "Quests" %}{% if is_guest %}<span class="lock-glyph" aria-label="{% bilingual "réservé aux comptes" "account only" %}"></span>{% endif %}</span>
+                                    <small>{% bilingual "Objectifs en cours" "Current objectives" %}</small>
                                 </span>
                             </a>
 
@@ -370,8 +413,8 @@
                                 {% icon "shop" %}
 
                                 <span class="nav-panel-text">
-                                    <span class="nav-panel-label">Boutique{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                    <small>Boosters à ouvrir</small>
+                                    <span class="nav-panel-label">{% bilingual "Boutique" "Shop" %}{% if is_guest %}<span class="lock-glyph" aria-label="{% bilingual "réservé aux comptes" "account only" %}"></span>{% endif %}</span>
+                                    <small>{% bilingual "Boosters à ouvrir" "Booster packs to open" %}</small>
                                 </span>
                             </a>
 
@@ -384,8 +427,8 @@
                                 {% icon "collection" %}
 
                                 <span class="nav-panel-text">
-                                    <span class="nav-panel-label">Collection{% if is_guest %}<span class="lock-glyph" aria-label="réservé aux comptes"></span>{% endif %}</span>
-                                    <small>Cartes débloquées</small>
+                                    <span class="nav-panel-label">{% bilingual "Collection" "Collection" %}{% if is_guest %}<span class="lock-glyph" aria-label="{% bilingual "réservé aux comptes" "account only" %}"></span>{% endif %}</span>
+                                    <small>{% bilingual "Cartes débloquées" "Unlocked cards" %}</small>
                                 </span>
                             </a>
 
@@ -402,7 +445,7 @@
                                     {% icon "logout" %}
 
                                     <span class="nav-panel-text">
-                                        {% if is_guest %}Quitter le mode invité{% else %}Se déconnecter{% endif %}
+                                        {% if is_guest %}{% bilingual "Quitter le mode invité" "Leave guest mode" %}{% else %}{% bilingual "Se déconnecter" "Sign out" %}{% endif %}
                                     </span>
                                 </button>
                             </form>
@@ -427,7 +470,7 @@
                             class="btn btn-ghost"
                         >
                             {% icon "play" %}
-                            Jouer en invité
+                            {% bilingual "Jouer en invité" "Play as guest" %}
                         </button>
                     </form>
 
@@ -436,7 +479,7 @@
                         href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}"
                     >
                         {% icon "login" %}
-                        Se connecter
+                        {% bilingual "Se connecter" "Sign in" %}
                     </a>
 
                     <a
@@ -444,7 +487,7 @@
                         href="{% url 'signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}"
                     >
                         {% icon "signup" %}
-                        Créer un compte
+                        {% bilingual "Créer un compte" "Create account" %}
                     </a>
                 {% endif %}
             </nav>
@@ -455,7 +498,7 @@
         <ul
             class="messages"
             aria-live="polite"
-            aria-label="Notifications"
+            aria-label="{% bilingual "Notifications" "Notifications" %}"
         >
             {% for message in messages %}
                 <li class="message message-{{ message.tags }}">

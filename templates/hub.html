@@ -1,27 +1,28 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}PokéTable — Choisis ton jeu{% endblock %}
+{% load static poketable_i18n %}
+{% block title %}{% bilingual "PokéTable — Choisis ton jeu" "PokéTable — Choose your game" %}{% endblock %}
+{% block meta_description %}{% bilingual "Joue gratuitement en ligne à huit jeux Pokémon : Poké-Uno, déduction, dessin, silhouettes, cartes, rôles cachés, stratégie navale et course." "Play eight free online Pokémon games: Poké-Uno, deduction, drawing, silhouettes, cards, hidden roles, naval strategy and racing." %}{% endblock %}
 {% block body_class %}hub-body{% endblock %}
 {% block content %}
 <div class="hub-page">
     <section class="hub-hero" aria-labelledby="hub-title">
         <div>
-            <p class="section-kicker">Le salon de jeux Pokémon</p>
-            <h1 id="hub-title">À quoi joue-t-on<br><span>ce soir ?</span></h1>
-            <p>Crée une table, invite un ami et retrouve des jeux de société revisités dans un univers Pokémon vivant.</p>
+            <p class="section-kicker">{% bilingual "Le salon de jeux Pokémon" "The Pokémon game room" %}</p>
+            <h1 id="hub-title">{% bilingual "À quoi joue-t-on" "What are we playing" %}<br><span>{% bilingual "ce soir ?" "tonight?" %}</span></h1>
+            <p>{% bilingual "Crée une table, invite un ami et retrouve des jeux de société revisités dans un univers Pokémon vivant." "Create a table, invite a friend and enjoy reimagined party games in a lively Pokémon universe." %}</p>
             {% if not user.is_authenticated %}
             <div class="hub-cta">
                 <form method="post" action="{% url 'play_as_guest' %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary btn-large">Jouer sans compte</button>
+                    <button type="submit" class="btn btn-primary btn-large">{% bilingual "Jouer sans compte" "Play without an account" %}</button>
                 </form>
-                <a class="btn btn-ghost" href="{% url 'signup' %}">Créer mon compte</a>
-                <p class="hub-cta-note">Les huit jeux sont ouverts en invité. Le compte garde tes scores et débloque collection, quêtes et amis.</p>
+                <a class="btn btn-ghost" href="{% url 'signup' %}">{% bilingual "Créer mon compte" "Create my account" %}</a>
+                <p class="hub-cta-note">{% bilingual "Les huit jeux sont ouverts en invité. Le compte garde tes scores et débloque collection, quêtes et amis." "All eight games are available to guests. An account saves your scores and unlocks your collection, quests and friends." %}</p>
             </div>
             {% elif is_guest %}
             <div class="hub-cta">
-                <a class="btn btn-primary btn-large" href="{% url 'signup' %}">Garder mes parties : créer mon compte</a>
-                <p class="hub-cta-note">Tu joues en invité sous le nom <strong>{{ user.username }}</strong> : rien n’est conservé quand la session se termine.</p>
+                <a class="btn btn-primary btn-large" href="{% url 'signup' %}">{% bilingual "Garder mes parties : créer mon compte" "Keep my games: create an account" %}</a>
+                <p class="hub-cta-note">{% bilingual "Tu joues en invité sous le nom" "You are playing as guest" %} <strong>{{ user.username }}</strong> : {% bilingual "rien n’est conservé quand la session se termine." "nothing is saved when the session ends." %}</p>
             </div>
             {% endif %}
         </div>
@@ -34,91 +35,91 @@
         </div>
     </section>
 
-    <section class="game-mode-grid" aria-label="Jeux disponibles">
+    <section class="game-mode-grid" aria-label="{% bilingual "Jeux disponibles" "Available games" %}">
         <article class="game-mode-card game-mode-card--uno">
             <div class="game-mode-art game-mode-art--uno">{% include "partials/art/uno.html" %}</div>
             <div class="game-mode-copy">
-                <span class="game-mode-status"><i></i> Disponible</span>
-                <p class="section-kicker">2 à 6 joueurs · IA disponibles</p>
+                <span class="game-mode-status"><i></i> {% bilingual "Disponible" "Available" %}</span>
+                <p class="section-kicker">{% bilingual "2 à 6 joueurs · IA disponibles" "2–6 players · AI available" %}</p>
                 <h2>Poké-Uno</h2>
-                <p>Vide ta main avec les 18 types Pokémon, les cartes pouvoir et des adversaires IA.</p>
-                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'lobby' %}">Entrer dans l’arène</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Entrer dans l’arène</button></form>{% endif %}
+                <p>{% bilingual "Vide ta main avec les 18 types Pokémon, les cartes pouvoir et des adversaires IA." "Empty your hand using all 18 Pokémon types, power cards and AI opponents." %}</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'lobby' %}">{% bilingual "Entrer dans l’arène" "Enter the arena" %}</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">{% bilingual "Entrer dans l’arène" "Enter the arena" %}</button></form>{% endif %}
             </div>
         </article>
 
         <article class="game-mode-card game-mode-card--guess">
             <div class="game-mode-art game-mode-art--guess">{% include "partials/art/guesswho.html" %}</div>
             <div class="game-mode-copy">
-                <span class="game-mode-status"><i></i> Nouveau</span>
-                <p class="section-kicker">2 joueurs · Déduction & chat</p>
-                <h2>Qui est-ce ? Pokémon</h2>
-                <p>Choisis une cible secrète, pose tes questions et rabats les cartes jusqu’à trouver le Pokémon adverse.</p>
-                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'guesswho:lobby' %}">Lancer une enquête</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'guesswho:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Lancer une enquête</button></form>{% endif %}
+                <span class="game-mode-status"><i></i> {% bilingual "Nouveau" "New" %}</span>
+                <p class="section-kicker">{% bilingual "2 joueurs · Déduction & chat" "2 players · Deduction & chat" %}</p>
+                <h2>{% bilingual "Qui est-ce ? Pokémon" "Guess Who? Pokémon" %}</h2>
+                <p>{% bilingual "Choisis une cible secrète, pose tes questions et rabats les cartes jusqu’à trouver le Pokémon adverse." "Choose a secret target, ask questions and fold down cards until you identify your opponent’s Pokémon." %}</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'guesswho:lobby' %}">{% bilingual "Lancer une enquête" "Start investigating" %}</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'guesswho:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">{% bilingual "Lancer une enquête" "Start investigating" %}</button></form>{% endif %}
             </div>
         </article>
         <article class="game-mode-card game-mode-card--silhouette">
             <div class="game-mode-art game-mode-art--silhouette">{% include "partials/art/silhouette.html" %}</div>
             <div class="game-mode-copy">
-                <span class="game-mode-status"><i></i> Nouveau</span>
-                <p class="section-kicker">Autant de joueurs qu’on veut · 5 à 15 manches</p>
-                <h2>Qui est ce Pokémon ?</h2>
-                <p>Une silhouette, un chrono. Réponds avant les autres : le type tombe à 5 secondes, les initiales à 10.</p>
-                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'silhouette:lobby' %}">Ouvrir un salon</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'silhouette:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Ouvrir un salon</button></form>{% endif %}
+                <span class="game-mode-status"><i></i> {% bilingual "Nouveau" "New" %}</span>
+                <p class="section-kicker">{% bilingual "Autant de joueurs qu’on veut · 5 à 15 manches · IA" "Any number of players · 5–15 rounds · AI" %}</p>
+                <h2>{% bilingual "Qui est ce Pokémon ?" "Who’s That Pokémon?" %}</h2>
+                <p>{% bilingual "Une silhouette, un chrono. Réponds avant les autres : le type tombe à 5 secondes, les initiales à 10." "A silhouette and a timer. Answer first: its type appears after 5 seconds and its initials after 10." %}</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'silhouette:lobby' %}">{% bilingual "Ouvrir un salon" "Open a room" %}</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'silhouette:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">{% bilingual "Ouvrir un salon" "Open a room" %}</button></form>{% endif %}
             </div>
         </article>
 
         <article class="game-mode-card game-mode-card--pictionary">
             <div class="game-mode-art game-mode-art--pictionary">{% include "partials/art/pictionary.html" %}</div>
             <div class="game-mode-copy">
-                <span class="game-mode-status"><i></i> Nouveau</span>
-                <p class="section-kicker">2 joueurs et plus · 3 à 9 manches</p>
+                <span class="game-mode-status"><i></i> {% bilingual "Nouveau" "New" %}</span>
+                <p class="section-kicker">{% bilingual "2 joueurs et plus · 3 à 9 manches" "2+ players · 3–9 rounds" %}</p>
                 <h2>Pictionary Pokémon</h2>
-                <p>Un joueur dessine son Pokémon, les autres devinent au clavier. Le dessinateur marque à chaque bonne réponse.</p>
-                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'pictionary:lobby' %}">Prendre le crayon</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'pictionary:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Prendre le crayon</button></form>{% endif %}
+                <p>{% bilingual "Un joueur dessine son Pokémon, les autres devinent au clavier. Le dessinateur marque à chaque bonne réponse." "One player draws a Pokémon while the others type their guesses. The artist scores for every correct answer." %}</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'pictionary:lobby' %}">{% bilingual "Prendre le crayon" "Pick up the pencil" %}</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'pictionary:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">{% bilingual "Prendre le crayon" "Pick up the pencil" %}</button></form>{% endif %}
             </div>
         </article>
 
         <article class="game-mode-card game-mode-card--metamorph">
             <div class="game-mode-art game-mode-art--metamorph">{% include "partials/art/metamorph.html" %}</div>
             <div class="game-mode-copy">
-                <span class="game-mode-status"><i></i> Nouveau</span>
-                <p class="section-kicker">2 à 6 joueurs · Paires & bluff</p>
-                <h2>Métamorph Mystère</h2>
-                <p>Forme toutes tes paires en piochant chez ton voisin. Le dernier joueur avec Métamorph perd la manche.</p>
-                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'metamorph:lobby' %}">Mélanger les cartes</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'metamorph:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Mélanger les cartes</button></form>{% endif %}
+                <span class="game-mode-status"><i></i> {% bilingual "Nouveau" "New" %}</span>
+                <p class="section-kicker">{% bilingual "2 à 6 joueurs · Paires & IA" "2–6 players · Pairs & AI" %}</p>
+                <h2>{% bilingual "Métamorph Mystère" "Ditto Mystery" %}</h2>
+                <p>{% bilingual "Forme toutes tes paires en piochant chez ton voisin. Le dernier joueur avec Métamorph perd la manche." "Make every pair by drawing from your neighbor. The last player holding Ditto loses the round." %}</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'metamorph:lobby' %}">{% bilingual "Mélanger les cartes" "Shuffle the cards" %}</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'metamorph:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">{% bilingual "Mélanger les cartes" "Shuffle the cards" %}</button></form>{% endif %}
             </div>
         </article>
 
         <article class="game-mode-card game-mode-card--rocket">
             <div class="game-mode-art game-mode-art--rocket">{% include "partials/art/rocket.html" %}</div>
             <div class="game-mode-copy">
-                <span class="game-mode-status"><i></i> Nouveau</span>
-                <p class="section-kicker">6 à 12 joueurs · Rôles cachés</p>
-                <h2>Infiltration Rocket</h2>
-                <p>La nuit, chaque rôle agit en secret. Le jour, débattez et votez avant que la Team Rocket ne prenne le contrôle.</p>
-                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'rocket:lobby' %}">Rejoindre la mission</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'rocket:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Rejoindre la mission</button></form>{% endif %}
+                <span class="game-mode-status"><i></i> {% bilingual "Nouveau" "New" %}</span>
+                <p class="section-kicker">{% bilingual "6 à 12 joueurs · Rôles cachés" "6–12 players · Hidden roles" %}</p>
+                <h2>{% bilingual "Infiltration Rocket" "Team Rocket Infiltration" %}</h2>
+                <p>{% bilingual "La nuit, chaque rôle agit en secret. Le jour, débattez et votez avant que la Team Rocket ne prenne le contrôle." "Each role acts in secret at night. By day, debate and vote before Team Rocket takes control." %}</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'rocket:lobby' %}">{% bilingual "Rejoindre la mission" "Join the mission" %}</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'rocket:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">{% bilingual "Rejoindre la mission" "Join the mission" %}</button></form>{% endif %}
             </div>
         </article>
 
         <article class="game-mode-card game-mode-card--islands">
             <div class="game-mode-art game-mode-art--islands">{% include "partials/art/islands.html" %}</div>
             <div class="game-mode-copy">
-                <span class="game-mode-status"><i></i> Nouveau</span>
-                <p class="section-kicker">2 joueurs · Stratégie navale</p>
-                <h2>Bataille des Îles</h2>
-                <p>Cache tes formations aquatiques sur une grille, annonce tes coordonnées et coule l’équipe adverse.</p>
-                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'islands:lobby' %}">Préparer la flotte</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'islands:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Préparer la flotte</button></form>{% endif %}
+                <span class="game-mode-status"><i></i> {% bilingual "Nouveau" "New" %}</span>
+                <p class="section-kicker">{% bilingual "2 joueurs · Stratégie navale & IA" "2 players · Naval strategy & AI" %}</p>
+                <h2>{% bilingual "Bataille des Îles" "Island Battle" %}</h2>
+                <p>{% bilingual "Cache tes formations aquatiques sur une grille, annonce tes coordonnées et coule l’équipe adverse." "Hide your aquatic formations on a grid, call your coordinates and sink the opposing team." %}</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'islands:lobby' %}">{% bilingual "Préparer la flotte" "Prepare the fleet" %}</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'islands:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">{% bilingual "Préparer la flotte" "Prepare the fleet" %}</button></form>{% endif %}
             </div>
         </article>
 
         <article class="game-mode-card game-mode-card--starterrace">
             <div class="game-mode-art game-mode-art--starterrace">{% include "partials/art/starterrace.html" %}</div>
             <div class="game-mode-copy">
-                <span class="game-mode-status"><i></i> Nouveau</span>
-                <p class="section-kicker">2 à 4 joueurs · Course tactique</p>
-                <h2>Course des Starters</h2>
-                <p>Fais sortir tes quatre Pokémon, prends les raccourcis, renvoie les rivaux au départ et atteins la Ligue.</p>
-                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'starterrace:lobby' %}">Choisir un starter</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'starterrace:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">Choisir un starter</button></form>{% endif %}
+                <span class="game-mode-status"><i></i> {% bilingual "Nouveau" "New" %}</span>
+                <p class="section-kicker">{% bilingual "2 à 4 joueurs · Course tactique & IA" "2–4 players · Tactical race & AI" %}</p>
+                <h2>{% bilingual "Course des Starters" "Starter Race" %}</h2>
+                <p>{% bilingual "Fais sortir tes quatre Pokémon, prends les raccourcis, renvoie les rivaux au départ et atteins la Ligue." "Bring out all four Pokémon, take shortcuts, send rivals home and reach the League." %}</p>
+                {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'starterrace:lobby' %}">{% bilingual "Choisir un starter" "Choose a starter" %}</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'starterrace:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">{% bilingual "Choisir un starter" "Choose a starter" %}</button></form>{% endif %}
             </div>
         </article>
     </section>
@@ -126,36 +127,36 @@
     {% if not is_member %}
     <section class="locked-grid" aria-labelledby="locked-title">
         <div class="locked-intro">
-            <p class="section-kicker"><span class="lock-glyph" aria-hidden="true"></span> Avec un compte</p>
-            <h2 id="locked-title">Ce qui t’attend derrière le cadenas</h2>
-            <p>Le compte est gratuit et se crée en dix secondes.{% if is_guest %} Tes parties d’invité sont conservées.{% endif %}</p>
-            <a class="btn btn-primary btn-large" href="{% url 'signup' %}">{% if is_guest %}Transformer mon pseudo en compte{% else %}Créer mon compte{% endif %}</a>
+            <p class="section-kicker"><span class="lock-glyph" aria-hidden="true"></span> {% bilingual "Avec un compte" "With an account" %}</p>
+            <h2 id="locked-title">{% bilingual "Ce qui t’attend derrière le cadenas" "What is waiting behind the lock" %}</h2>
+            <p>{% bilingual "Le compte est gratuit et se crée en dix secondes." "Accounts are free and take ten seconds to create." %}{% if is_guest %} {% bilingual "Tes parties d’invité sont conservées." "Your guest games are preserved." %}{% endif %}</p>
+            <a class="btn btn-primary btn-large" href="{% url 'signup' %}">{% if is_guest %}{% bilingual "Transformer mon pseudo en compte" "Turn my nickname into an account" %}{% else %}{% bilingual "Créer mon compte" "Create my account" %}{% endif %}</a>
         </div>
 
         <ul class="locked-list">
             <li class="locked-card">
                 <span class="lock-badge" aria-hidden="true"></span>
                 <strong>Collection</strong>
-                <span>Les 151 cartes de la première génération, à débloquer une par une.</span>
-                <a href="{% url 'collection' %}">Voir ce que ça donne</a>
+                <span>{% bilingual "Les 151 cartes de la première génération, à débloquer une par une." "Unlock all 151 first-generation cards, one by one." %}</span>
+                <a href="{% url 'collection' %}">{% bilingual "Voir ce que ça donne" "Take a look" %}</a>
             </li>
             <li class="locked-card">
                 <span class="lock-badge" aria-hidden="true"></span>
-                <strong>Quêtes</strong>
-                <span>Des objectifs quotidiens et hebdomadaires qui font grandir ta collection.</span>
-                <a href="{% url 'quests' %}">Voir ce que ça donne</a>
+                <strong>{% bilingual "Quêtes" "Quests" %}</strong>
+                <span>{% bilingual "Des objectifs quotidiens et hebdomadaires qui font grandir ta collection." "Daily and weekly objectives that grow your collection." %}</span>
+                <a href="{% url 'quests' %}">{% bilingual "Voir ce que ça donne" "Take a look" %}</a>
             </li>
             <li class="locked-card">
                 <span class="lock-badge" aria-hidden="true"></span>
-                <strong>Amis</strong>
-                <span>Ajoute tes amis, vois leurs parties et invite-les d’un clic.</span>
-                <a href="{% url 'friends' %}">Voir ce que ça donne</a>
+                <strong>{% bilingual "Amis" "Friends" %}</strong>
+                <span>{% bilingual "Ajoute tes amis, vois leurs parties et invite-les d’un clic." "Add friends, see their games and invite them with one click." %}</span>
+                <a href="{% url 'friends' %}">{% bilingual "Voir ce que ça donne" "Take a look" %}</a>
             </li>
             <li class="locked-card">
                 <span class="lock-badge" aria-hidden="true"></span>
-                <strong>Profil et scores</strong>
-                <span>Ton avatar, ta description et tes statistiques gardées d’une partie à l’autre.</span>
-                <a href="{% url 'my_profile' %}">Voir ce que ça donne</a>
+                <strong>{% bilingual "Profil et scores" "Profile and scores" %}</strong>
+                <span>{% bilingual "Ton avatar, ta description et tes statistiques gardées d’une partie à l’autre." "Keep your avatar, bio and statistics from one game to the next." %}</span>
+                <a href="{% url 'my_profile' %}">{% bilingual "Voir ce que ça donne" "Take a look" %}</a>
             </li>
         </ul>
     </section>

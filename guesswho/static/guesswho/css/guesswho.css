@@ -483,12 +483,12 @@
 }
 
 /* Plateau plein écran sur bureau. */
-.guesswho-document {
+.guesswho-document--active {
     height: 100%;
     overflow: hidden;
 }
 
-.guesswho-game-shell {
+.guesswho-game-shell--active {
     display: flex;
     height: 100vh;
     height: 100dvh;
@@ -498,29 +498,29 @@
     overscroll-behavior: none;
 }
 
-.guesswho-game-shell .site-header {
+.guesswho-game-shell--active .site-header {
     position: relative;
     flex: 0 0 auto;
 }
 
-.guesswho-game-shell .site-header-inner {
+.guesswho-game-shell--active .site-header-inner {
     min-height: 54px;
     padding-top: 5px;
     padding-bottom: 5px;
 }
 
-.guesswho-game-shell .site-title .brand-mark,
-.guesswho-game-shell .site-user .user-avatar {
+.guesswho-game-shell--active .site-title .brand-mark,
+.guesswho-game-shell--active .site-user .user-avatar {
     width: 34px;
     height: 34px;
 }
 
-.guesswho-game-shell .site-actions .btn {
+.guesswho-game-shell--active .site-actions .btn {
     min-height: 42px;
     padding-block: 6px;
 }
 
-.guesswho-game-shell > .messages {
+.guesswho-game-shell--active > .messages {
     position: fixed;
     top: 60px;
     right: 12px;
@@ -531,7 +531,7 @@
     padding: 0;
 }
 
-.guesswho-game-shell .page-content {
+.guesswho-game-shell--active .page-content {
     flex: 1 1 auto;
     width: min(100%, 1580px);
     min-height: 0;
@@ -908,6 +908,21 @@
     grid-template-columns: minmax(0, 1fr) clamp(295px, 23vw, 360px);
     gap: 8px;
     padding: 8px;
+}
+
+.gw-board-layout.is-entering .gw-board-panel {
+    animation: gw-view-enter 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.gw-board-layout.is-entering .gw-side-panel {
+    animation: gw-view-enter 420ms 55ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes gw-view-enter {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
 }
 
 .gw-board-panel,
@@ -1319,6 +1334,11 @@
 .gw-player-chip.is-turn {
     border-color: rgba(89, 229, 164, 0.45);
     background: rgba(89, 229, 164, 0.075);
+    animation: gw-turn-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes gw-turn-breathe {
+    50% { box-shadow: 0 0 0 3px rgba(89, 229, 164, 0.06); }
 }
 
 .gw-player-chip.is-turn::after {
@@ -1637,6 +1657,17 @@
     text-align: center;
 }
 
+.gw-result-view.is-entering > *:not(.gw-result-halo) {
+    animation: gw-result-enter 440ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes gw-result-enter {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.985);
+    }
+}
+
 .gw-result-halo {
     position: absolute;
     top: 50%;
@@ -1804,19 +1835,19 @@
 
 /* Hauteurs réduites : le plateau garde les 24 cartes visibles. */
 @media (min-width: 901px) and (max-height: 790px) {
-    .guesswho-game-shell .site-header-inner {
+    .guesswho-game-shell--active .site-header-inner {
         min-height: 48px;
         padding-top: 3px;
         padding-bottom: 3px;
     }
 
-    .guesswho-game-shell .site-title .brand-mark,
-    .guesswho-game-shell .site-user .user-avatar {
+    .guesswho-game-shell--active .site-title .brand-mark,
+    .guesswho-game-shell--active .site-user .user-avatar {
         width: 31px;
         height: 31px;
     }
 
-    .guesswho-game-shell .site-user-copy small,
+    .guesswho-game-shell--active .site-user-copy small,
     .gw-game-title p,
     .gw-sync-state span {
         display: none;
@@ -1889,12 +1920,12 @@
         grid-template-columns: 1fr;
     }
 
-    .guesswho-document {
+    .guesswho-document--active {
         height: auto;
         overflow: auto;
     }
 
-    .guesswho-game-shell {
+    .guesswho-game-shell--active {
         display: block;
         height: auto;
         min-height: 100vh;
@@ -1903,11 +1934,11 @@
         overscroll-behavior: auto;
     }
 
-    .guesswho-game-shell .site-header {
+    .guesswho-game-shell--active .site-header {
         position: sticky;
     }
 
-    .guesswho-game-shell .page-content {
+    .guesswho-game-shell--active .page-content {
         width: 100%;
         min-height: auto;
         overflow: visible;
@@ -2126,6 +2157,10 @@
     .gw-tool-button,
     .gw-send-button {
         transition-duration: 0.01ms !important;
+    }
+
+    .gw-player-chip.is-turn {
+        animation: none;
     }
 
     .gw-card.is-eliminated .gw-card-frame {

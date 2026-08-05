@@ -1880,7 +1880,7 @@
     height: calc(100% - 10px);
 }
 
-.game-shell--active .center-row .card-unit img {
+.game-shell--active .center-row .card-unit > img {
     width: clamp(62px, 9dvh, 82px);
     height: clamp(62px, 9dvh, 82px);
 }
@@ -1941,7 +1941,7 @@
     height: clamp(140px, 19.7dvh, 174px);
 }
 
-.game-shell--active .my-hand-row .card-unit img {
+.game-shell--active .my-hand-row .card-unit > img {
     width: clamp(62px, 9dvh, 82px);
     height: clamp(62px, 9dvh, 82px);
 }
@@ -2009,8 +2009,8 @@
         height: 140px;
     }
 
-    .game-shell--active .center-row .card-unit img,
-    .game-shell--active .my-hand-row .card-unit img {
+    .game-shell--active .center-row .card-unit > img,
+    .game-shell--active .my-hand-row .card-unit > img {
         width: 62px;
         height: 62px;
     }
@@ -2164,7 +2164,7 @@
         height: 124px;
     }
 
-    .game-shell--active .center-row .card-unit img {
+    .game-shell--active .center-row .card-unit > img {
         width: 54px;
         height: 54px;
         margin-top: 9px;
@@ -2271,7 +2271,7 @@
         height: 134px;
     }
 
-    .game-shell--active .my-hand-row .card-unit img {
+    .game-shell--active .my-hand-row .card-unit > img {
         width: 58px;
         height: 58px;
     }

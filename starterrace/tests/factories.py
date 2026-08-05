@@ -28,6 +28,12 @@ def make_starter_catalog():
         "electric": PokemonType.objects.create(slug="electric", name_fr="Électrik", name_en="Electric"),
     }
     type_order = ("grass", "fire", "water", "electric")
+    english_names = {
+        1: "Bulbasaur",
+        4: "Charmander",
+        7: "Squirtle",
+        25: "Pikachu",
+    }
     cards = []
     for descriptor, type_slug in zip(STARTERS, type_order, strict=True):
         pokedex_id = descriptor["pokedex_id"]
@@ -36,7 +42,7 @@ def make_starter_catalog():
                 pokedex_id=pokedex_id,
                 slug=f"starter-{pokedex_id}",
                 name_fr=descriptor["name"],
-                name_en=descriptor["name"],
+                name_en=english_names[pokedex_id],
                 primary_type=types[type_slug],
                 sprite_url=(
                     "https://raw.githubusercontent.com/PokeAPI/sprites/master/"

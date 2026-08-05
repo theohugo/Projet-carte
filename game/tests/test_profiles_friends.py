@@ -3,9 +3,10 @@ from django.test import TestCase
 from django.urls import reverse
 
 from game.models import Friendship, Profile
+from game.tests.i18n import LanguageIsolationMixin
 
 
-class ProfileViewTests(TestCase):
+class ProfileViewTests(LanguageIsolationMixin, TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username="alice",
@@ -230,6 +231,17 @@ class ProfileViewTests(TestCase):
         # Le plus récent d'abord, et jamais soi-même.
         self.assertEqual(usernames[0], newcomer.username)
         self.assertNotIn("alice", usernames)
+
+    def test_social_pages_follow_the_browser_language(self):
+        self.client.force_login(self.user)
+
+        search = self.client.get(reverse("player_search"), HTTP_ACCEPT_LANGUAGE="en-US,en;q=0.9")
+        friends = self.client.get(reverse("friends"), HTTP_ACCEPT_LANGUAGE="en-US,en;q=0.9")
+
+        self.assertContains(search, "Find a player")
+        self.assertContains(search, "Newest players")
+        self.assertContains(friends, "My friends")
+        self.assertContains(friends, "Your friends list is empty")
 
     def test_the_suggestions_leave_out_guest_accounts(self):
         guest = User.objects.create_user(

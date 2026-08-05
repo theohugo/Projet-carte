@@ -184,6 +184,7 @@
 /* ── Scène de jeu ──────────────────────────────────────────────────────── */
 
 .sil-stage {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -196,6 +197,34 @@
         linear-gradient(180deg, rgba(16, 32, 54, 0.94), rgba(5, 11, 20, 0.97));
     box-shadow: var(--shadow-raised);
     text-align: center;
+}
+
+/* A successful local guess gets a short halo without exposing the answer. */
+.sil-stage::after {
+    position: absolute;
+    z-index: 0;
+    inset: 12%;
+    border: 2px solid rgba(98, 230, 166, 0.7);
+    border-radius: 50%;
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.35);
+}
+
+.sil-stage.is-correct-answer::after {
+    animation: sil-correct-wave 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sil-stage > * {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes sil-correct-wave {
+    0% { opacity: 0.9; transform: scale(0.35); }
+    65% { opacity: 0.24; }
+    100% { opacity: 0; transform: scale(1.25); }
 }
 
 .sil-stage-top {
@@ -225,6 +254,35 @@
     border-radius: var(--radius-lg);
 }
 
+.sil-frame::before,
+.sil-frame::after {
+    position: absolute;
+    z-index: 0;
+    inset: 2%;
+    border-radius: 50%;
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sil-frame::before {
+    background: conic-gradient(
+        from 15deg,
+        transparent 0 8%,
+        rgba(255, 255, 255, 0.7) 9% 10%,
+        transparent 11% 24%,
+        rgba(98, 230, 166, 0.62) 25% 27%,
+        transparent 28% 48%,
+        rgba(117, 216, 255, 0.68) 49% 51%,
+        transparent 52% 100%
+    );
+    filter: blur(1px);
+}
+
+.sil-frame::after {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.72), rgba(98, 230, 166, 0.25) 38%, transparent 68%);
+}
+
 .sil-frame-glow {
     position: absolute;
     width: 88%;
@@ -252,13 +310,33 @@
 }
 
 .sil-frame.is-popping img {
-    animation: sil-pop 420ms cubic-bezier(0.16, 1, 0.3, 1);
+    animation: sil-pop 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sil-frame.is-popping::before {
+    animation: sil-reveal-rays 760ms ease-out;
+}
+
+.sil-frame.is-popping::after {
+    animation: sil-reveal-flash 620ms ease-out;
 }
 
 @keyframes sil-pop {
-    0% { transform: scale(0.9); }
-    60% { transform: scale(1.06); }
+    0% { filter: brightness(2.1) drop-shadow(0 0 34px rgba(255, 255, 255, 0.85)); transform: scale(0.82) rotate(-2deg); }
+    60% { filter: brightness(1.15) drop-shadow(0 16px 32px rgba(0, 0, 0, 0.42)); transform: scale(1.08) rotate(1deg); }
     100% { transform: scale(1); }
+}
+
+@keyframes sil-reveal-rays {
+    0% { opacity: 0; transform: rotate(-16deg) scale(0.5); }
+    28% { opacity: 0.95; }
+    100% { opacity: 0; transform: rotate(24deg) scale(1.3); }
+}
+
+@keyframes sil-reveal-flash {
+    0% { opacity: 0; transform: scale(0.55); }
+    22% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.12); }
 }
 
 .sil-answer {
@@ -272,6 +350,15 @@
     box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
     font-size: var(--font-size-lg);
     font-weight: 900;
+}
+
+.sil-frame.is-popping .sil-answer {
+    animation: sil-answer-in 540ms 110ms both cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes sil-answer-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.82); }
+    to { opacity: 1; transform: none; }
 }
 
 .sil-hints {
@@ -310,6 +397,29 @@
     letter-spacing: 0.12em;
 }
 
+.sil-type-hints,
+.sil-type-hint {
+    display: inline-flex;
+    align-items: center;
+}
+
+.sil-type-hints {
+    gap: var(--space-2);
+}
+
+.sil-type-hint {
+    gap: 0.38rem;
+    font-weight: 900;
+}
+
+.sil-type-icon {
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.35));
+}
+
 .sil-hint--pending {
     border-style: dashed;
     color: var(--color-text-muted);
@@ -333,6 +443,20 @@
 
 .sil-guess-form.is-found input {
     border-color: rgba(98, 230, 166, 0.6);
+}
+
+.sil-guess-form.is-celebrating {
+    animation: sil-correct-bounce 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sil-guess-form.is-celebrating input {
+    box-shadow: 0 0 0 4px rgba(98, 230, 166, 0.14), 0 0 32px rgba(98, 230, 166, 0.28);
+}
+
+@keyframes sil-correct-bounce {
+    0% { transform: scale(0.96); }
+    55% { transform: scale(1.025); }
+    100% { transform: none; }
 }
 
 .sil-guess-form.is-wrong input {
@@ -395,6 +519,141 @@
     font-size: var(--font-size-sm);
 }
 
+.room-bot-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.room-bot-controls .btn {
+    min-height: 38px;
+    padding: 6px var(--space-3);
+    font-size: var(--font-size-xs);
+}
+
+.sil-game .timer-ring.is-warning {
+    filter: drop-shadow(0 0 10px rgba(242, 206, 62, 0.3));
+}
+
+.sil-game .timer-ring.is-critical {
+    animation: sil-timer-critical 520ms ease-in-out infinite;
+    filter: drop-shadow(0 0 14px rgba(255, 96, 115, 0.48));
+}
+
+@keyframes sil-timer-critical {
+    50% { transform: scale(1.08); }
+}
+
+/* Desktop game pages use the viewport as a board. The ranking scrolls inside
+   its own column, so the document itself never jumps during a round. */
+@media (min-width: 800px) and (min-height: 600px) {
+    html.sil-game-document {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    body.sil-game-shell {
+        display: flex;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        flex-direction: column;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    .sil-game-shell .site-header {
+        position: relative;
+        flex: 0 0 auto;
+    }
+
+    .sil-game-shell .site-header-inner {
+        min-height: 56px;
+        padding-block: 6px;
+    }
+
+    .sil-game-shell .page-content {
+        flex: 1 1 auto;
+        width: min(100%, 1440px);
+        min-height: 0;
+        overflow: hidden;
+        padding: 8px clamp(8px, 1.5vw, var(--space-5));
+    }
+
+    .sil-game-shell .sil-game {
+        display: grid;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        grid-template-columns: minmax(0, 1fr) minmax(250px, 320px);
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: 8px clamp(8px, 1.2vw, var(--space-4));
+        padding: 0;
+    }
+
+    .sil-game .room-header,
+    .sil-game > .message,
+    .sil-game > .visually-hidden {
+        grid-column: 1 / -1;
+    }
+
+    .sil-game .room-header {
+        min-height: 46px;
+    }
+
+    .sil-game .room-header .back-link {
+        min-height: 40px;
+        margin: 0;
+    }
+
+    .sil-game .sil-stage {
+        min-height: 0;
+        grid-column: 1;
+        grid-row: 2;
+        justify-content: space-between;
+        gap: clamp(4px, 0.8vh, 10px);
+        overflow: hidden;
+        padding: clamp(10px, 1.4vh, var(--space-4));
+    }
+
+    .sil-game .sil-frame {
+        width: min(320px, 38dvh, 100%);
+        min-height: 0;
+    }
+
+    .sil-game .sil-scores {
+        min-height: 0;
+        grid-column: 2;
+        grid-row: 2;
+        overflow: hidden;
+        padding: var(--space-3);
+    }
+
+    .sil-game .score-board-list {
+        max-height: calc(100% - 52px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+    }
+
+    .sil-game .room-waiting {
+        min-height: 0;
+        grid-column: 1 / -1;
+        grid-row: 2;
+        overflow: auto;
+        padding: clamp(var(--space-4), 3vh, var(--space-6));
+    }
+
+    .sil-game[data-game-status="EN_ATTENTE"] .sil-scores {
+        display: none;
+    }
+
+    .sil-game[data-game-status="TERMINEE"] .sil-scores {
+        grid-column: 1 / -1;
+    }
+}
+
 @media (max-width: 760px) {
     .sil-hero {
         grid-template-columns: minmax(0, 1fr);
@@ -405,7 +664,13 @@
     .sil-radar-sweep,
     .sil-hint,
     .sil-frame.is-popping img,
-    .sil-guess-form.is-wrong input {
+    .sil-frame.is-popping::before,
+    .sil-frame.is-popping::after,
+    .sil-frame.is-popping .sil-answer,
+    .sil-guess-form.is-wrong input,
+    .sil-guess-form.is-celebrating,
+    .sil-stage.is-correct-answer::after,
+    .sil-game .timer-ring.is-critical {
         animation: none;
     }
 }

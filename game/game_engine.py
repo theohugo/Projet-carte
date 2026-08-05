@@ -16,6 +16,12 @@ from django.utils import timezone
 from game.card_actions import assign_actions
 from game.deck_builder import draw_game_types, select_species, species_type_slugs
 from game.models import Game, GameCard, GamePlayer, MoveLog, PokemonCard, PokemonType, Profile
+from game.pokemon_names import (
+    active_language,
+    bilingual_text,
+    localized_pokemon_name,
+    localized_type_name,
+)
 from game.pokemon_types import get_pokemon_type
 from game.quests import EVENT_GAME_PLAYED, EVENT_GAME_WON, record_event
 from game.type_icons import type_icon_url
@@ -100,20 +106,24 @@ class GameEngine:
 
     def add_player(self, user) -> GamePlayer:
         if self.game.status != Game.Status.EN_ATTENTE:
-            raise GameNotJoinableError("La partie a déjà commencé.")
+            raise GameNotJoinableError(
+                bilingual_text("La partie a déjà commencé.", "The game has already started.")
+            )
         if self.game.players.filter(user=user).exists():
             return self.game.players.get(user=user)
         if self.game.players.count() >= self.game.max_players:
-            raise GameFullError("La partie est complète.")
+            raise GameFullError(bilingual_text("La partie est complète.", "The game is full."))
 
         turn_order = self.game.players.count()
         return GamePlayer.objects.create(game=self.game, user=user, turn_order=turn_order)
 
     def add_bot(self) -> GamePlayer:
         if self.game.status != Game.Status.EN_ATTENTE:
-            raise GameNotJoinableError("La partie a déjà commencé.")
+            raise GameNotJoinableError(
+                bilingual_text("La partie a déjà commencé.", "The game has already started.")
+            )
         if self.game.players.count() >= self.game.max_players:
-            raise GameFullError("La partie est complète.")
+            raise GameFullError(bilingual_text("La partie est complète.", "The game is full."))
 
         used_names = set(self.game.players.exclude(bot_name="").values_list("bot_name", flat=True))
         bot_name = next((name for name in BOT_NAMES if name not in used_names), None)
@@ -131,10 +141,17 @@ class GameEngine:
 
     def remove_bot(self, player_id: int):
         if self.game.status != Game.Status.EN_ATTENTE:
-            raise GameNotJoinableError("La partie a déjà commencé.")
+            raise GameNotJoinableError(
+                bilingual_text("La partie a déjà commencé.", "The game has already started.")
+            )
         bot = self.game.players.filter(pk=player_id, user__isnull=True).first()
         if bot is None:
-            raise GameEngineError("Cette IA n'existe pas dans ce salon.")
+            raise GameEngineError(
+                bilingual_text(
+                    "Cette IA n'existe pas dans ce salon.",
+                    "This AI player is not in this room.",
+                )
+            )
 
         removed_order = bot.turn_order
         bot.delete()
@@ -181,11 +198,18 @@ class GameEngine:
 
     def start_game(self):
         if self.game.status != Game.Status.EN_ATTENTE:
-            raise GameNotJoinableError("La partie a déjà commencé.")
+            raise GameNotJoinableError(
+                bilingual_text("La partie a déjà commencé.", "The game has already started.")
+            )
 
         players = list(self.game.players.all())
         if len(players) < MIN_PLAYERS:
-            raise NotEnoughPlayersError(f"Il faut au moins {MIN_PLAYERS} joueurs.")
+            raise NotEnoughPlayersError(
+                bilingual_text(
+                    f"Il faut au moins {MIN_PLAYERS} joueurs.",
+                    f"At least {MIN_PLAYERS} players are required.",
+                )
+            )
 
         self.build_deck()
         MoveLog.objects.create(game=self.game, move_type=MoveLog.MoveType.DEBUT_PARTIE)
@@ -237,7 +261,12 @@ class GameEngine:
                 .first()
             )
         if top is None:
-            raise GameEngineError("Plus aucune carte disponible, ni en pioche ni en défausse.")
+            raise GameEngineError(
+                bilingual_text(
+                    "Plus aucune carte disponible, ni en pioche ni en défausse.",
+                    "No cards remain in either the draw pile or discard pile.",
+                )
+            )
 
         if owner is not None:
             top.location = GameCard.Location.MAIN
@@ -280,11 +309,13 @@ class GameEngine:
 
     def is_move_valid(self, player: GamePlayer, game_card: GameCard) -> tuple[bool, str | None]:
         if self.game.status != Game.Status.EN_COURS:
-            return False, "La partie n'est pas en cours."
+            return False, bilingual_text("La partie n'est pas en cours.", "The game is not in progress.")
         if self.get_current_player().pk != player.pk:
-            return False, "Ce n'est pas votre tour."
+            return False, bilingual_text("Ce n'est pas votre tour.", "It is not your turn.")
         if game_card.location != GameCard.Location.MAIN or game_card.owner_id != player.pk:
-            return False, "Cette carte n'est pas dans votre main."
+            return False, bilingual_text(
+                "Cette carte n'est pas dans votre main.", "This card is not in your hand."
+            )
 
         pokemon_card = game_card.pokemon_card
         if self.requires_type_choice(game_card):
@@ -300,14 +331,20 @@ class GameEngine:
         if self.game.active_type_id:
             if self.game.active_type.slug in card_types:
                 return True, None
-            return False, "Un joker a imposé un type : jouez une carte de ce type."
+            return False, bilingual_text(
+                "Un joker a imposé un type : jouez une carte de ce type.",
+                "A wild card set the type: play a card of that type.",
+            )
 
         if card_types & set(species_type_slugs(top_discard.pokemon_card)):
             return True, None
         if pokemon_card.pokedex_id == top_discard.pokemon_card.pokedex_id:
             return True, None
 
-        return False, "Cette carte ne partage aucun type ni l'espèce de la carte du dessus."
+        return False, bilingual_text(
+            "Cette carte ne partage aucun type ni l'espèce de la carte du dessus.",
+            "This card shares neither a type nor the species of the top card.",
+        )
 
     def play_card(
         self,
@@ -324,7 +361,12 @@ class GameEngine:
         if self.requires_type_choice(game_card):
             declared_type = self.get_selected_types().filter(slug=declared_type_slug).first()
             if declared_type is None:
-                raise InvalidMoveError("Cette carte impose de choisir un des types de la partie.")
+                raise InvalidMoveError(
+                    bilingual_text(
+                        "Cette carte impose de choisir un des types de la partie.",
+                        "This card requires choosing one of the game types.",
+                    )
+                )
             self.game.active_type = declared_type
         else:
             declared_type = None
@@ -408,9 +450,11 @@ class GameEngine:
 
     def draw_card(self, player: GamePlayer, count: int = 1) -> list[GameCard]:
         if self.game.status != Game.Status.EN_COURS:
-            raise InvalidMoveError("La partie n'est pas en cours.")
+            raise InvalidMoveError(
+                bilingual_text("La partie n'est pas en cours.", "The game is not in progress.")
+            )
         if self.get_current_player().pk != player.pk:
-            raise NotYourTurnError("Ce n'est pas votre tour.")
+            raise NotYourTurnError(bilingual_text("Ce n'est pas votre tour.", "It is not your turn."))
 
         drawn = [self._draw_top_of_pile(player) for _ in range(count)]
         self.game.save(update_fields=["card_sequence_counter"])
@@ -492,9 +536,12 @@ class GameEngine:
 
         def serialize_type(pokemon_type):
             info = get_pokemon_type(pokemon_type.slug)
+            name_fr = info.name_fr if info else pokemon_type.name_fr
             return {
                 "slug": pokemon_type.slug,
-                "name_fr": info.name_fr if info else pokemon_type.name_fr,
+                "name": localized_type_name(pokemon_type),
+                "name_fr": name_fr,
+                "name_en": pokemon_type.name_en or name_fr,
                 "color": info.color if info else "#9fa19f",
                 "icon_url": type_icon_url(pokemon_type.slug),
             }
@@ -504,6 +551,7 @@ class GameEngine:
             return {
                 "id": game_card.id,
                 "pokedex_id": pc.pokedex_id,
+                "name": localized_pokemon_name(pc),
                 "name_fr": pc.name_fr,
                 "name_en": pc.name_en,
                 "sprite_url": pc.sprite_url,
@@ -511,7 +559,17 @@ class GameEngine:
                 "is_legendary": pc.is_legendary,
                 "requires_type_choice": self.requires_type_choice(game_card),
                 "action": game_card.action,
-                "action_label": game_card.get_action_display(),
+                "action_label": (
+                    {
+                        GameCard.Action.NORMAL: "No effect",
+                        GameCard.Action.DRAW_TWO: "+2",
+                        GameCard.Action.DRAW_FOUR: "+4",
+                        GameCard.Action.REVERSE: "Reverse",
+                        GameCard.Action.SHIELD: "Protection",
+                    }[game_card.action]
+                    if active_language() == "en"
+                    else game_card.get_action_display()
+                ),
             }
 
         players_payload = []
@@ -533,6 +591,7 @@ class GameEngine:
 
         return {
             "game_id": str(self.game.id),
+            "language": active_language(),
             "status": self.game.status,
             "max_players": self.game.max_players,
             "is_creator": self.game.created_by_id == for_player.user_id,

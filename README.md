@@ -10,12 +10,12 @@ PokéTable est une plateforme Django de jeux de société Pokémon multijoueurs.
 | --- | ---: | --- | --- |
 | Poké‑Uno | 2–6, IA possibles | Défausse et pouvoirs | `/uno/` |
 | Qui est-ce ? Pokémon | 2 | Déduction en duel | `/qui-est-ce/` |
-| Qui est ce Pokémon ? | sans limite fixe | Silhouettes chronométrées | `/qui-est-ce-pokemon/` |
+| Qui est ce Pokémon ? | sans limite fixe, IA possibles | Silhouettes chronométrées | `/qui-est-ce-pokemon/` |
 | Pictionary Pokémon | 2+ | Dessin et devinettes | `/pictionary/` |
-| Métamorph Mystère | 2–6 | Paires et carte perdante | `/metamorph-mystere/` |
+| Métamorph Mystère | 2–6, IA possibles | Paires et carte perdante | `/metamorph-mystere/` |
 | Infiltration Rocket | 6–12 | Rôles cachés, débat et vote | `/infiltration-rocket/` |
-| Bataille des Îles | 2 | Bataille navale Pokémon | `/bataille-des-iles/` |
-| Course des Starters | 2–4 | Course de pions et dé | `/course-des-starters/` |
+| Bataille des Îles | 2, IA possible | Bataille navale Pokémon | `/bataille-des-iles/` |
+| Course des Starters | 2–4, IA possibles | Course de pions et dé | `/course-des-starters/` |
 
 ### Poké‑Uno
 
@@ -77,6 +77,7 @@ L'illustration passe par un proxy (`/qui-est-ce-pokemon/rounds/<id>/image/`) qui
 - À son tour, un joueur choisit un dos numéroté dans la main du joueur précédent selon le sens de jeu. L'API ne lui envoie ni identifiant de carte, ni nom, ni sprite avant le tirage.
 - La carte piochée rejoint la main ; si sa jumelle s'y trouve, les deux cartes sont immédiatement retirées et la paire devient publique.
 - Un joueur sans carte reçoit son rang et est sauté dans les tours suivants. Quand il ne reste qu'une main, son propriétaire détient forcément Métamorph : il termine dernier, tous les autres gagnent dans leur ordre de sortie.
+- L'hôte peut compléter le salon avec des IA. Elles piochent à l'aveugle comme un humain et enchaînent leurs tours côté serveur sans recevoir le contenu secret des mains adverses.
 
 ### Infiltration Rocket
 
@@ -91,9 +92,10 @@ L'illustration passe par un proxy (`/qui-est-ce-pokemon/rounds/<id>/image/`) qui
 
 - Le duel se joue sur deux grilles **8 × 8**. Chaque joueur reçoit quatre Pokémon, aquatiques en priorité, occupant des formations de tailles **2, 3, 3 et 4**.
 - Les formations sont placées horizontalement ou verticalement, sans chevauchement et sans dépasser la grille. Les positions restent strictement privées jusqu'à la fin.
-- Quand les deux joueurs verrouillent leur archipel, l'hôte ouvre le feu. Les tirs alternent et une coordonnée adverse ne peut être visée qu'une fois.
+- Quand les deux joueurs verrouillent leur archipel, l'hôte ouvre le feu. Une coordonnée adverse ne peut être visée qu'une fois : **un tir raté passe le tour, une touche ou une capture permet de rejouer immédiatement**.
 - Une réponse indique **Raté**, **Touché** ou **Capturé**. Le Pokémon adverse n'est nommé que lorsque toute sa formation est capturée.
 - Les quatre formations couvrent 12 cases : le premier joueur à obtenir les **12 touches** gagne. Le placement adverse complet n'est révélé qu'après la victoire.
+- L'hôte peut ajouter une IA : elle place une flotte légale et combine une recherche en damier avec un ciblage des cases voisines après une touche.
 
 ### Course des Starters
 
@@ -102,6 +104,7 @@ L'illustration passe par un proxy (`/qui-est-ce-pokemon/rounds/<id>/image/`) qui
 - La piste commune compte 40 cases, puis chaque équipe emprunte un couloir final de 4 cases. Il faut un lancer exact : un pion qui dépasserait l'arrivée ne peut pas bouger.
 - Les huit refuges, une case sur cinq, interdisent les captures. Ailleurs, atterrir sur un rival le renvoie au camp.
 - Quatre raccourcis symétriques font avancer de quatre cases (`3 → 7`, `13 → 17`, `23 → 27`, `33 → 37`). Le premier joueur à placer ses quatre pions à l'arrivée gagne.
+- L'hôte peut ajouter jusqu'à trois IA. Elles lancent le dé et choisissent uniquement parmi les mouvements validés par le serveur.
 
 ### URLs et API des quatre nouveaux modes
 
@@ -315,7 +318,7 @@ Les huit moteurs métier sont séparés des vues :
 - `islands/services.py` valide les formations, conserve les coordonnées adverses secrètes et résout chaque tir ;
 - `starterrace/services.py` calcule les mouvements légaux, raccourcis, refuges, captures, tours bonus et arrivée exacte.
 
-Les deux jeux de devinette partagent `game/pokemon_names.py`, qui compare une saisie clavier au nom français ou anglais d'une espèce en ignorant casse, accents et ponctuation.
+Les jeux partagent `game/pokemon_names.py`, qui choisit les noms de Pokémon et de types selon la langue active et compare une saisie clavier au nom français ou anglais d'une espèce en ignorant casse, accents et ponctuation. `LocaleMiddleware` choisit automatiquement le français ou l'anglais depuis `Accept-Language` ; les templates, payloads JSON, messages serveur, cartes et noms de bots suivent ce choix.
 
 L’inscription affiche la liste des critères que le mot de passe doit remplir. `game/password_rules.py` dérive cette liste de `AUTH_PASSWORD_VALIDATORS`, puis marque chaque critère respecté ou manquant à partir des erreurs renvoyées par le serveur ; `game/static/game/js/signup.js` met les mêmes critères à jour pendant la frappe, en reproduisant les calculs des validateurs Django. Le serveur reste seul juge : le critère « mot de passe trop courant » n’est vérifié qu’à l’envoi.
 
@@ -408,7 +411,9 @@ Les Pokémon mis en avant dans les nouveaux habillages utilisent les **artworks 
 
 Les 18 types s'affichent avec leurs **pastilles officielles** en PNG 64 × 64 dans `game/static/game/img/types/` : le symbole blanc sur son disque de couleur, celui des jeux. Les fichiers committés proviennent des assets Pokémon GO de [PokeMiners](https://github.com/PokeMiners/pogo_assets/tree/master/Images/Types) ; `uv run python manage.py fetch_type_icons` les retélécharge depuis `POKEMON_TYPE_<TYPE>.png`. Ils sont servis depuis nos statiques, donc aucun type ne dépend d’un domaine tiers au runtime. L’URL part avec l’état de la partie (`icon_url`), car en production le nom du fichier porte une empreinte que le navigateur ne peut pas deviner.
 
-Le plateau Poké‑Uno tient dans le viewport sans scroll de page. Les mains disposent de leur propre axe horizontal quand elles deviennent longues. Les cartes suivent légèrement le pointeur avec profondeur et reflet, et les actions de pioche/pose sont animées du point de vue de chaque joueur. `prefers-reduced-motion` désactive ces effets pour les personnes qui le demandent. Les contrôles conservent des cibles tactiles d’au moins 44 px, des états `focus-visible`, des annonces `aria-live` et un lien d’évitement.
+Les huit tables actives tiennent dans le viewport desktop sans scroll de page ; seuls les historiques, chats ou longues mains peuvent défiler dans leur propre panneau. Les cartes Poké‑Uno suivent légèrement le pointeur avec profondeur et reflet, les tirs des Îles traversent l'océan avant leur impact, et chaque mode anime ses actions importantes. `prefers-reduced-motion` désactive ces effets pour les personnes qui le demandent. Les contrôles conservent des cibles tactiles d’au moins 44 px, des états `focus-visible`, des annonces `aria-live` et un lien d’évitement.
+
+Les routes publiques possèdent des titres et descriptions dédiés, des métadonnées Open Graph/Twitter, des URLs canoniques et un JSON-LD `WebSite`/`WebApplication`. `robots.txt` et le sitemap n'indexent que l'accueil et les huit lobbies : les tables, profils, invitations, comptes et API restent explicitement hors index.
 
 ## Docker, tests et CI
 

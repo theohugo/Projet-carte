@@ -275,6 +275,7 @@ class GuessWhoServiceTests(TestCase):
             set(state),
             {
                 "game_id",
+                "language",
                 "status",
                 "turn_revision",
                 "is_creator",

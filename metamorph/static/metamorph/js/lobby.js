@@ -12,6 +12,8 @@
         return;
     }
 
+    const t = (french, english) => (initialState.language === "en" ? english : french);
+
     const stateUrl = lobby.dataset.stateUrl;
     const rules = document.getElementById("metamorph-rules");
     const rulesButton = lobby.querySelector("[data-toggle-rules]");
@@ -51,7 +53,9 @@
         const willOpen = rules.hidden;
         rules.hidden = !willOpen;
         rulesButton.setAttribute("aria-expanded", String(willOpen));
-        rulesButton.textContent = willOpen ? "Masquer les règles" : "Comment jouer";
+        rulesButton.textContent = willOpen
+            ? t("Masquer les règles", "Hide rules")
+            : t("Comment jouer", "How to play");
         if (willOpen) rules.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
 
@@ -61,7 +65,9 @@
             if (!button || button.disabled) return;
             button.disabled = true;
             button.setAttribute("aria-busy", "true");
-            button.textContent = button.hasAttribute("data-create-game") ? "Création…" : "Connexion…";
+            button.textContent = button.hasAttribute("data-create-game")
+                ? t("Création…", "Creating…")
+                : t("Connexion…", "Connecting…");
         });
     });
 

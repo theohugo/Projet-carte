@@ -4,6 +4,8 @@ from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
 
+from game.pokemon_names import localized_bot_name
+
 
 class MetamorphGame(models.Model):
     """Une table de Métamorph Mystère et son curseur de tour."""
@@ -62,7 +64,10 @@ class MetamorphPlayer(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="metamorph_participations",
+        null=True,
+        blank=True,
     )
+    bot_name = models.CharField(max_length=40, blank=True, default="")
     turn_order = models.PositiveSmallIntegerField()
     rank = models.PositiveSmallIntegerField(null=True, blank=True)
     is_loser = models.BooleanField(default=False)
@@ -74,7 +79,13 @@ class MetamorphPlayer(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["game", "user"],
+                condition=Q(user__isnull=False),
                 name="unique_metamorph_user_per_game",
+            ),
+            models.UniqueConstraint(
+                fields=["game", "bot_name"],
+                condition=~Q(bot_name=""),
+                name="unique_metamorph_bot_name_per_game",
             ),
             models.UniqueConstraint(
                 fields=["game", "turn_order"],
@@ -96,10 +107,22 @@ class MetamorphPlayer(models.Model):
                 condition=Q(is_loser=False) | Q(rank__isnull=False),
                 name="metamorph_loser_has_rank",
             ),
+            models.CheckConstraint(
+                condition=(Q(user__isnull=True) & ~Q(bot_name="")) | (Q(user__isnull=False) & Q(bot_name="")),
+                name="metamorph_valid_player_controller",
+            ),
         ]
 
     def __str__(self):
-        return f"{self.user.get_username()} @ {self.game_id}"
+        return f"{self.display_name} @ {self.game_id}"
+
+    @property
+    def is_bot(self):
+        return self.user_id is None
+
+    @property
+    def display_name(self):
+        return localized_bot_name(self.bot_name) if self.is_bot else self.user.get_username()
 
 
 class MetamorphCard(models.Model):

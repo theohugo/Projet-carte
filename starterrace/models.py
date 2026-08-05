@@ -69,7 +69,10 @@ class Player(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="starterrace_participations",
+        null=True,
+        blank=True,
     )
+    bot_name = models.CharField(max_length=40, blank=True, default="")
     starter_card = models.ForeignKey(
         "game.PokemonCard",
         on_delete=models.PROTECT,
@@ -89,14 +92,32 @@ class Player(models.Model):
                 fields=["game", "turn_order"],
                 name="unique_starterrace_turn_order",
             ),
+            models.UniqueConstraint(
+                fields=["game", "bot_name"],
+                condition=~models.Q(bot_name=""),
+                name="unique_starterrace_bot_name",
+            ),
             models.CheckConstraint(
                 condition=models.Q(turn_order__gte=0, turn_order__lte=3),
                 name="starterrace_turn_order_zero_to_three",
             ),
+            models.CheckConstraint(
+                condition=(models.Q(user__isnull=False, bot_name=""))
+                | (models.Q(user__isnull=True) & ~models.Q(bot_name="")),
+                name="starterrace_player_has_one_controller",
+            ),
         ]
 
     def __str__(self):
-        return f"{self.user.get_username()} · {self.starter_card.name_fr}"
+        return f"{self.display_name} · {self.starter_card.name_fr}"
+
+    @property
+    def is_bot(self):
+        return self.user_id is None
+
+    @property
+    def display_name(self):
+        return self.bot_name if self.is_bot else self.user.get_username()
 
 
 class Pawn(models.Model):

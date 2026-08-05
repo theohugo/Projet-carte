@@ -1,23 +1,24 @@
 {% extends "base.html" %}
-{% load static icons %}
+{% load static icons poketable_i18n %}
 
-{% block title %}Bataille des Îles — PokéTable{% endblock %}
+{% block title %}{% bilingual "Bataille des Îles — carte de jeu — PokéTable" "Island Battle — game map — PokéTable" %}{% endblock %}
+{% block meta_description %}{% bilingual "Carte privée d’une partie de Bataille des Îles Pokémon sur PokéTable." "Private game map for a Pokémon Island Battle match on PokéTable." %}{% endblock %}
 {% block html_class %}islands-document{% endblock %}
 {% block body_class %}islands-game-shell{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'islands/css/islands.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'islands/css/islands.css' %}?v=3">
 
 <main class="is-game-page">
     <header class="is-game-header">
         <div class="is-game-heading">
-            <a class="is-back" href="{% url 'islands:lobby' %}">{% icon "back" "icon-sm" %} Quitter l’archipel</a>
+            <a class="is-back" href="{% url 'islands:lobby' %}">{% icon "back" "icon-sm" %} {% bilingual "Quitter l’archipel" "Leave the archipelago" %}</a>
             <span class="is-header-line" aria-hidden="true"></span>
-            <div><p>Bataille des Îles</p><h1>Carte <span translate="no">#{{ game.id|stringformat:"s"|slice:":6" }}</span></h1></div>
+            <div><p>{% bilingual "Bataille des Îles" "Island Battle" %}</p><h1>{% bilingual "Carte" "Map" %} <span translate="no">#{{ game.id|stringformat:"s"|slice:":6" }}</span></h1></div>
         </div>
         <div class="is-game-meta">
-            <span class="is-sync" data-sync><i aria-hidden="true"></i><span>Synchronisé</span></span>
-            <span class="is-game-status" data-status>Connexion…</span>
+            <span class="is-sync" data-sync><i aria-hidden="true"></i><span>{% bilingual "Synchronisé" "Synced" %}</span></span>
+            <span class="is-game-status" data-status>{% bilingual "Connexion…" "Connecting…" %}</span>
         </div>
     </header>
 
@@ -28,23 +29,36 @@
         data-place-url="{% url 'islands:api_place' game_id=game.id %}"
         data-ready-url="{% url 'islands:api_ready' game_id=game.id %}"
         data-fire-url="{% url 'islands:api_fire' game_id=game.id %}"
+        data-add-bot-url="{% url 'islands:api_add_bot' game_id=game.id %}"
+        data-remove-bot-url-template="{% url 'islands:api_remove_bot' game_id=game.id bot_id=0 %}"
+        data-start-url="{% url 'islands:api_start' game_id=game.id %}"
+        data-bot-turn-url="{% url 'islands:api_bot_turn' game_id=game.id %}"
         aria-busy="false"
     >
+        <div class="is-ocean-atmosphere" aria-hidden="true">
+            <i></i><i></i><i></i><b></b><b></b><b></b>
+        </div>
         <form class="is-csrf" aria-hidden="true">{% csrf_token %}</form>
         <p class="is-alert" data-feedback role="alert" hidden></p>
         <p class="visually-hidden" data-announcer aria-live="polite"></p>
 
         <section class="is-waiting" data-view="waiting" hidden aria-labelledby="is-wait-title">
-            <div class="is-waiting__visual" aria-hidden="true"><i></i><i></i><i></i><strong>1<small>/2</small></strong></div>
+            <div class="is-waiting__visual" aria-hidden="true"><i></i><i></i><i></i><strong><span data-waiting-count>1</span><small>/2</small></strong></div>
             <div class="is-waiting__copy">
-                <p class="is-eyebrow"><span class="is-pulse" aria-hidden="true"></span> Canal ouvert</p>
-                <h2 id="is-wait-title" tabindex="-1">Un rival manque à l’appel</h2>
-                <p>Partage ce lien. Le déploiement secret commencera dès que l’adversaire rejoindra la table.</p>
+                <p class="is-eyebrow"><span class="is-pulse" aria-hidden="true"></span> {% bilingual "Canal ouvert" "Open channel" %}</p>
+                <h2 id="is-wait-title" tabindex="-1">{% bilingual "Un rival manque à l’appel" "Waiting for an opponent" %}</h2>
+                <p data-waiting-lead>{% bilingual "Partage ce lien. Le déploiement secret commencera dès que l’adversaire rejoindra la table." "Share this link. Secret deployment will begin as soon as your opponent joins the table." %}</p>
+                <ul class="is-waiting__roster" data-waiting-players aria-label="{% bilingual 'Participants de la bataille' 'Battle participants' %}"></ul>
+                <div class="is-waiting__controls" data-host-controls hidden>
+                    <button class="btn btn-ghost" type="button" data-add-bot>{% bilingual 'Ajouter une IA' 'Add an AI opponent' %}</button>
+                    <button class="btn btn-primary" type="button" data-start-bot disabled>{% bilingual 'Commencer le déploiement' 'Start deployment' %}</button>
+                </div>
+                <p class="is-start-hint" data-start-hint>{% bilingual 'Invite un ami ou ajoute une IA.' 'Invite a friend or add an AI opponent.' %}</p>
                 <div class="is-invite">
                     <code data-invite-url></code>
-                    <button class="btn btn-primary" type="button" data-copy>Copier le lien</button>
+                    <button class="btn btn-primary" type="button" data-copy>{% bilingual "Copier le lien" "Copy link" %}</button>
                     {% if game.created_by_id == user.id and game.status == "EN_ATTENTE" %}
-                        <a class="btn btn-ghost" href="{% url 'invite_friends_to_game' mode='bataille-des-iles' room_id=game.id %}">Inviter un ami</a>
+                        <a class="btn btn-ghost" href="{% url 'invite_friends_to_game' mode='bataille-des-iles' room_id=game.id %}">{% bilingual "Inviter un ami" "Invite a friend" %}</a>
                     {% endif %}
                 </div>
             </div>
@@ -52,25 +66,25 @@
 
         <section class="is-placement" data-view="placement" hidden aria-labelledby="is-placement-title">
             <header class="is-section-heading">
-                <div><p class="is-eyebrow">Phase 1 · confidentiel</p><h2 id="is-placement-title" tabindex="-1">Déploie ton escouade</h2><p>Choisis un Pokémon, son orientation, puis sa case de départ.</p></div>
-                <div class="is-orientation" role="group" aria-label="Orientation de la formation">
-                    <button type="button" data-orientation="H" aria-pressed="true"><span aria-hidden="true">↔</span> Horizontal</button>
-                    <button type="button" data-orientation="V" aria-pressed="false"><span aria-hidden="true">↕</span> Vertical</button>
+                <div><p class="is-eyebrow">{% bilingual "Phase 1 · confidentiel" "Phase 1 · confidential" %}</p><h2 id="is-placement-title" tabindex="-1">{% bilingual "Déploie ton escouade" "Deploy your squad" %}</h2><p>{% bilingual "Choisis un Pokémon, son orientation, puis sa case de départ." "Choose a Pokémon, its orientation, then its starting cell." %}</p></div>
+                <div class="is-orientation" role="group" aria-label="{% bilingual 'Orientation de la formation' 'Formation orientation' %}">
+                    <button type="button" data-orientation="H" aria-pressed="true"><span aria-hidden="true">↔</span> {% bilingual "Horizontal" "Horizontal" %}</button>
+                    <button type="button" data-orientation="V" aria-pressed="false"><span aria-hidden="true">↕</span> {% bilingual "Vertical" "Vertical" %}</button>
                 </div>
             </header>
             <div class="is-placement-layout">
                 <aside class="is-squad" aria-labelledby="is-squad-title">
-                    <div class="is-squad__heading"><div><p class="is-eyebrow">Ton équipe</p><h3 id="is-squad-title">4 Pokémon aquatiques</h3></div><span data-placement-count>0/4</span></div>
+                    <div class="is-squad__heading"><div><p class="is-eyebrow">{% bilingual "Ton équipe" "Your team" %}</p><h3 id="is-squad-title">{% bilingual "4 Pokémon aquatiques" "4 Water-type Pokémon" %}</h3></div><span data-placement-count>0/4</span></div>
                     <div class="is-formation-list" data-formations></div>
-                    <button class="btn btn-primary is-ready" type="button" data-ready disabled>Verrouiller mon équipe</button>
-                    <p class="is-private-note"><span aria-hidden="true">◈</span> Les positions restent invisibles pour ton adversaire.</p>
+                    <button class="btn btn-primary is-ready" type="button" data-ready disabled>{% bilingual "Verrouiller mon équipe" "Lock my team" %}</button>
+                    <p class="is-private-note"><span aria-hidden="true">◈</span> {% bilingual "Les positions restent invisibles pour ton adversaire." "Your positions remain hidden from your opponent." %}</p>
                 </aside>
                 <div class="is-board-card">
-                    <div class="is-board-top"><div><p class="is-eyebrow">Zone privée</p><h3>Ton archipel</h3></div><span class="is-board-chip" data-placement-hint>Sélectionne un Pokémon</span></div>
+                    <div class="is-board-top"><div><p class="is-eyebrow">{% bilingual "Zone privée" "Private zone" %}</p><h3>{% bilingual "Ton archipel" "Your archipelago" %}</h3></div><span class="is-board-chip" data-placement-hint>{% bilingual "Sélectionne un Pokémon" "Select a Pokémon" %}</span></div>
                     <div class="is-grid-wrap">
                         <div class="is-axis is-axis--cols" aria-hidden="true"><i>A</i><i>B</i><i>C</i><i>D</i><i>E</i><i>F</i><i>G</i><i>H</i></div>
                         <div class="is-axis is-axis--rows" aria-hidden="true"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
-                        <div class="is-grid is-grid--placement" data-placement-grid role="grid" aria-label="Grille de placement, 8 colonnes par 8 lignes"></div>
+                        <div class="is-grid is-grid--placement" data-placement-grid role="grid" aria-label="{% bilingual 'Grille de placement, 8 colonnes par 8 lignes' 'Placement grid, 8 columns by 8 rows' %}"></div>
                     </div>
                 </div>
             </div>
@@ -78,51 +92,54 @@
 
         <section class="is-battle" data-view="battle" hidden aria-labelledby="is-battle-title">
             <header class="is-battle-banner">
-                <div><p class="is-eyebrow">Phase 2 · exploration</p><h2 id="is-battle-title" tabindex="-1" data-battle-title>Repère l’escouade adverse</h2></div>
-                <div class="is-turn" data-turn><i aria-hidden="true"></i><span>Chargement…</span></div>
+                <div><p class="is-eyebrow">{% bilingual "Phase 2 · exploration" "Phase 2 · exploration" %}</p><h2 id="is-battle-title" tabindex="-1" data-battle-title>{% bilingual "Repère l’escouade adverse" "Locate the opposing squad" %}</h2></div>
+                <div class="is-battle-signals">
+                    <div class="is-combo" data-combo hidden aria-live="polite"><small>{% bilingual "Impact en chaîne" "Hit streak" %}</small><strong>COMBO ×<span data-combo-count>2</span></strong><em data-combo-copy>{% bilingual "Tu rejoues !" "You play again!" %}</em></div>
+                    <div class="is-turn" data-turn><i aria-hidden="true"></i><span>{% bilingual "Chargement…" "Loading…" %}</span></div>
+                </div>
             </header>
             <div class="is-dual-board">
                 <section class="is-board-card is-board-card--enemy" aria-labelledby="is-enemy-title">
-                    <div class="is-board-top"><div><p class="is-eyebrow">Zone adverse</p><h3 id="is-enemy-title">Archipel de <span data-opponent-name>l’adversaire</span></h3></div><span class="is-board-chip" data-enemy-score>0 / 12 touches</span></div>
+                    <div class="is-board-top"><div><p class="is-eyebrow">{% bilingual "Zone adverse" "Enemy zone" %}</p><h3 id="is-enemy-title">{% bilingual "Archipel de" "Archipelago of" %} <span data-opponent-name>{% bilingual "l’adversaire" "your opponent" %}</span></h3></div><span class="is-board-chip" data-enemy-score>{% bilingual "0 / 12 touches" "0 / 12 hits" %}</span></div>
                     <div class="is-grid-wrap">
                         <div class="is-axis is-axis--cols" aria-hidden="true"><i>A</i><i>B</i><i>C</i><i>D</i><i>E</i><i>F</i><i>G</i><i>H</i></div>
                         <div class="is-axis is-axis--rows" aria-hidden="true"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
-                        <div class="is-grid is-grid--enemy" data-enemy-grid role="grid" aria-label="Archipel adverse. Utilise les flèches pour te déplacer et Entrée pour attaquer."></div>
+                        <div class="is-grid is-grid--enemy" data-enemy-grid role="grid" aria-label="{% bilingual 'Archipel adverse. Utilise les flèches pour te déplacer et Entrée pour attaquer.' 'Enemy archipelago. Use the arrow keys to move and Enter to attack.' %}"></div>
                     </div>
-                    <p class="is-board-help" data-enemy-help>Choisis une coordonnée à explorer.</p>
+                    <p class="is-board-help" data-enemy-help>{% bilingual "Choisis une coordonnée à explorer." "Choose a coordinate to explore." %}</p>
                 </section>
 
                 <section class="is-board-card is-board-card--own" aria-labelledby="is-own-title">
-                    <div class="is-board-top"><div><p class="is-eyebrow">Zone protégée</p><h3 id="is-own-title">Ton archipel</h3></div><span class="is-board-chip" data-own-score>12 cases intactes</span></div>
+                    <div class="is-board-top"><div><p class="is-eyebrow">{% bilingual "Zone protégée" "Protected zone" %}</p><h3 id="is-own-title">{% bilingual "Ton archipel" "Your archipelago" %}</h3></div><span class="is-board-chip" data-own-score>{% bilingual "12 cases intactes" "12 intact cells" %}</span></div>
                     <div class="is-grid-wrap">
                         <div class="is-axis is-axis--cols" aria-hidden="true"><i>A</i><i>B</i><i>C</i><i>D</i><i>E</i><i>F</i><i>G</i><i>H</i></div>
                         <div class="is-axis is-axis--rows" aria-hidden="true"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
-                        <div class="is-grid is-grid--own" data-own-grid role="img" aria-label="Ton placement et les tirs adverses"></div>
+                        <div class="is-grid is-grid--own" data-own-grid role="img" aria-label="{% bilingual 'Ton placement et les tirs adverses' 'Your placement and incoming shots' %}"></div>
                     </div>
-                    <div class="is-captured-strip" data-own-squad aria-label="État de ton escouade"></div>
+                    <div class="is-captured-strip" data-own-squad aria-label="{% bilingual 'État de ton escouade' 'Your squad status' %}"></div>
                 </section>
             </div>
             <aside class="is-log" aria-labelledby="is-log-title">
-                <div><p class="is-eyebrow">Dernier signal</p><h3 id="is-log-title">Journal radar</h3></div>
-                <p data-last-shot>Aucun tir pour le moment.</p>
-                <div class="is-legend" aria-label="Légende"><span><i class="miss"></i> Raté</span><span><i class="hit"></i> Touché</span><span><i class="captured"></i> Capturé</span></div>
+                <div><p class="is-eyebrow">{% bilingual "Dernier signal" "Latest signal" %}</p><h3 id="is-log-title">{% bilingual "Journal radar" "Radar log" %}</h3></div>
+                <p data-last-shot>{% bilingual "Aucun tir pour le moment." "No shots yet." %}</p>
+                <div class="is-legend" aria-label="{% bilingual 'Légende' 'Legend' %}"><span><i class="miss"></i> {% bilingual "Raté" "Miss" %}</span><span><i class="hit"></i> {% bilingual "Touché" "Hit" %}</span><span><i class="captured"></i> {% bilingual "Capturé" "Captured" %}</span></div>
             </aside>
         </section>
 
         <section class="is-result" data-view="result" hidden aria-labelledby="is-result-title">
             <div class="is-result__radar" aria-hidden="true"><i></i><i></i><i></i></div>
-            <p class="is-eyebrow">Exploration terminée</p>
-            <h2 id="is-result-title" tabindex="-1" data-result-title>Archipel conquis</h2>
+            <p class="is-eyebrow">{% bilingual "Exploration terminée" "Exploration complete" %}</p>
+            <h2 id="is-result-title" tabindex="-1" data-result-title>{% bilingual "Archipel conquis" "Archipelago conquered" %}</h2>
             <p data-result-copy></p>
-            <div class="is-reveal" data-reveal aria-label="Escouade adverse révélée"></div>
+            <div class="is-reveal" data-reveal aria-label="{% bilingual 'Escouade adverse révélée' 'Revealed opposing squad' %}"></div>
             <div class="is-result__actions">
-                <form method="post" action="{% url 'islands:create_game' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Nouvelle bataille</button></form>
-                <a class="btn btn-ghost" href="{% url 'islands:lobby' %}">{% icon "back" %} Retour au salon</a>
+                <form method="post" action="{% url 'islands:create_game' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">{% bilingual "Nouvelle bataille" "New battle" %}</button></form>
+                <a class="btn btn-ghost" href="{% url 'islands:lobby' %}">{% icon "back" %} {% bilingual "Retour au salon" "Back to lobby" %}</a>
             </div>
         </section>
     </div>
 </main>
 
 {{ game_state|json_script:"islands-initial-state" }}
-<script src="{% static 'islands/js/game.js' %}?v=1"></script>
+<script src="{% static 'islands/js/game.js' %}?v=3"></script>
 {% endblock %}

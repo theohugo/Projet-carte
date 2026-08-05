@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 
 from game.models import Profile
 from game.password_rules import build_password_rules, failed_rule_codes
+from game.pokemon_names import bilingual_text
 
 
 class SignUpForm(UserCreationForm):
@@ -52,6 +53,16 @@ class AccountForm(forms.ModelForm):
         ),
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].label = bilingual_text("Nom d’utilisateur", "Username")
+        self.fields["first_name"].label = bilingual_text("Prénom", "First name")
+        self.fields["last_name"].label = bilingual_text("Nom", "Last name")
+        self.fields["email"].label = bilingual_text("Adresse e-mail", "Email address")
+        self.fields["email"].widget.attrs["placeholder"] = bilingual_text(
+            "exemple@email.fr", "example@email.com"
+        )
+
     class Meta:
         model = User
         fields = ["username", "first_name", "last_name", "email"]
@@ -78,7 +89,12 @@ class AccountForm(forms.ModelForm):
         email_already_used = User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists()
 
         if email_already_used:
-            raise ValidationError("Cette adresse e-mail est déjà utilisée par un autre compte.")
+            raise ValidationError(
+                bilingual_text(
+                    "Cette adresse e-mail est déjà utilisée par un autre compte.",
+                    "This email address is already used by another account.",
+                )
+            )
 
         return email
 
@@ -112,6 +128,22 @@ class ProfileForm(forms.ModelForm):
             "description": "500 caractères maximum.",
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["avatar"].label = bilingual_text("Photo de profil", "Profile picture")
+        self.fields["description"].label = bilingual_text("Description", "Description")
+        self.fields["description"].widget.attrs["placeholder"] = bilingual_text(
+            "Présente-toi aux autres joueurs en quelques mots...",
+            "Introduce yourself to other players in a few words...",
+        )
+        self.fields["avatar"].help_text = bilingual_text(
+            "Formats acceptés : JPG, PNG ou WebP. Taille maximale : 5 Mo.",
+            "Accepted formats: JPG, PNG or WebP. Maximum size: 5 MB.",
+        )
+        self.fields["description"].help_text = bilingual_text(
+            "500 caractères maximum.", "500 characters maximum."
+        )
+
     def clean_avatar(self):
         avatar = self.cleaned_data.get("avatar")
 
@@ -119,7 +151,12 @@ class ProfileForm(forms.ModelForm):
             return avatar
 
         if avatar.size > 5 * 1024 * 1024:
-            raise ValidationError("La photo de profil ne doit pas dépasser 5 Mo.")
+            raise ValidationError(
+                bilingual_text(
+                    "La photo de profil ne doit pas dépasser 5 Mo.",
+                    "The profile picture must not exceed 5 MB.",
+                )
+            )
 
         content_type = getattr(avatar, "content_type", "")
         allowed_types = {
@@ -129,6 +166,11 @@ class ProfileForm(forms.ModelForm):
         }
 
         if content_type and content_type not in allowed_types:
-            raise ValidationError("Utilise une image au format JPG, PNG ou WebP.")
+            raise ValidationError(
+                bilingual_text(
+                    "Utilise une image au format JPG, PNG ou WebP.",
+                    "Use a JPG, PNG or WebP image.",
+                )
+            )
 
         return avatar

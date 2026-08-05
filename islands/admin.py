@@ -18,7 +18,7 @@ class IslandGameAdmin(admin.ModelAdmin):
 
 @admin.register(IslandPlayer)
 class IslandPlayerAdmin(admin.ModelAdmin):
-    list_display = ("game", "user", "turn_order", "is_ready")
+    list_display = ("game", "display_name", "user", "bot_name", "turn_order", "is_ready")
     list_filter = ("is_ready",)
     inlines = (FormationInline,)
 

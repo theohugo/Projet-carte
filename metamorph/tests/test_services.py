@@ -5,8 +5,10 @@ from unittest.mock import patch
 
 from django.conf import settings
 from django.test import TestCase
-from django.utils import timezone
+from django.utils import timezone, translation
+from django.utils.translation import override
 
+from game.models import PokemonCard, PokemonType
 from metamorph.models import MetamorphCard, MetamorphGame, MetamorphMove
 from metamorph.services import (
     MAX_PLAYERS,
@@ -15,9 +17,12 @@ from metamorph.services import (
     MetamorphPermissionError,
     MetamorphStateError,
     StaleRevisionError,
+    add_bot,
     create_game,
     draw_card,
     join_game,
+    play_bot_turn,
+    remove_bot,
     serialize_game_state,
     start_game,
 )
@@ -27,6 +32,10 @@ from .factories import make_catalog, make_users
 
 class MetamorphServiceTests(TestCase):
     def setUp(self):
+        # Service tests do not cross LocaleMiddleware, so make their default
+        # language explicit and leave no thread-local language behind.
+        translation.activate("fr")
+        self.addCleanup(translation.deactivate_all)
         self.species, self.ditto = make_catalog()
         self.users = make_users()
         self.host = self.users[0]
@@ -75,6 +84,72 @@ class MetamorphServiceTests(TestCase):
         game = self.make_waiting_game()
         with self.assertRaisesMessage(MetamorphPermissionError, "Seul l'hôte"):
             start_game(game.id, self.guest, game.turn_revision)
+
+    def test_host_can_add_and_remove_bots_with_revision_protection(self):
+        game = create_game(self.host)
+        original_revision = game.turn_revision
+
+        game = add_bot(game.id, self.host, original_revision)
+        bot = game.players.get(user__isnull=True)
+        self.assertTrue(bot.is_bot)
+        self.assertTrue(bot.display_name.startswith("IA "))
+        self.assertEqual(bot.turn_order, 1)
+        self.assertTrue(serialize_game_state(game, self.host)["can_start"])
+
+        with self.assertRaises(StaleRevisionError):
+            add_bot(game.id, self.host, original_revision)
+        with self.assertRaises(MetamorphPermissionError):
+            remove_bot(game.id, self.guest, bot.id, game.turn_revision)
+
+        game = remove_bot(game.id, self.host, bot.id, game.turn_revision)
+        self.assertFalse(game.players.filter(user__isnull=True).exists())
+
+    def test_bot_display_name_and_payload_follow_active_language(self):
+        game = add_bot(create_game(self.host).id, self.host, 0)
+        bot = game.players.get(user__isnull=True)
+
+        with override("fr"):
+            self.assertEqual(bot.display_name, "IA Ondine")
+            self.assertEqual(
+                next(
+                    player for player in serialize_game_state(game, self.host)["players"] if player["is_bot"]
+                )["username"],
+                "IA Ondine",
+            )
+        with override("en"):
+            self.assertEqual(bot.display_name, "Misty AI")
+            self.assertEqual(
+                next(
+                    player for player in serialize_game_state(game, self.host)["players"] if player["is_bot"]
+                )["username"],
+                "Misty AI",
+            )
+
+    def test_bot_draws_blindly_and_returns_turn_to_a_human(self):
+        game = create_game(self.host)
+        game = add_bot(game.id, self.host, game.turn_revision)
+        game = self.start_deterministically(game)
+        game = draw_card(game.id, self.host, 1, game.turn_revision)
+        active_bot = game.current_turn
+        self.assertTrue(active_bot.is_bot)
+
+        class FirstCard:
+            @staticmethod
+            def randint(start, end):
+                self.assertEqual(start, 1)
+                self.assertGreaterEqual(end, 1)
+                return 1
+
+        game = play_bot_turn(game.id, self.host, game.turn_revision, rng=FirstCard())
+
+        move = game.moves.latest("sequence")
+        self.assertEqual(move.actor_id, active_bot.id)
+        self.assertTrue(move.actor.is_bot)
+        self.assertTrue(game.status == MetamorphGame.Status.TERMINEE or not game.current_turn.is_bot)
+        bot_payload = next(
+            player for player in serialize_game_state(game, self.host)["players"] if player["is_bot"]
+        )
+        self.assertEqual(bot_payload["username"], active_bot.bot_name)
 
     def test_start_builds_twelve_pairs_and_one_real_ditto(self):
         game = self.start_deterministically(self.make_waiting_game())
@@ -264,6 +339,20 @@ class MetamorphServiceTests(TestCase):
             host_state["me"]["hand"][0]["physical_id"],
             guest_state["me"]["hand"][0]["physical_id"],
         )
+
+    def test_visible_cards_include_localized_primary_and_secondary_type_pngs(self):
+        water = PokemonType.objects.create(slug="water", name_fr="Eau", name_en="Water")
+        PokemonCard.objects.update(secondary_type=water)
+        game = self.start_deterministically(self.make_waiting_game())
+
+        with override("en"):
+            card = serialize_game_state(game, self.host)["me"]["hand"][0]["pokemon"]
+
+        self.assertEqual(card["name"], card["name_en"])
+        self.assertEqual(card["primary_type"]["name"], card["primary_type"]["name_en"])
+        self.assertEqual(card["secondary_type"]["name"], "Water")
+        self.assertIn("game/img/types/normal.png", card["primary_type"]["icon_url"])
+        self.assertIn("game/img/types/water.png", card["secondary_type"]["icon_url"])
 
     def test_unmatched_move_history_does_not_reveal_drawn_pokemon(self):
         game = self.start_deterministically(self.make_waiting_game())

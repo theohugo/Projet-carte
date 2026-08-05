@@ -1,20 +1,23 @@
 {% extends "base.html" %}
-{% load static icons %}
+{% load static icons poketable_i18n %}
 
-{% block title %}Pictionary Pokémon — partie{% endblock %}
+{% block title %}{% bilingual "Pictionary Pokémon — partie" "Pokémon Pictionary — game" %}{% endblock %}
+{% block html_class %}pic-game-document{% if game.status == "EN_COURS" %} pic-game-document--active{% endif %}{% endblock %}
+{% block body_class %}pic-game-shell{% if game.status == "EN_COURS" %} pic-game-shell--active{% endif %}{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'pictionary/css/pictionary.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'pictionary/css/pictionary.css' %}?v=4">
 
 <div id="pictionary-game" class="room-shell pic-game"
      data-state-url="{% url 'pictionary:api_state' game_id=game.id %}"
      data-stroke-url="{% url 'pictionary:api_stroke' game_id=game.id %}"
-     data-guess-url="{% url 'pictionary:api_guess' game_id=game.id %}">
+     data-guess-url="{% url 'pictionary:api_guess' game_id=game.id %}"
+     data-game-status="{{ game_state.status }}">
     <header class="room-header">
         <div>
             <a class="back-link" href="{% url 'pictionary:lobby' %}" data-reload-focus-key="back">
                 {% icon "back" "icon-sm" %}
-                Retour au lobby
+                {% bilingual "Retour au lobby" "Back to lobby" %}
             </a>
 
             <h1 class="room-title">
@@ -25,7 +28,7 @@
                     data-status="{{ game.status|lower }}"
                     data-status-badge
                 >
-                    {{ game.get_status_display }}
+                    {% if game.status == "EN_ATTENTE" %}{% bilingual "En attente" "Waiting" %}{% elif game.status == "EN_COURS" %}{% bilingual "En cours" "In progress" %}{% else %}{% bilingual "Terminée" "Finished" %}{% endif %}
                 </span>
             </h1>
         </div>
@@ -33,7 +36,7 @@
         <ol
             class="round-dots"
             data-round-dots
-            aria-label="Progression des manches"
+            aria-label="{% bilingual 'Progression des manches' 'Round progress' %}"
         ></ol>
     </header>
 
@@ -60,17 +63,17 @@
         <div>
             <p class="section-kicker">
                 <span class="live-pulse" aria-hidden="true"></span>
-                Salon ouvert
+                {% bilingual "Salon ouvert" "Open room" %}
             </p>
 
-            <h2>En attente des joueurs</h2>
+            <h2>{% bilingual "En attente des joueurs" "Waiting for players" %}</h2>
 
             <p class="room-waiting-lead">
-                Il faut au moins
-                <strong>{{ game_state.min_players }} joueurs</strong> :
-                un dessine, les autres devinent. La partie compte
-                <strong>{{ game.round_count }} manches</strong>
-                de 90 secondes, et le crayon tourne à chaque fois.
+                {% bilingual "Il faut au moins" "At least" %}
+                <strong>{{ game_state.min_players }} {% bilingual "joueurs" "players" %}</strong> :
+                {% bilingual "un dessine, les autres devinent. La partie compte" "one draws while the others guess. The game has" %}
+                <strong>{{ game.round_count }} {% bilingual "manches" "rounds" %}</strong>
+                {% bilingual "de 90 secondes, et le crayon tourne à chaque fois." "of 90 seconds, with a different artist each time." %}
             </p>
 
             <div class="room-waiting-actions">
@@ -86,7 +89,7 @@
                             class="btn btn-primary btn-large"
                             data-reload-focus-key="start"
                         >
-                            Lancer la partie
+                            {% bilingual "Lancer la partie" "Start game" %}
                         </button>
                     </form>
 
@@ -94,7 +97,7 @@
                         class="btn btn-ghost"
                         href="{% url 'invite_friends_to_game' mode='pictionary' room_id=game.id %}"
                     >
-                        Inviter un ami
+                        {% bilingual "Inviter un ami" "Invite a friend" %}
                     </a>
                 {% endif %}
 
@@ -105,14 +108,14 @@
                     data-reload-focus-key="copy"
                 >
                     <span data-copy-label>
-                        Copier le lien d’invitation
+                        {% bilingual "Copier le lien d’invitation" "Copy invitation link" %}
                     </span>
                 </button>
             </div>
 
             {% if not game_state.is_host %}
                 <p class="room-waiting-lead">
-                    L’hôte lancera la partie quand tout le monde sera là.
+                    {% bilingual "L’hôte lancera la partie quand tout le monde sera là." "The host will start when everyone is ready." %}
                 </p>
             {% endif %}
         </div>
@@ -126,7 +129,7 @@
             </div>
 
             <p class="section-kicker">
-                Joueurs présents
+                {% bilingual "Joueurs présents" "Players here" %}
             </p>
 
             <ul
@@ -199,7 +202,7 @@
                 data-canvas
                 width="960"
                 height="640"
-                aria-label="Zone de dessin"
+                aria-label="{% bilingual 'Zone de dessin' 'Drawing area' %}"
             ></canvas>
 
             <p
@@ -213,7 +216,7 @@
                 ></span>
 
                 <span data-watch-text>
-                    en direct
+                    {% bilingual "en direct" "live" %}
                 </span>
             </p>
 
@@ -223,7 +226,7 @@
                 hidden
             >
                 <p class="section-kicker">
-                    Manche terminée
+                    {% bilingual "Manche terminée" "Round over" %}
                 </p>
 
                 <p
@@ -241,7 +244,7 @@
             hidden
         >
             <p class="pic-secret">
-                À faire deviner
+                {% bilingual "À faire deviner" "Draw this Pokémon" %}
 
                 <strong data-secret-word>
                     —
@@ -251,14 +254,14 @@
             <div
                 class="pic-tool-group"
                 role="group"
-                aria-label="Couleur du trait"
+                aria-label="{% bilingual 'Couleur du trait' 'Stroke color' %}"
             >
                 <button
                     type="button"
                     class="pic-color is-active"
                     data-color="#f6f9ff"
                     style="--pen: #f6f9ff"
-                    aria-label="Blanc"
+                    aria-label="{% bilingual 'Blanc' 'White' %}"
                     aria-pressed="true"
                 ></button>
 
@@ -267,7 +270,7 @@
                     class="pic-color"
                     data-color="#ffd166"
                     style="--pen: #ffd166"
-                    aria-label="Jaune"
+                    aria-label="{% bilingual 'Jaune' 'Yellow' %}"
                     aria-pressed="false"
                 ></button>
 
@@ -276,7 +279,7 @@
                     class="pic-color"
                     data-color="#ef476f"
                     style="--pen: #ef476f"
-                    aria-label="Rouge"
+                    aria-label="{% bilingual 'Rouge' 'Red' %}"
                     aria-pressed="false"
                 ></button>
 
@@ -285,7 +288,7 @@
                     class="pic-color"
                     data-color="#06d6a0"
                     style="--pen: #06d6a0"
-                    aria-label="Vert"
+                    aria-label="{% bilingual 'Vert' 'Green' %}"
                     aria-pressed="false"
                 ></button>
 
@@ -294,7 +297,7 @@
                     class="pic-color"
                     data-color="#4cc9f0"
                     style="--pen: #4cc9f0"
-                    aria-label="Bleu"
+                    aria-label="{% bilingual 'Bleu' 'Blue' %}"
                     aria-pressed="false"
                 ></button>
             </div>
@@ -302,13 +305,13 @@
             <div
                 class="pic-tool-group"
                 role="group"
-                aria-label="Épaisseur du trait"
+                aria-label="{% bilingual 'Épaisseur du trait' 'Stroke width' %}"
             >
                 <button
                     type="button"
                     class="pic-size"
                     data-size="4"
-                    aria-label="Trait fin"
+                    aria-label="{% bilingual 'Trait fin' 'Thin stroke' %}"
                     aria-pressed="false"
                 >
                     <i style="--dot: 5px"></i>
@@ -318,7 +321,7 @@
                     type="button"
                     class="pic-size is-active"
                     data-size="8"
-                    aria-label="Trait moyen"
+                    aria-label="{% bilingual 'Trait moyen' 'Medium stroke' %}"
                     aria-pressed="true"
                 >
                     <i style="--dot: 10px"></i>
@@ -328,7 +331,7 @@
                     type="button"
                     class="pic-size"
                     data-size="16"
-                    aria-label="Trait épais"
+                    aria-label="{% bilingual 'Trait épais' 'Thick stroke' %}"
                     aria-pressed="false"
                 >
                     <i style="--dot: 16px"></i>
@@ -340,7 +343,7 @@
                 class="btn btn-ghost"
                 data-clear
             >
-                Tout effacer
+                {% bilingual "Tout effacer" "Clear all" %}
             </button>
         </div>
 
@@ -353,7 +356,7 @@
                 class="visually-hidden"
                 for="pic-guess"
             >
-                Ta proposition
+                {% bilingual "Ta proposition" "Your guess" %}
             </label>
 
             <input
@@ -363,7 +366,7 @@
                 autocapitalize="none"
                 spellcheck="false"
                 maxlength="60"
-                placeholder="C’est quel Pokémon ?"
+                placeholder="{% bilingual 'C’est quel Pokémon ?' 'Which Pokémon is it?' %}"
                 data-guess-input
             >
 
@@ -372,14 +375,14 @@
                 class="btn btn-primary"
                 data-guess-submit
             >
-                Proposer
+                {% bilingual "Proposer" "Guess" %}
             </button>
         </form>
 
         <ul
             class="pic-guess-feed"
             data-my-guesses
-            aria-label="Mes propositions"
+            aria-label="{% bilingual 'Mes propositions' 'My guesses' %}"
         ></ul>
     </section>
 
@@ -392,7 +395,7 @@
                 id="pic-scores-title"
                 class="section-kicker"
             >
-                Classement
+                {% bilingual "Classement" "Leaderboard" %}
             </h2>
 
             <p
@@ -410,5 +413,5 @@
 
 {{ game_state|json_script:"pictionary-initial-state" }}
 
-<script src="{% static 'pictionary/js/game.js' %}?v=3"></script>
+<script src="{% static 'pictionary/js/game.js' %}?v=5"></script>
 {% endblock %}

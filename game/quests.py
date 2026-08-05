@@ -20,6 +20,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from game.models import Profile, QuestProgress
+from game.pokemon_names import bilingual_text
 from game.shop import BOOSTERS_BY_KEY, grant_ticket
 
 
@@ -27,7 +28,9 @@ from game.shop import BOOSTERS_BY_KEY, grant_ticket
 class Quest:
     key: str
     label: str
+    label_en: str
     description: str
+    description_en: str
     event: str
     target: int
     reward: int
@@ -47,7 +50,9 @@ QUESTS = (
     Quest(
         key="daily_play_three",
         label="Sur tous les fronts",
+        label_en="On every front",
         description="Termine 3 parties, quel que soit le jeu.",
+        description_en="Finish 3 games in any mode.",
         event=EVENT_GAME_PLAYED,
         target=3,
         reward=60,
@@ -56,7 +61,9 @@ QUESTS = (
     Quest(
         key="daily_win_one",
         label="Première victoire",
+        label_en="First victory",
         description="Gagne une partie aujourd'hui.",
+        description_en="Win a game today.",
         event=EVENT_GAME_WON,
         target=1,
         reward=80,
@@ -65,7 +72,9 @@ QUESTS = (
     Quest(
         key="daily_silhouettes",
         label="Œil de lynx",
+        label_en="Eagle eye",
         description="Reconnais 5 silhouettes.",
+        description_en="Identify 5 silhouettes.",
         event=EVENT_SILHOUETTE_FOUND,
         target=5,
         reward=70,
@@ -74,7 +83,9 @@ QUESTS = (
     Quest(
         key="daily_drawing",
         label="Coup de crayon",
+        label_en="Pencil stroke",
         description="Fais deviner un de tes dessins au Pictionary.",
+        description_en="Get another player to guess one of your Pictionary drawings.",
         event=EVENT_PICTIONARY_DRAWN,
         target=1,
         reward=60,
@@ -83,7 +94,9 @@ QUESTS = (
     Quest(
         key="weekly_marathon",
         label="Marathon",
+        label_en="Marathon",
         description="Termine 15 parties cette semaine.",
+        description_en="Finish 15 games this week.",
         event=EVENT_GAME_PLAYED,
         target=15,
         reward=260,
@@ -93,7 +106,9 @@ QUESTS = (
     Quest(
         key="weekly_champion",
         label="Champion de la semaine",
+        label_en="Champion of the week",
         description="Remporte 5 parties.",
+        description_en="Win 5 games.",
         event=EVENT_GAME_WON,
         target=5,
         reward=320,
@@ -103,7 +118,9 @@ QUESTS = (
     Quest(
         key="weekly_guesser",
         label="Devineur infatigable",
+        label_en="Tireless guesser",
         description="Trouve 25 Pokémon, silhouette ou dessin.",
+        description_en="Identify 25 Pokémon from silhouettes or drawings.",
         event=EVENT_SILHOUETTE_FOUND,
         target=25,
         reward=280,
@@ -174,10 +191,10 @@ def quest_board(user) -> dict:
         board[quest.period].append(
             {
                 "key": quest.key,
-                "label": quest.label,
-                "description": quest.description,
+                "label": bilingual_text(quest.label, quest.label_en),
+                "description": bilingual_text(quest.description, quest.description_en),
                 "reward": quest.reward,
-                "booster_label": booster.label if booster else "",
+                "booster_label": booster.display_label if booster else "",
                 "booster_season": booster.season if booster else None,
                 "target": quest.target,
                 "progress": progress,
@@ -208,7 +225,7 @@ def claim_reward(user, quest_key: str) -> Claim:
 
     quest = QUESTS_BY_KEY.get(quest_key)
     if quest is None:
-        raise QuestError("Cette quête n'existe pas.")
+        raise QuestError(bilingual_text("Cette quête n'existe pas.", "This quest does not exist."))
 
     progress = (
         QuestProgress.objects.select_for_update()
@@ -216,9 +233,11 @@ def claim_reward(user, quest_key: str) -> Claim:
         .first()
     )
     if progress is None or progress.progress < quest.target:
-        raise QuestError("Cette quête n'est pas encore terminée.")
+        raise QuestError(
+            bilingual_text("Cette quête n'est pas encore terminée.", "This quest is not complete yet.")
+        )
     if progress.claimed_at is not None:
-        raise QuestError("Récompense déjà récupérée.")
+        raise QuestError(bilingual_text("Récompense déjà récupérée.", "Reward already collected."))
 
     progress.claimed_at = timezone.now()
     progress.save(update_fields=["claimed_at"])
@@ -227,5 +246,5 @@ def claim_reward(user, quest_key: str) -> Claim:
     ticket = grant_ticket(user, quest.booster, source=quest.key) if quest.booster else None
     return Claim(
         points=quest.reward,
-        booster_label=BOOSTERS_BY_KEY[ticket.booster_key].label if ticket else "",
+        booster_label=BOOSTERS_BY_KEY[ticket.booster_key].display_label if ticket else "",
     )

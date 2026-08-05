@@ -8,7 +8,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
-from game.guests import guest_allowed
+from game.guests import guest_action, guest_allowed, public_lobby
+from game.pokemon_names import bilingual_text
 
 from .models import GuessWhoGame
 from .services import (
@@ -36,10 +37,18 @@ def _read_json_object(request):
     try:
         payload = json.loads(request.body or "{}")
     except (json.JSONDecodeError, UnicodeDecodeError):
-        return None, JsonResponse({"error": "Requête JSON invalide."}, status=400)
+        return None, JsonResponse(
+            {"error": bilingual_text("Requête JSON invalide.", "Invalid JSON request.")},
+            status=400,
+        )
     if not isinstance(payload, dict):
         return None, JsonResponse(
-            {"error": "La requête doit contenir un objet JSON."},
+            {
+                "error": bilingual_text(
+                    "La requête doit contenir un objet JSON.",
+                    "The request must contain a JSON object.",
+                )
+            },
             status=400,
         )
     return payload, None
@@ -49,7 +58,7 @@ def _read_expected_revision(payload):
     revision = payload.get("expected_turn_revision")
     if isinstance(revision, bool) or not isinstance(revision, int) or revision < 0:
         return None, JsonResponse(
-            {"error": "Révision de tour invalide."},
+            {"error": bilingual_text("Révision de tour invalide.", "Invalid turn revision.")},
             status=400,
         )
     return revision, None
@@ -77,19 +86,21 @@ def _error_response(exc, game_id, user):
     return JsonResponse({"error": str(exc)}, status=status)
 
 
-@guest_allowed
+@public_lobby
 def lobby(request):
     open_games = (
         GuessWhoGame.objects.filter(status=GuessWhoGame.Status.EN_ATTENTE)
         .select_related("created_by")
         .annotate(player_count=Count("players"))
     )
-    my_games = (
-        GuessWhoGame.objects.annotate(player_count=Count("players"))
-        .filter(players__user=request.user)
-        .select_related("created_by", "winner__user")
-        .distinct()
-    )
+    my_games = GuessWhoGame.objects.none()
+    if request.user.is_authenticated:
+        my_games = (
+            GuessWhoGame.objects.annotate(player_count=Count("players"))
+            .filter(players__user=request.user)
+            .select_related("created_by", "winner__user")
+            .distinct()
+        )
     return render(
         request,
         "guesswho/lobby.html",
@@ -101,13 +112,12 @@ def lobby(request):
     )
 
 
-@login_required
 @require_GET
 def api_lobby_state(request):
     return JsonResponse(get_lobby_state(request.user))
 
 
-@login_required
+@guest_action
 @require_POST
 def create_game(request):
     try:
@@ -118,7 +128,7 @@ def create_game(request):
     return redirect("guesswho:game_detail", game_id=game.id)
 
 
-@login_required
+@guest_action
 @require_POST
 def join_game(request, game_id):
     try:
@@ -142,8 +152,11 @@ def game_detail(request, game_id):
             request,
             "join_invitation.html",
             {
-                "mode_name": "Qui est-ce ? Pokémon",
-                "mode_kicker": "Déduction · questions · duel",
+                "mode_name": bilingual_text("Qui est-ce ? Pokémon", "Pokémon Guess Who?"),
+                "mode_kicker": bilingual_text(
+                    "Déduction · questions · duel",
+                    "Deduction · questions · duel",
+                ),
                 "host_name": game.created_by.get_username(),
                 "player_count": player_count,
                 "max_players": game.max_players,
@@ -180,7 +193,11 @@ def api_choose_target(request, game_id):
     revision, error = _read_expected_revision(payload)
     if error:
         return error
-    card_id, error = _read_positive_int(payload, "pokemon_card_id", "Pokémon invalide.")
+    card_id, error = _read_positive_int(
+        payload,
+        "pokemon_card_id",
+        bilingual_text("Pokémon invalide.", "Invalid Pokémon."),
+    )
     if error:
         return error
     try:
@@ -221,7 +238,15 @@ def api_answer_question(request, game_id):
         return error
     answer = payload.get("answer")
     if not isinstance(answer, bool):
-        return JsonResponse({"error": "La réponse doit être Oui ou Non."}, status=400)
+        return JsonResponse(
+            {
+                "error": bilingual_text(
+                    "La réponse doit être Oui ou Non.",
+                    "The answer must be Yes or No.",
+                )
+            },
+            status=400,
+        )
     try:
         game = answer_question(game_id, request.user, answer, revision)
         return JsonResponse(serialize_game_state(game, request.user))
@@ -240,7 +265,11 @@ def api_guess(request, game_id):
     revision, error = _read_expected_revision(payload)
     if error:
         return error
-    card_id, error = _read_positive_int(payload, "pokemon_card_id", "Pokémon invalide.")
+    card_id, error = _read_positive_int(
+        payload,
+        "pokemon_card_id",
+        bilingual_text("Pokémon invalide.", "Invalid Pokémon."),
+    )
     if error:
         return error
     try:
@@ -281,7 +310,10 @@ def api_toggle_candidate(request, game_id, pokemon_card_id):
         return error
     is_eliminated = payload.get("is_eliminated")
     if not isinstance(is_eliminated, bool):
-        return JsonResponse({"error": "État de carte invalide."}, status=400)
+        return JsonResponse(
+            {"error": bilingual_text("État de carte invalide.", "Invalid card state.")},
+            status=400,
+        )
     try:
         game = toggle_candidate(
             game_id,

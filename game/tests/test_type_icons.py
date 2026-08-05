@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.template import Context, Template
 from django.test import TestCase
 
@@ -30,3 +31,16 @@ class TypeIconTests(TestCase):
         markup = Template('{% load icons %}{% type_icon "chocolat" %}').render(Context())
 
         self.assertEqual(markup, "")
+
+    def test_card_art_rules_do_not_resize_nested_type_icons(self):
+        stylesheets = [
+            settings.BASE_DIR / "static" / "atoms.css",
+            settings.BASE_DIR / "static" / "molecules.css",
+            settings.BASE_DIR / "static" / "organisms.css",
+        ]
+
+        combined_css = "\n".join(path.read_text() for path in stylesheets)
+
+        self.assertIn(".card-unit > img", combined_css)
+        self.assertNotIn(".card-unit img", combined_css)
+        self.assertNotIn(".card-unit.has-action img", combined_css)

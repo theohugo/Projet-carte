@@ -1,24 +1,25 @@
 {% extends "base.html" %}
-{% load static icons %}
+{% load static icons poketable_i18n %}
 
-{% block title %}Boutique — PokéTable{% endblock %}
+{% block title %}{% bilingual "Boutique" "Shop" %} — PokéTable{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=4">
 
 <section class="shop-page" id="shop" data-shop
+         data-language="{{ request.LANGUAGE_CODE|default:'fr' }}"
          data-open-url-template="{% url 'api_open_booster' booster_key='KEY' %}"
          data-ticket-url-template="{% url 'api_open_ticket' ticket_id=0 %}"
          aria-labelledby="shop-title">
     <header class="shop-header">
         <div>
-            <p class="section-kicker">Boutique</p>
-            <h1 id="shop-title">Ouvre tes boosters</h1>
-            <p>Deux saisons de cartes, tirées au sort à l’ouverture. Les points viennent des quêtes.</p>
+            <p class="section-kicker">{% bilingual "Boutique" "Shop" %}</p>
+            <h1 id="shop-title">{% bilingual "Ouvre tes boosters" "Open your booster packs" %}</h1>
+            <p>{% bilingual "Deux saisons de cartes, tirées au sort à l’ouverture. Les points viennent des quêtes." "Two card seasons, randomly drawn when opened. Earn points through quests." %}</p>
         </div>
         <p class="points-badge" data-points-badge>
             <span class="points-value">{% icon "coin" %}<span data-points>{{ points }}</span></span>
-            <small>points disponibles</small>
+            <small>{% bilingual "points disponibles" "points available" %}</small>
         </p>
     </header>
 
@@ -27,8 +28,8 @@
     {% if tickets %}
     <section class="shop-shelf shop-tickets" data-tickets aria-labelledby="tickets-title">
         <div class="shop-shelf-heading">
-            <h2 id="tickets-title">{% icon "star" %}Tes boosters de quête</h2>
-            <span class="shop-shelf-tagline">Gagnés en quête hebdomadaire — rien à payer.</span>
+            <h2 id="tickets-title">{% icon "star" %}{% bilingual "Tes boosters de quête" "Your quest boosters" %}</h2>
+            <span class="shop-shelf-tagline">{% bilingual "Gagnés en quête hebdomadaire — rien à payer." "Earned through weekly quests — completely free." %}</span>
         </div>
 
         <ul class="booster-list">
@@ -37,19 +38,19 @@
                 <div class="booster-art is-season-{{ ticket.booster.season }}" aria-hidden="true">
                     <span class="booster-art-shine"></span>
                     <span class="booster-art-logo">Poké<b>Table</b></span>
-                    <span class="booster-art-set">{% if ticket.booster.season == 2 %}Série 151{% else %}1<sup>re</sup> édition{% endif %}</span>
+                    <span class="booster-art-set">{% if ticket.booster.season == 2 %}{% bilingual "Série 151" "151 Series" %}{% else %}{% bilingual "1re édition" "1st edition" %}{% endif %}</span>
                 </div>
 
                 <div class="booster-copy">
                     <strong>{{ ticket.booster.label }}</strong>
                     <span>{{ ticket.booster.description }}</span>
-                    <span class="booster-guaranteed">{% icon "quest" %}Offert par une quête</span>
+                    <span class="booster-guaranteed">{% icon "quest" %}{% bilingual "Offert par une quête" "Quest reward" %}</span>
                 </div>
 
                 <div class="booster-buy">
-                    <span class="booster-price booster-price-free">Offert</span>
+                    <span class="booster-price booster-price-free">{% bilingual "Offert" "Free" %}</span>
                     <button type="button" class="btn btn-primary" data-open-ticket="{{ ticket.id }}">
-                        {% icon "pack" %}Ouvrir
+                        {% icon "pack" %}{% bilingual "Ouvrir" "Open" %}
                     </button>
                 </div>
             </li>
@@ -62,9 +63,9 @@
     <section class="shop-shelf" aria-labelledby="shelf-{{ shelf.season.number }}-title">
         <div class="shop-shelf-heading">
             <h2 id="shelf-{{ shelf.season.number }}-title">
-                <span class="season-chip">{{ shelf.season.kicker }}</span>{{ shelf.season.label }}
+                <span class="season-chip">{{ shelf.season.display_kicker }}</span>{{ shelf.season.display_label }}
             </h2>
-            <span class="shop-shelf-tagline">{{ shelf.season.tagline }}</span>
+            <span class="shop-shelf-tagline">{{ shelf.season.display_tagline }}</span>
         </div>
 
         <ul class="booster-list">
@@ -73,14 +74,14 @@
                 <div class="booster-art is-season-{{ booster.season }}" aria-hidden="true">
                     <span class="booster-art-shine"></span>
                     <span class="booster-art-logo">Poké<b>Table</b></span>
-                    <span class="booster-art-set">{% if booster.season == 2 %}Série 151{% else %}1<sup>re</sup> édition{% endif %}</span>
+                    <span class="booster-art-set">{% if booster.season == 2 %}{% bilingual "Série 151" "151 Series" %}{% else %}{% bilingual "1re édition" "1st edition" %}{% endif %}</span>
                 </div>
 
                 <div class="booster-copy">
                     <strong>{{ booster.label }}</strong>
                     <span>{{ booster.description }}</span>
 
-                    <ul class="booster-odds" aria-label="Chances par rareté">
+                    <ul class="booster-odds" aria-label="{% bilingual "Chances par rareté" "Odds by rarity" %}">
                         {% for entry in booster.odds %}
                         <li style="--rarity-color: {{ entry.rarity_color }}" title="{{ entry.rarity_label }}">
                             <b>{{ entry.rarity_code }}</b>{{ entry.percent }} %
@@ -88,19 +89,19 @@
                         {% endfor %}
                     </ul>
                     {% if booster.guaranteed %}
-                    <span class="booster-guaranteed">{% icon "star" %}Une carte {{ booster.guaranteed|lower }} garantie</span>
+                    <span class="booster-guaranteed">{% icon "star" %}{% bilingual "Une carte garantie :" "Guaranteed card:" %} {{ booster.guaranteed }}</span>
                     {% endif %}
                 </div>
 
                 <div class="booster-buy">
                     <span class="booster-price">{% icon "coin" %}<span data-price>{{ booster.price }}</span></span>
-                    <div class="booster-batches" role="group" aria-label="Nombre de boosters à ouvrir">
+                    <div class="booster-batches" role="group" aria-label="{% bilingual "Nombre de boosters à ouvrir" "Number of boosters to open" %}">
                         {% for batch in booster.batches %}
                         <button type="button" class="btn {% if batch.quantity == 1 %}btn-primary{% else %}btn-secondary{% endif %}"
                                 data-open-booster="{{ booster.key }}" data-quantity="{{ batch.quantity }}"
                                 data-price="{{ batch.price }}" {% if not batch.affordable %}disabled{% endif %}
-                                title="{{ batch.quantity }} booster{{ batch.quantity|pluralize }} · {{ batch.price }} points">
-                            {% if batch.quantity == 1 %}{% icon "pack" %}{% endif %}<span data-label>{% if batch.affordable %}{% if batch.quantity == 1 %}Ouvrir{% else %}×{{ batch.quantity }}{% endif %}{% else %}−{{ batch.missing }}{% endif %}</span>
+                                title="{{ batch.quantity }} booster(s) · {{ batch.price }} points">
+                            {% if batch.quantity == 1 %}{% icon "pack" %}{% endif %}<span data-label>{% if batch.affordable %}{% if batch.quantity == 1 %}{% bilingual "Ouvrir" "Open" %}{% else %}×{{ batch.quantity }}{% endif %}{% else %}−{{ batch.missing }}{% endif %}</span>
                         </button>
                         {% endfor %}
                     </div>
@@ -111,7 +112,7 @@
     </section>
     {% endfor %}
 
-    <p class="shop-note">Pas assez de points ? <a href="{% url 'quests' %}">Termine une quête</a> — la plupart se bouclent en une partie, et les hebdomadaires offrent un booster.</p>
+    <p class="shop-note">{% bilingual "Pas assez de points ?" "Not enough points?" %} <a href="{% url 'quests' %}">{% bilingual "Termine une quête" "Complete a quest" %}</a> — {% bilingual "la plupart se bouclent en une partie, et les hebdomadaires offrent un booster." "most take one game, and weekly quests award a booster." %}</p>
 </section>
 
 {# Scène d'ouverture : le sachet se déchire, puis les cartes défilent une à une. #}
@@ -121,18 +122,18 @@
     <div class="opening-flash" data-flash aria-hidden="true"></div>
 
     <div class="opening-scene" role="dialog" aria-modal="true" aria-labelledby="opening-title">
-        <h2 id="opening-title" class="visually-hidden">Ouverture du booster</h2>
+        <h2 id="opening-title" class="visually-hidden">{% bilingual "Ouverture du booster" "Opening booster" %}</h2>
 
-        <button type="button" class="opening-close" data-opening-close aria-label="Fermer l’ouverture">
+        <button type="button" class="opening-close" data-opening-close aria-label="{% bilingual "Fermer l’ouverture" "Close opening" %}">
             {% icon "close" %}
         </button>
 
         <div class="opening-dots" data-dots hidden aria-hidden="true"></div>
 
-        <button type="button" class="opening-pack" data-pack aria-label="Ouvrir le booster">
+        <button type="button" class="opening-pack" data-pack aria-label="{% bilingual "Ouvrir le booster" "Open booster" %}">
             <span class="opening-pack-body">
                 <span class="opening-pack-logo">Poké<b>Table</b></span>
-                <span class="opening-pack-set" data-pack-set>1<sup>re</sup> édition</span>
+                <span class="opening-pack-set" data-pack-set>{% bilingual "1re édition" "1st edition" %}</span>
             </span>
         </button>
 
@@ -147,12 +148,12 @@
             <div class="recap-fan" data-fan></div>
             <p class="opening-summary" data-summary></p>
             <div class="opening-actions">
-                <a class="btn btn-secondary" href="{% url 'collection' %}" data-collection-link>{% icon "collection" %}Voir ma collection</a>
-                <button type="button" class="btn btn-ghost" data-opening-close>{% icon "close" %}Fermer</button>
+                <a class="btn btn-secondary" href="{% url 'collection' %}" data-collection-link>{% icon "collection" %}{% bilingual "Voir ma collection" "View my collection" %}</a>
+                <button type="button" class="btn btn-ghost" data-opening-close>{% icon "close" %}{% bilingual "Fermer" "Close" %}</button>
             </div>
         </div>
     </div>
 </div>
 
-<script src="{% static 'game/js/shop.js' %}?v=4"></script>
+<script src="{% static 'game/js/shop.js' %}?v=5"></script>
 {% endblock %}

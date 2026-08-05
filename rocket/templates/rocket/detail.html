@@ -1,12 +1,15 @@
 {% extends "base.html" %}
-{% load static icons %}
+{% load static icons poketable_i18n %}
 
-{% block title %}Mission en cours — Infiltration Rocket{% endblock %}
+{% block title %}{% bilingual "Mission en cours — Infiltration Rocket" "Mission in progress — Team Rocket Infiltration" %}{% endblock %}
+{% block meta_description %}{% bilingual "Mission Infiltration Rocket en direct : utilise ton rôle secret, agis la nuit, débats avec l’escouade et vote pour démasquer le camp adverse." "Live Team Rocket Infiltration mission: use your secret role, act at night, debate with the squad, and vote to expose the opposing side." %}{% endblock %}
+{% block html_class %}rocket-document{% endblock %}
+{% block body_class %}rocket-shell{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'rocket/css/rocket.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'rocket/css/rocket.css' %}?v=3">
 
-<main id="rocket-game" class="rk-game"
+<div id="rocket-game" class="rk-game"
       data-state-url="{% url 'rocket:api_state' game_id=game.id %}"
       data-night-url="{% url 'rocket:api_night_action' game_id=game.id %}"
       data-start-vote-url="{% url 'rocket:api_start_vote' game_id=game.id %}"
@@ -14,9 +17,9 @@
       data-message-url="{% url 'rocket:api_message' game_id=game.id %}">
     <header class="rk-game-header">
         <div>
-            <a class="back-link" href="{% url 'rocket:lobby' %}">{% icon "back" "icon-sm" %} Retour aux missions</a>
-            <p class="section-kicker">Canal sécurisé · mission <span class="rk-room-code">{{ game.id|stringformat:"s"|slice:":8" }}</span></p>
-            <h1>Infiltration Rocket</h1>
+            <a class="back-link" href="{% url 'rocket:lobby' %}">{% icon "back" "icon-sm" %} {% bilingual "Retour aux missions" "Back to missions" %}</a>
+            <p class="section-kicker">{% bilingual "Canal sécurisé · mission" "Secure channel · mission" %} <span class="rk-room-code">{{ game.id|stringformat:"s"|slice:":8" }}</span></p>
+            <h1>{% bilingual "Infiltration Rocket" "Team Rocket Infiltration" %}</h1>
         </div>
         <div class="rk-phase-pill" data-phase-pill><span aria-hidden="true"></span><b data-phase>—</b><small data-round>—</small></div>
     </header>
@@ -26,13 +29,13 @@
 
     <section class="rk-waiting" data-waiting hidden>
         <div class="rk-wait-copy">
-            <p class="section-kicker"><span class="live-pulse" aria-hidden="true"></span> Briefing en cours</p>
-            <h2>Rassemble 6 à 12 joueurs.</h2>
-            <p>Les rôles seront mélangés au lancement. Chaque joueur ne verra que sa propre carte ; les agents Rocket reconnaîtront leurs complices.</p>
+            <p class="section-kicker"><span class="live-pulse" aria-hidden="true"></span> {% bilingual "Briefing en cours" "Briefing in progress" %}</p>
+            <h2>{% bilingual "Rassemble 6 à 12 joueurs." "Gather 6 to 12 players." %}</h2>
+            <p>{% bilingual "Les rôles seront mélangés au lancement. Chaque joueur ne verra que sa propre carte ; les agents Rocket reconnaîtront leurs complices." "Roles are shuffled at launch. Each player sees only their own card; Team Rocket agents recognize their accomplices." %}</p>
             <div class="rk-wait-actions">
-                <form method="post" action="{% url 'rocket:start_game' game_id=game.id %}" data-host-only>{% csrf_token %}<button class="btn btn-primary btn-large" type="submit">Distribuer les rôles</button></form>
-                <a class="btn btn-ghost" href="{% url 'invite_friends_to_game' mode='infiltration-rocket' room_id=game.id %}" data-host-only>Inviter des amis</a>
-                <button class="btn btn-secondary" type="button" data-copy-link>Copier le lien</button>
+                <form method="post" action="{% url 'rocket:start_game' game_id=game.id %}" data-host-only>{% csrf_token %}<button class="btn btn-primary btn-large" type="submit">{% bilingual "Distribuer les rôles" "Deal the roles" %}</button></form>
+                <a class="btn btn-ghost" href="{% url 'invite_friends_to_game' mode='infiltration-rocket' room_id=game.id %}" data-host-only>{% bilingual "Inviter des amis" "Invite friends" %}</a>
+                <button class="btn btn-secondary" type="button" data-copy-link>{% bilingual "Copier le lien" "Copy link" %}</button>
             </div>
             <p class="rk-minimum" data-minimum></p>
         </div>
@@ -41,46 +44,47 @@
 
     <section class="rk-board" data-board hidden>
         <aside class="rk-role-card" data-role-card>
-            <p class="section-kicker">Dossier confidentiel</p>
+            <p class="section-kicker">{% bilingual "Dossier confidentiel" "Confidential file" %}</p>
             <div class="rk-role-art"><img data-role-art alt=""></div>
             <h2 data-role-name>—</h2>
             <p class="rk-side" data-role-side>—</p>
             <p data-role-mission>—</p>
             <div class="rk-detective-log" data-detective-log hidden>
-                <strong>Rapports de Looker</strong><ul data-detective-results></ul>
+                <strong>{% bilingual "Rapports de Looker" "Looker's reports" %}</strong><ul data-detective-results></ul>
             </div>
         </aside>
 
         <div class="rk-command">
-            <section class="rk-event" data-event hidden><span class="rk-event-icon" aria-hidden="true">!</span><div><p class="section-kicker">Dernier rapport</p><p data-event-text></p></div></section>
+            <section class="rk-event" data-event hidden><span class="rk-event-icon" aria-hidden="true">!</span><div><p class="section-kicker">{% bilingual "Dernier rapport" "Latest report" %}</p><p data-event-text></p></div></section>
             <section class="rk-directive" aria-labelledby="rk-directive-title">
-                <p class="section-kicker" data-directive-kicker>Mission</p>
+                <p class="section-kicker" data-directive-kicker>{% bilingual "Mission" "Mission" %}</p>
                 <h2 id="rk-directive-title" data-directive-title>—</h2>
                 <p data-directive-text>—</p>
                 <div class="rk-progress" data-progress hidden><span data-progress-bar></span><small data-progress-label></small></div>
             </section>
 
             <section class="rk-agents" aria-labelledby="rk-agents-title">
-                <div class="rk-section-head"><h2 id="rk-agents-title">Agents sur le terrain</h2><span data-alive-count></span></div>
+                <div class="rk-section-head"><h2 id="rk-agents-title">{% bilingual "Agents sur le terrain" "Agents in the field" %}</h2><span data-alive-count></span></div>
                 <div class="rk-agent-grid" data-player-grid></div>
             </section>
 
             <section class="rk-chat" data-chat hidden aria-labelledby="rk-chat-title">
-                <div class="rk-section-head"><h2 id="rk-chat-title">Canal de discussion</h2><span>Nuit <b data-chat-round></b></span></div>
+                <div class="rk-section-head"><h2 id="rk-chat-title">{% bilingual "Canal de discussion" "Discussion channel" %}</h2><span>{% bilingual "Cycle" "Cycle" %} <b data-chat-round></b></span></div>
                 <ol class="rk-messages" data-messages></ol>
-                <form class="rk-chat-form" data-chat-form><label class="visually-hidden" for="rk-message">Ton message</label><input id="rk-message" name="body" maxlength="300" autocomplete="off" placeholder="Partage un indice ou défends-toi…"><button class="btn btn-primary" type="submit">Envoyer</button></form>
-                <button class="btn btn-secondary rk-open-vote" type="button" data-open-vote data-host-only>Ouvrir le vote</button>
+                <form class="rk-chat-form" data-chat-form><label class="visually-hidden" for="rk-message">{% bilingual "Ton message" "Your message" %}</label><input id="rk-message" name="body" maxlength="300" autocomplete="off" placeholder="{% bilingual 'Partage un indice ou défends-toi…' 'Share a clue or defend yourself…' %}"><button class="btn btn-primary" type="submit">{% bilingual "Envoyer" "Send" %}</button></form>
+                <button class="btn btn-secondary rk-open-vote" type="button" data-open-vote>{% bilingual "Ouvrir le vote" "Open voting" %}</button>
             </section>
 
             <section class="rk-finished" data-finished hidden>
-                <p class="section-kicker">Mission terminée</p><h2 data-winner>—</h2><p data-result-copy></p><a class="btn btn-primary btn-large" href="{% url 'rocket:lobby' %}">Nouvelle mission</a>
+                <p class="section-kicker">{% bilingual "Mission terminée" "Mission finished" %}</p><h2 data-winner>—</h2><p data-result-copy></p><a class="btn btn-primary btn-large" href="{% url 'rocket:lobby' %}">{% bilingual "Nouvelle mission" "New mission" %}</a>
             </section>
         </div>
 
-        <aside class="rk-roster"><div class="rk-section-head"><h2>Escouade</h2><span data-player-count></span></div><ol data-roster></ol></aside>
+        <aside class="rk-roster"><div class="rk-section-head"><h2>{% bilingual "Escouade" "Squad" %}</h2><span data-player-count></span></div><ol data-roster></ol></aside>
     </section>
-</main>
+</div>
 
 {{ game_state|json_script:"rocket-initial-state" }}
-<script defer src="{% static 'rocket/js/game.js' %}?v=1"></script>
+{{ ui_i18n|json_script:"rocket-i18n" }}
+<script defer src="{% static 'rocket/js/game.js' %}?v=3"></script>
 {% endblock %}

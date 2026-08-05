@@ -1,31 +1,28 @@
 {% extends "base.html" %}
-{% load icons %}
+{% load icons poketable_i18n %}
 
-{% block title %}Modifier mon profil — PokéTable{% endblock %}
+{% block title %}{% bilingual "Modifier mon profil" "Edit my profile" %} — PokéTable{% endblock %}
 
 {% block content %}
 <section class="profile-edit-page" aria-labelledby="profile-edit-title">
 
     <header class="profile-edit-header">
         <div>
-            <p class="section-kicker">Personnalisation</p>
-            <h1 id="profile-edit-title">Modifier mon profil</h1>
-            <p>
-                Personnalise ton identité de joueur et les informations visibles
-                par les autres membres.
-            </p>
+            <p class="section-kicker">{% bilingual "Personnalisation" "Customization" %}</p>
+            <h1 id="profile-edit-title">{% bilingual "Modifier mon profil" "Edit my profile" %}</h1>
+            <p>{% bilingual "Personnalise ton identité de joueur et les informations visibles par les autres membres." "Customize your player identity and the information visible to other members." %}</p>
         </div>
 
         <a class="btn btn-ghost" href="{% url 'my_profile' %}">
             {% icon "back" %}
-            Retour au profil
+            {% bilingual "Retour au profil" "Back to profile" %}
         </a>
     </header>
 
     <div class="profile-edit-shell">
 
         <aside class="profile-preview-card">
-            <p class="profile-preview-label">Aperçu du profil</p>
+            <p class="profile-preview-label">{% bilingual "Aperçu du profil" "Profile preview" %}</p>
 
             <div class="profile-preview-avatar-wrapper">
                 <img
@@ -34,7 +31,7 @@
                     {% if profile.avatar %}
                         src="{{ profile.avatar.url }}"
                     {% endif %}
-                    alt="Aperçu de la photo de profil"
+                    alt="{% bilingual "Aperçu de la photo de profil" "Profile picture preview" %}"
                 >
 
                 <div
@@ -62,7 +59,7 @@
                     {% if profile.description %}
                         {{ profile.description }}
                     {% else %}
-                        Ta description apparaîtra ici.
+                        {% bilingual "Ta description apparaîtra ici." "Your bio will appear here." %}
                     {% endif %}
                 </p>
             </div>
@@ -70,12 +67,12 @@
             <div class="profile-preview-stats">
                 <div>
                     <strong>{{ profile.total_games_played }}</strong>
-                    <span>Parties</span>
+                    <span>{% bilingual "Parties" "Games" %}</span>
                 </div>
 
                 <div>
                     <strong>{{ profile.total_games_won }}</strong>
-                    <span>Victoires</span>
+                    <span>{% bilingual "Victoires" "Wins" %}</span>
                 </div>
             </div>
         </aside>
@@ -95,8 +92,8 @@
                     <span class="profile-form-number">01</span>
 
                     <div>
-                        <h2>Informations du compte</h2>
-                        <p>Ton identité et tes informations de connexion.</p>
+                        <h2>{% bilingual "Informations du compte" "Account information" %}</h2>
+                        <p>{% bilingual "Ton identité et tes informations de connexion." "Your identity and sign-in information." %}</p>
                     </div>
                 </div>
 
@@ -138,8 +135,8 @@
                     <span class="profile-form-number">02</span>
 
                     <div>
-                        <h2>Photo de profil</h2>
-                        <p>Choisis une image qui permettra de te reconnaître.</p>
+                        <h2>{% bilingual "Photo de profil" "Profile picture" %}</h2>
+                        <p>{% bilingual "Choisis une image qui permettra de te reconnaître." "Choose an image that helps others recognize you." %}</p>
                     </div>
                 </div>
 
@@ -149,7 +146,7 @@
                             <img
                                 id="avatar-editor-image"
                                 src="{{ profile.avatar.url }}"
-                                alt="Photo de profil actuelle"
+                                alt="{% bilingual "Photo de profil actuelle" "Current profile picture" %}"
                             >
                         {% else %}
                             <div
@@ -167,7 +164,7 @@
                             class="profile-file-button"
                             for="id_avatar"
                         >
-                            Choisir une nouvelle photo
+                            {% bilingual "Choisir une nouvelle photo" "Choose a new picture" %}
                         </label>
 
                         <input
@@ -182,11 +179,11 @@
                             id="avatar-file-name"
                             class="profile-file-name"
                         >
-                            Aucun nouveau fichier sélectionné
+                            {% bilingual "Aucun nouveau fichier sélectionné" "No new file selected" %}
                         </span>
 
                         <p class="profile-file-help">
-                            JPG, PNG ou WebP. Taille maximale : 5 Mo.
+                            {% bilingual "JPG, PNG ou WebP. Taille maximale : 5 Mo." "JPG, PNG or WebP. Maximum size: 5 MB." %}
                         </p>
 
                         {% if profile.avatar %}
@@ -196,7 +193,7 @@
                                     name="avatar-clear"
                                     id="avatar-clear_id"
                                 >
-                                Supprimer ma photo actuelle
+                                {% bilingual "Supprimer ma photo actuelle" "Remove my current picture" %}
                             </label>
                         {% endif %}
 
@@ -210,8 +207,8 @@
                     <span class="profile-form-number">03</span>
 
                     <div>
-                        <h2>Description publique</h2>
-                        <p>Présente-toi brièvement aux autres joueurs.</p>
+                        <h2>{% bilingual "Description publique" "Public bio" %}</h2>
+                        <p>{% bilingual "Présente-toi brièvement aux autres joueurs." "Briefly introduce yourself to other players." %}</p>
                     </div>
                 </div>
 
@@ -222,7 +219,7 @@
 
                     <div class="profile-description-footer">
                         <span>
-                            Cette description sera visible sur ton profil public.
+                            {% bilingual "Cette description sera visible sur ton profil public." "This bio will be visible on your public profile." %}
                         </span>
 
                         <span>
@@ -236,11 +233,11 @@
 
             <div class="profile-form-actions">
                 <a class="btn btn-ghost" href="{% url 'my_profile' %}">
-                    Annuler
+                    {% bilingual "Annuler" "Cancel" %}
                 </a>
 
                 <button type="submit" class="btn btn-primary">
-                    Enregistrer les modifications
+                    {% bilingual "Enregistrer les modifications" "Save changes" %}
                 </button>
             </div>
         </form>
@@ -257,7 +254,7 @@
         const file = avatarInput.files[0];
 
         if (!file) {
-            avatarFileName.textContent = "Aucun nouveau fichier sélectionné";
+            avatarFileName.textContent = "{% bilingual 'Aucun nouveau fichier sélectionné' 'No new file selected' %}";
             return;
         }
 
@@ -278,7 +275,7 @@
             const newImage = document.createElement("img");
             newImage.id = "avatar-editor-image";
             newImage.src = imageUrl;
-            newImage.alt = "Aperçu de la nouvelle photo";
+            newImage.alt = "{% bilingual 'Aperçu de la nouvelle photo' 'New picture preview' %}";
             editorFallback.replaceWith(newImage);
         }
     });
@@ -292,7 +289,7 @@
 
         descriptionCount.textContent = value.length;
         descriptionPreview.textContent =
-            value.trim() || "Ta description apparaîtra ici.";
+            value.trim() || "{% bilingual 'Ta description apparaîtra ici.' 'Your bio will appear here.' %}";
     });
 </script>
 {% endblock %}

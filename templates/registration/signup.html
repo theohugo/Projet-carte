@@ -1,26 +1,26 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}Créer un compte — PokéTable{% endblock %}
+{% load static poketable_i18n %}
+{% block title %}{% bilingual "Créer un compte" "Create an account" %} — PokéTable{% endblock %}
 {% block content %}
 <section class="auth-layout" aria-labelledby="auth-title">
     <div class="auth-showcase">
         <div>
-            <p class="section-kicker">Nouveau challenger</p>
-            <p class="auth-showcase-title">Choisis ton jeu.<br>Invite tes amis.</p>
-            <p>Crée ton profil pour ouvrir une table et retrouver tous les jeux Pokémon du salon.</p>
+            <p class="section-kicker">{% bilingual "Nouveau challenger" "New challenger" %}</p>
+            <p class="auth-showcase-title">{% bilingual "Choisis ton jeu." "Choose your game." %}<br>{% bilingual "Invite tes amis." "Invite your friends." %}</p>
+            <p>{% bilingual "Crée ton profil pour ouvrir une table et retrouver tous les jeux Pokémon du salon." "Create your profile to open a table and enjoy every Pokémon game in the room." %}</p>
         </div>
         <div class="auth-card-fan" aria-hidden="true"><span></span><span></span><span></span></div>
-        <ul class="feature-list" aria-label="Fonctionnalités">
-            <li><span aria-hidden="true">01</span> Compte gratuit</li>
-            <li><span aria-hidden="true">02</span> Parties instantanées</li>
-            <li><span aria-hidden="true">03</span> Progression sauvegardée</li>
+        <ul class="feature-list" aria-label="{% bilingual "Fonctionnalités" "Features" %}">
+            <li><span aria-hidden="true">01</span> {% bilingual "Compte gratuit" "Free account" %}</li>
+            <li><span aria-hidden="true">02</span> {% bilingual "Parties instantanées" "Instant games" %}</li>
+            <li><span aria-hidden="true">03</span> {% bilingual "Progression sauvegardée" "Saved progress" %}</li>
         </ul>
     </div>
     <div class="auth-card">
-        <p class="section-kicker">Rejoins la partie</p>
-        <h1 id="auth-title">Créer un compte</h1>
-        <p class="auth-intro">Quelques secondes suffisent pour commencer.</p>
-        <form method="post" id="signup-form">
+        <p class="section-kicker">{% bilingual "Rejoins la partie" "Join the game" %}</p>
+        <h1 id="auth-title">{% bilingual "Créer un compte" "Create an account" %}</h1>
+        <p class="auth-intro">{% bilingual "Quelques secondes suffisent pour commencer." "It only takes a few seconds to begin." %}</p>
+        <form method="post" id="signup-form" data-language="{{ request.LANGUAGE_CODE|default:'fr' }}">
             {% csrf_token %}
             {{ form.non_field_errors }}
             {% for field in form %}
@@ -30,7 +30,7 @@
                     {{ field.errors }}
                     {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
                     {% if field.name == 'password2' %}
-                        <span class="password-checklist-title" id="password-checklist-title">Pour être accepté, le mot de passe doit respecter :</span>
+                        <span class="password-checklist-title" id="password-checklist-title">{% bilingual "Pour être accepté, le mot de passe doit respecter :" "Your password must meet these requirements:" %}</span>
                         <ul class="password-checklist" id="password-checklist" aria-labelledby="password-checklist-title">
                             {% for rule in form.password_rules %}
                                 <li class="password-rule is-{{ rule.state }}"
@@ -39,7 +39,7 @@
                                     {% if not rule.checked_client_side %}data-server-only="true"{% endif %}>
                                     <span class="password-rule-mark" aria-hidden="true"></span>
                                     <span class="password-rule-label">{{ rule.label }}</span>
-                                    <span class="visually-hidden" data-rule-status>{% if rule.state == 'satisfied' %}règle respectée{% elif rule.state == 'missing' %}règle non respectée{% else %}règle à vérifier{% endif %}</span>
+                                    <span class="visually-hidden" data-rule-status>{% if rule.state == 'satisfied' %}{% bilingual "règle respectée" "requirement met" %}{% elif rule.state == 'missing' %}{% bilingual "règle non respectée" "requirement not met" %}{% else %}{% bilingual "règle à vérifier" "requirement to check" %}{% endif %}</span>
                                 </li>
                             {% endfor %}
                         </ul>
@@ -47,10 +47,10 @@
                 </p>
             {% endfor %}
             {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-            <button type="submit" class="btn btn-primary btn-block">Créer mon compte</button>
+            <button type="submit" class="btn btn-primary btn-block">{% bilingual "Créer mon compte" "Create my account" %}</button>
         </form>
-        <p class="auth-switch">Déjà un compte ? <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Se connecter</a></p>
+        <p class="auth-switch">{% bilingual "Déjà un compte ?" "Already have an account?" %} <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">{% bilingual "Se connecter" "Sign in" %}</a></p>
     </div>
 </section>
-<script src="{% static 'game/js/signup.js' %}?v=1"></script>
+<script src="{% static 'game/js/signup.js' %}?v=2"></script>
 {% endblock %}

@@ -7,7 +7,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
-from game.guests import guest_allowed
+from game.guests import guest_action, guest_allowed, public_lobby
+from game.pokemon_names import bilingual_text
 from pictionary.models import PictionaryGame
 from pictionary.services import (
     PictionaryError,
@@ -28,9 +29,20 @@ def _read_json_object(request):
     try:
         payload = json.loads(request.body or "{}")
     except (json.JSONDecodeError, UnicodeDecodeError):
-        return None, JsonResponse({"error": "Requête JSON invalide."}, status=400)
+        return None, JsonResponse(
+            {"error": bilingual_text("Requête JSON invalide.", "Invalid JSON request.")},
+            status=400,
+        )
     if not isinstance(payload, dict):
-        return None, JsonResponse({"error": "La requête doit contenir un objet JSON."}, status=400)
+        return None, JsonResponse(
+            {
+                "error": bilingual_text(
+                    "La requête doit contenir un objet JSON.",
+                    "The request must contain a JSON object.",
+                )
+            },
+            status=400,
+        )
     return payload, None
 
 
@@ -51,14 +63,16 @@ def _since_sequence(request):
         return 0
 
 
-@guest_allowed
+@public_lobby
 def lobby(request):
-    my_games = (
-        PictionaryGame.objects.filter(players__user=request.user)
-        .exclude(status=PictionaryGame.Status.EN_ATTENTE)
-        .select_related("created_by")
-        .distinct()
-    )
+    my_games = PictionaryGame.objects.none()
+    if request.user.is_authenticated:
+        my_games = (
+            PictionaryGame.objects.filter(players__user=request.user)
+            .exclude(status=PictionaryGame.Status.EN_ATTENTE)
+            .select_related("created_by")
+            .distinct()
+        )
     return render(
         request,
         "pictionary/lobby.html",
@@ -70,13 +84,12 @@ def lobby(request):
     )
 
 
-@login_required
 @require_GET
 def api_lobby_state(request):
     return JsonResponse(get_lobby_state(request.user))
 
 
-@login_required
+@guest_action
 @require_POST
 def create_game_view(request):
     try:
@@ -91,13 +104,16 @@ def create_game_view(request):
     return redirect("pictionary:game_detail", game_id=game.id)
 
 
-@login_required
+@guest_action
 @require_POST
 def join_game_view(request, game_id):
     try:
         join_game(game_id, request.user)
     except PictionaryGame.DoesNotExist:
-        messages.error(request, "Cette partie n'existe plus.")
+        messages.error(
+            request,
+            bilingual_text("Cette partie n'existe plus.", "This game no longer exists."),
+        )
         return redirect("pictionary:lobby")
     except PictionaryError as exc:
         messages.error(request, str(exc))
@@ -123,8 +139,11 @@ def game_detail(request, game_id):
             request,
             "join_invitation.html",
             {
-                "mode_name": "Pictionary Pokémon",
-                "mode_kicker": "Dessin · devinette · rapidité",
+                "mode_name": bilingual_text("Pictionary Pokémon", "Pokémon Pictionary"),
+                "mode_kicker": bilingual_text(
+                    "Dessin · devinette · rapidité",
+                    "Drawing · guessing · speed",
+                ),
                 "host_name": game.created_by.get_username(),
                 "player_count": game.players.count(),
                 "max_players": "∞",
@@ -149,7 +168,15 @@ def game_detail(request, game_id):
 def api_state(request, game_id):
     game = get_object_or_404(PictionaryGame, pk=game_id)
     if not game.players.filter(user=request.user).exists():
-        return JsonResponse({"error": "Vous ne participez pas à cette partie."}, status=403)
+        return JsonResponse(
+            {
+                "error": bilingual_text(
+                    "Vous ne participez pas à cette partie.",
+                    "You are not taking part in this game.",
+                )
+            },
+            status=403,
+        )
     advance_if_needed(game.id)
     game.refresh_from_db()
     return JsonResponse(serialize_game_state(game, request.user, since_sequence=_since_sequence(request)))
@@ -182,7 +209,10 @@ def api_guess(request, game_id):
     if expected_revision is not None and (
         isinstance(expected_revision, bool) or not isinstance(expected_revision, int)
     ):
-        return JsonResponse({"error": "Révision de tour invalide."}, status=400)
+        return JsonResponse(
+            {"error": bilingual_text("Révision de tour invalide.", "Invalid turn revision.")},
+            status=400,
+        )
 
     try:
         result = submit_guess(game.id, request.user, payload.get("text"), expected_revision)

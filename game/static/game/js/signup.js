@@ -4,6 +4,10 @@
     const form = document.getElementById("signup-form");
     const checklist = document.getElementById("password-checklist");
     if (!form || !checklist) return;
+    const isEnglish = String(form.dataset.language || document.documentElement.lang || "fr")
+        .toLowerCase()
+        .startsWith("en");
+    const tr = (french, english) => (isEnglish ? english : french);
 
     const username = form.querySelector("#id_username");
     const password1 = form.querySelector("#id_password1");
@@ -65,11 +69,15 @@
         rule.classList.remove("is-pending", "is-satisfied", "is-missing");
         if (satisfied === null) {
             rule.classList.add("is-pending");
-            if (status) status.textContent = "règle à vérifier";
+            if (status) status.textContent = tr("règle à vérifier", "requirement to check");
             return;
         }
         rule.classList.add(satisfied ? "is-satisfied" : "is-missing");
-        if (status) status.textContent = satisfied ? "règle respectée" : "règle non respectée";
+        if (status) {
+            status.textContent = satisfied
+                ? tr("règle respectée", "requirement met")
+                : tr("règle non respectée", "requirement not met");
+        }
     }
 
     function refresh() {

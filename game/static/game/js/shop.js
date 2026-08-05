@@ -21,6 +21,10 @@
     const collectionLink = opening.querySelector("[data-collection-link]");
     const fx = opening.querySelector("[data-fx]");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const isEnglish = String(shop.dataset.language || document.documentElement.lang || "fr")
+        .toLowerCase()
+        .startsWith("en");
+    const tr = (french, english) => (isEnglish ? english : french);
 
     // Rang de la rareté « Rare » : à partir de là, la scène se teinte et les
     // rayons tournent. En dessous, la carte se retourne et c'est tout.
@@ -42,8 +46,8 @@
     }
 
     const SEASON_LABEL = {
-        1: '1<sup>re</sup> édition',
-        2: "Série 151",
+        1: tr('1<sup>re</sup> édition', "1<sup>st</sup> edition"),
+        2: tr("Série 151", "151 Series"),
     };
 
     function csrfToken() {
@@ -333,7 +337,7 @@
         if (card.is_new) {
             const fresh = document.createElement("span");
             fresh.className = "new-chip";
-            fresh.textContent = "Nouvelle";
+            fresh.textContent = tr("Nouvelle", "New");
             tags.appendChild(fresh);
         }
         caption.append(name, tags);
@@ -342,8 +346,11 @@
         locked = false;
         setHint(
             index === pulls.length - 1
-                ? "Clique pour voir les cinq cartes"
-                : `Balaie ou clique — carte ${index + 1} sur ${pulls.length}`,
+                ? tr("Clique pour voir les cinq cartes", "Click to view all five cards")
+                : tr(
+                    `Balaie ou clique — carte ${index + 1} sur ${pulls.length}`,
+                    `Swipe or click — card ${index + 1} of ${pulls.length}`,
+                ),
         );
     }
 
@@ -411,12 +418,18 @@
         );
         const headline =
             (best.rarity_rank || 0) >= SPECIAL_RANK
-                ? `${best.rarity_label} dans ce booster : ${best.name}.`
-                : "Cinq cartes de plus pour la collection.";
+                ? tr(
+                    `${best.rarity_label} dans ce booster : ${best.name}.`,
+                    `${best.rarity_label} in this booster: ${best.name}.`,
+                )
+                : tr("Cinq cartes de plus pour la collection.", "Five more cards for your collection.");
         const fresh = pulls.filter((card) => card.is_new).length;
         summary.textContent = fresh
-            ? `${headline} ${fresh} nouvelle${fresh > 1 ? "s" : ""} carte${fresh > 1 ? "s" : ""}.`
-            : `${headline} Aucune nouveauté cette fois.`;
+            ? tr(
+                `${headline} ${fresh} nouvelle${fresh > 1 ? "s" : ""} carte${fresh > 1 ? "s" : ""}.`,
+                `${headline} ${fresh} new card${fresh > 1 ? "s" : ""}.`,
+            )
+            : tr(`${headline} Aucune nouveauté cette fois.`, `${headline} Nothing new this time.`);
 
         recap.hidden = false;
     }
@@ -452,20 +465,23 @@
         caption.innerHTML = "";
         const name = document.createElement("span");
         name.className = "opening-caption-name";
-        name.textContent = `${pulls.length} cartes`;
+        name.textContent = tr(`${pulls.length} cartes`, `${pulls.length} cards`);
         const tags = document.createElement("span");
         tags.className = "opening-caption-tags";
         const rarity = document.createElement("span");
         rarity.className = "rarity-chip";
         rarity.dataset.rarity = best.rarity;
         rarity.style.setProperty("--rarity-color", best.rarity_color || "#9fb0c4");
-        rarity.textContent = `Meilleure : ${best.rarity_label || "Commune"}`;
+        rarity.textContent = tr(
+            `Meilleure : ${best.rarity_label || "Commune"}`,
+            `Best: ${best.rarity_label || "Common"}`,
+        );
         tags.appendChild(rarity);
         caption.append(name, tags);
         caption.classList.add("is-visible");
 
         locked = false;
-        setHint("Clique pour le récapitulatif");
+        setHint(tr("Clique pour le récapitulatif", "Click for the summary"));
     }
 
     // ── Le sachet ─────────────────────────────────────────────────────────
@@ -613,7 +629,7 @@
             const label = button.querySelector("[data-label]");
             if (!label) return;
             if (!affordable) label.textContent = `−${price - points}`;
-            else label.textContent = quantity === 1 ? "Ouvrir" : `×${quantity}`;
+            else label.textContent = quantity === 1 ? tr("Ouvrir", "Open") : `×${quantity}`;
         });
     }
 
@@ -652,7 +668,7 @@
             const payload = await response.json();
 
             if (!response.ok) {
-                showFeedback(payload.error || "Ouverture impossible.");
+                showFeedback(payload.error || tr("Ouverture impossible.", "Unable to open this booster."));
                 return;
             }
 
@@ -673,13 +689,16 @@
             opening.hidden = false;
             document.body.classList.add("has-opening");
             window.requestAnimationFrame(() => opening.classList.add("is-open"));
-            setHint(reducedMotion.matches ? "" : "Clique sur le sachet pour l’ouvrir");
+            setHint(reducedMotion.matches ? "" : tr("Clique sur le sachet pour l’ouvrir", "Click the pack to open it"));
             pack.focus({ preventScroll: true });
 
             // Sans animation, on saute directement au contenu.
             if (reducedMotion.matches) await tearPack();
         } catch (_) {
-            showFeedback("Connexion perdue : le booster n’a pas été ouvert.");
+            showFeedback(tr(
+                "Connexion perdue : le booster n’a pas été ouvert.",
+                "Connection lost: the booster was not opened.",
+            ));
         } finally {
             isBusy = false;
             refreshAffordability();

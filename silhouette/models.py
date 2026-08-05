@@ -3,6 +3,8 @@ import uuid
 from django.conf import settings
 from django.db import models
 
+from game.pokemon_names import localized_bot_name
+
 
 class SilhouetteGame(models.Model):
     """Partie de « Qui est ce Pokémon ? », ouverte à autant de joueurs qu'on veut."""
@@ -49,7 +51,10 @@ class SilhouettePlayer(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="silhouette_participations",
+        null=True,
+        blank=True,
     )
+    bot_name = models.CharField(max_length=30, blank=True)
     score = models.PositiveIntegerField(default=0)
     joined_at = models.DateTimeField(auto_now_add=True)
 
@@ -60,7 +65,15 @@ class SilhouettePlayer(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.get_username()} @ {self.game_id}"
+        return f"{self.display_name} @ {self.game_id}"
+
+    @property
+    def is_bot(self):
+        return self.user_id is None
+
+    @property
+    def display_name(self):
+        return localized_bot_name(self.bot_name) if self.is_bot else self.user.get_username()
 
 
 class SilhouetteRound(models.Model):

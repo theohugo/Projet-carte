@@ -288,15 +288,18 @@
 .rk-briefcase img { position: absolute; z-index: 3; right: -4%; bottom: -2%; width: 76%; filter: drop-shadow(0 20px 18px rgba(0,0,0,.55)); transform: scaleX(-1); }
 
 .rk-board {
+    position: relative;
     display: grid;
     grid-template-columns: 235px minmax(0, 1fr) 220px;
     gap: 16px;
     align-items: start;
+    overflow-x: clip;
 }
 
 .rk-role-card,
 .rk-command > section,
 .rk-roster {
+    min-width: 0;
     border: 1px solid var(--rk-line);
     border-radius: 20px;
     background: linear-gradient(155deg, rgba(17, 35, 57, 0.98), rgba(8, 18, 32, 0.98));
@@ -347,7 +350,10 @@
 button.rk-agent-card { cursor: pointer; }
 button.rk-agent-card:hover:not(:disabled), button.rk-agent-card:focus-visible { border-color: var(--rk-cyan); background: rgba(101,220,255,.08); transform: translateY(-2px); }
 .rk-agent-card.is-selected { border-color: var(--rk-violet); box-shadow: 0 0 0 2px rgba(170,134,255,.19); }
+.rk-agent-card.is-night-choice { animation: rk-night-choice .65s ease both; }
+.rk-agent-card.is-casting-vote { animation: rk-vote-stamp .62s cubic-bezier(.2,.8,.2,1) both; }
 .rk-agent-card.is-dead { opacity: .45; filter: grayscale(.8); }
+.rk-agent-card.was-eliminated { animation: rk-eliminated .9s ease both; }
 .rk-agent-card.is-dead::after { position: absolute; inset: 50% 7px auto; height: 2px; background: var(--rk-red); content: ""; transform: rotate(-8deg); }
 .rk-agent-card b { display: block; overflow: hidden; margin-top: 8px; text-overflow: ellipsis; white-space: nowrap; }
 .rk-agent-card small { display: block; overflow: hidden; margin-top: 4px; color: var(--rk-muted); font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
@@ -364,6 +370,7 @@ button.rk-agent-card:hover:not(:disabled), button.rk-agent-card:focus-visible { 
 .rk-chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .rk-chat-form input { min-width: 0; padding: 12px 13px; border: 1px solid var(--rk-line); border-radius: 11px; color: #fff; background: #081422; }
 .rk-open-vote { width: 100%; margin-top: 10px; }
+.rk-open-vote.is-casting-vote { animation: rk-vote-stamp .62s ease; }
 
 .rk-finished { text-align: center; }
 .rk-finished h2 { margin: 7px 0; color: var(--rk-green); font-size: clamp(2rem, 5vw, 4rem); letter-spacing: -.06em; }
@@ -373,9 +380,41 @@ button.rk-agent-card:hover:not(:disabled), button.rk-agent-card:focus-visible { 
 .rk-roster li { display: grid; grid-template-columns: 8px 1fr; gap: 9px; align-items: center; min-width: 0; padding: 9px 8px; border-radius: 10px; background: rgba(255,255,255,.03); }
 .rk-roster li::before { width: 7px; height: 7px; border-radius: 50%; background: var(--rk-green); box-shadow: 0 0 7px var(--rk-green); content: ""; }
 .rk-roster li.is-dead { opacity: .52; text-decoration: line-through; }
+.rk-roster li.was-eliminated { animation: rk-roster-eliminated .9s ease both; }
 .rk-roster li.is-dead::before { background: var(--rk-red); box-shadow: none; }
 .rk-roster b { overflow: hidden; font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
 .rk-roster small { grid-column: 2; overflow: hidden; color: var(--rk-cyan); font-size: .63rem; text-overflow: ellipsis; white-space: nowrap; }
+
+.rk-event.is-new-event { animation: rk-report-enter .72s cubic-bezier(.16,.82,.25,1) both; }
+.rk-game.phase-night .rk-board::before,
+.rk-game.phase-day .rk-board::before,
+.rk-game.phase-vote .rk-board::before,
+.rk-game.phase-finished .rk-board::before {
+    position: absolute;
+    z-index: 20;
+    inset: 0;
+    border-radius: 22px;
+    content: "";
+    pointer-events: none;
+}
+.rk-game.phase-night .rk-board::before { background: radial-gradient(circle at 50% 35%, rgba(123,92,219,.25), rgba(4,7,20,.88)); animation: rk-night-sweep 1s ease both; }
+.rk-game.phase-day .rk-board::before { background: radial-gradient(circle at 50% 30%, rgba(161,232,255,.7), rgba(40,116,158,.12) 58%, transparent); animation: rk-daybreak 1s ease both; }
+.rk-game.phase-vote .rk-board::before { background: repeating-linear-gradient(-18deg, rgba(255,78,103,.18) 0 18px, transparent 18px 36px); animation: rk-vote-alert 1s ease both; }
+.rk-game.phase-finished .rk-board::before { background: radial-gradient(circle, rgba(97,228,173,.42), transparent 64%); animation: rk-finish-reveal 1s ease both; }
+.rk-game.phase-night .rk-role-card { animation: rk-role-reveal .9s cubic-bezier(.16,.82,.25,1) both; }
+.rk-game[data-status="TERMINEE"] .rk-finished { animation: rk-finish-card .85s cubic-bezier(.16,.82,.25,1) both; }
+
+@keyframes rk-night-choice { 45% { border-color: var(--rk-violet); background: rgba(170,134,255,.2); transform: translateY(-7px) scale(1.03); } }
+@keyframes rk-vote-stamp { 0% { transform: scale(.82) rotate(-3deg); } 55% { border-color: var(--rk-red); box-shadow: 0 0 0 4px rgba(255,78,103,.28); transform: scale(1.06) rotate(1deg); } 100% { transform: none; } }
+@keyframes rk-eliminated { 0% { opacity: 1; filter: none; transform: none; } 35% { border-color: var(--rk-red); box-shadow: 0 0 28px rgba(255,78,103,.45); transform: translateX(-7px) rotate(-1deg); } 55% { transform: translateX(6px) rotate(1deg); } 100% { opacity: .45; filter: grayscale(.8); transform: none; } }
+@keyframes rk-roster-eliminated { 35% { color: #fff; background: rgba(255,78,103,.24); transform: translateX(-5px); } }
+@keyframes rk-report-enter { from { opacity: 0; transform: translateY(-18px) scale(.97); } 55% { border-color: rgba(255,78,103,.55); } }
+@keyframes rk-night-sweep { 0% { opacity: 0; clip-path: circle(0 at 50% 15%); } 45% { opacity: 1; } 100% { opacity: 0; clip-path: circle(120% at 50% 15%); } }
+@keyframes rk-daybreak { 0% { opacity: 0; transform: translateY(28%); } 45% { opacity: .9; } 100% { opacity: 0; transform: translateY(-20%); } }
+@keyframes rk-vote-alert { 0%, 100% { opacity: 0; } 40% { opacity: .82; } }
+@keyframes rk-finish-reveal { 0%, 100% { opacity: 0; transform: scale(.7); } 50% { opacity: .9; transform: scale(1); } }
+@keyframes rk-role-reveal { from { opacity: 0; transform: rotateY(70deg) scale(.85); } 70% { transform: rotateY(-5deg) scale(1.03); } }
+@keyframes rk-finish-card { from { opacity: 0; transform: translateY(24px) scale(.94); } }
 
 @media (max-width: 980px) {
     .rk-hero { min-height: 560px; grid-template-columns: 1fr .7fr; }
@@ -428,6 +467,154 @@ button.rk-agent-card:hover:not(:disabled), button.rk-agent-card:focus-visible { 
     .rk-chat-form { grid-template-columns: 1fr; }
 }
 
+/* Table de jeu desktop : tout le cycle reste visible dans 100dvh. Les zones
+   susceptibles de grandir (agents, chat, rapports et escouade) défilent seules. */
+@media (min-width: 901px) {
+    html.rocket-document { height: 100%; overflow: hidden; }
+
+    body.rocket-shell {
+        display: flex;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        flex-direction: column;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    .rocket-shell .site-header { position: relative; flex: 0 0 auto; }
+    .rocket-shell .site-header-inner { min-height: 52px; padding-block: 4px; }
+    .rocket-shell .site-title .brand-mark,
+    .rocket-shell .nav-trigger .user-avatar { width: 34px; height: 34px; }
+
+    .rocket-shell > .messages {
+        position: fixed;
+        z-index: 70;
+        top: 58px;
+        right: 12px;
+        left: 12px;
+        width: min(620px, calc(100% - 24px));
+        margin: 0 auto;
+    }
+
+    .rocket-shell .page-content {
+        width: min(100%, 1540px);
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+        padding: 5px clamp(7px, 1.2vw, 18px) 7px;
+    }
+
+    .rocket-shell .rk-game {
+        display: grid;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: 5px;
+        margin: 0;
+    }
+
+    .rocket-shell .rk-game-header {
+        min-height: 43px;
+        align-items: center;
+        flex: 0 0 auto;
+        gap: 12px;
+        margin: 0;
+    }
+
+    .rocket-shell .rk-game-header > div:first-child { display: flex; min-width: 0; align-items: center; gap: 12px; }
+    .rocket-shell .rk-game-header .back-link { flex: 0 0 auto; }
+    .rocket-shell .rk-game-header .section-kicker { margin: 0; white-space: nowrap; }
+    .rocket-shell .rk-game-header h1 { margin: 0; overflow: hidden; font-size: 1.18rem; text-overflow: ellipsis; white-space: nowrap; }
+    .rocket-shell .rk-phase-pill { min-width: 155px; padding: 7px 12px; }
+
+    .rocket-shell .rk-game > .message { position: fixed; z-index: 75; top: 58px; left: 50%; width: min(520px, calc(100% - 24px)); margin: 0; transform: translateX(-50%); }
+
+    .rocket-shell .rk-waiting,
+    .rocket-shell .rk-board { height: 100%; min-height: 0; }
+    .rocket-shell .rk-waiting { min-height: 0; border-radius: 22px; }
+    .rocket-shell .rk-wait-copy { padding: clamp(20px, 4vh, 48px) clamp(30px, 5vw, 70px); }
+    .rocket-shell .rk-wait-copy h2 { font-size: clamp(2.4rem, 5vw, 4.7rem); }
+    .rocket-shell .rk-briefcase { min-height: 0; }
+
+    .rocket-shell .rk-board {
+        grid-template-columns: clamp(180px, 15vw, 220px) minmax(0, 1fr) clamp(160px, 14vw, 205px);
+        align-items: stretch;
+        gap: 8px;
+        overflow: hidden;
+    }
+
+    .rocket-shell .rk-role-card,
+    .rocket-shell .rk-roster {
+        position: static;
+        top: auto;
+        height: 100%;
+        min-height: 0;
+        padding: 11px;
+        overflow-y: auto;
+        border-radius: 15px;
+    }
+
+    .rocket-shell .rk-role-art { height: clamp(82px, 15vh, 125px); margin-top: 0; }
+    .rocket-shell .rk-role-card h2 { margin-top: 3px; font-size: 1.08rem; }
+    .rocket-shell .rk-role-card > p:not(.section-kicker):not(.rk-side) { margin-bottom: 7px; font-size: .68rem; line-height: 1.35; }
+    .rocket-shell .rk-side { margin-bottom: 6px; font-size: .58rem; }
+    .rocket-shell .rk-detective-log { margin-top: 8px; padding-top: 8px; }
+    .rocket-shell .rk-detective-log ul { gap: 4px; margin-top: 5px; }
+    .rocket-shell .rk-detective-log li { padding: 5px; font-size: .62rem; }
+
+    .rocket-shell .rk-command {
+        display: flex;
+        height: 100%;
+        min-height: 0;
+        flex-direction: column;
+        gap: 6px;
+        overflow: hidden;
+    }
+
+    .rocket-shell .rk-command > section { padding: 10px 12px; border-radius: 14px; }
+    .rocket-shell .rk-event { flex: 0 0 auto; gap: 9px; }
+    .rocket-shell .rk-event-icon { width: 32px; height: 32px; flex-basis: 32px; border-radius: 9px; }
+    .rocket-shell .rk-event p { font-size: .7rem; }
+    .rocket-shell .rk-directive { flex: 0 0 auto; }
+    .rocket-shell .rk-directive h2 { margin: 2px 0 3px; font-size: clamp(1.15rem, 2vw, 1.55rem); }
+    .rocket-shell .rk-directive > p:last-of-type { font-size: .7rem; line-height: 1.35; }
+    .rocket-shell .rk-progress { height: 6px; margin: 9px 0 15px; }
+    .rocket-shell .rk-progress small { top: 9px; font-size: .61rem; }
+
+    .rocket-shell .rk-agents { min-height: 0; flex: 1 1 auto; overflow-y: auto; }
+    .rocket-shell .rk-agent-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 7px; }
+    .rocket-shell .rk-agent-card { min-height: 62px; padding: 7px; border-radius: 9px; }
+    .rocket-shell .rk-agent-card b { margin-top: 3px; font-size: .72rem; }
+    .rocket-shell .rk-agent-card small { margin-top: 1px; font-size: .58rem; }
+    .rocket-shell .rk-agent-number { font-size: .55rem; }
+    .rocket-shell .rk-agent-state { top: 7px; right: 7px; width: 6px; height: 6px; }
+
+    .rocket-shell .rk-chat:not([hidden]) { display: flex; min-height: 150px; flex: 1 1 42%; flex-direction: column; }
+    .rocket-shell .rk-messages { min-height: 0; max-height: none; flex: 1 1 auto; gap: 4px; margin: 7px 0; }
+    .rocket-shell .rk-messages li { padding: 5px 7px; }
+    .rocket-shell .rk-messages p { font-size: .7rem; }
+    .rocket-shell .rk-chat-form input { padding: 7px 9px; }
+    .rocket-shell .rk-chat-form .btn { min-height: 34px; padding-block: 5px; }
+    .rocket-shell .rk-open-vote { min-height: 34px; margin-top: 5px; padding-block: 5px; }
+
+    .rocket-shell .rk-finished:not([hidden]) { display: grid; min-height: 0; flex: 1 1 auto; place-items: center; align-content: center; }
+    .rocket-shell .rk-game[data-status="TERMINEE"] .rk-agents { display: none; }
+    .rocket-shell .rk-finished h2 { font-size: clamp(2rem, 4vw, 3.5rem); }
+
+    .rocket-shell .rk-roster ol { gap: 4px; margin-top: 7px; }
+    .rocket-shell .rk-roster li { gap: 6px; padding: 5px 6px; border-radius: 7px; }
+    .rocket-shell .rk-roster b { font-size: .67rem; }
+    .rocket-shell .rk-roster small { font-size: .55rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .rk-agent-card, .rk-progress > span { transition: none; }
+    .rk-agent-card,
+    .rk-progress > span,
+    .rk-event,
+    .rk-role-card,
+    .rk-finished,
+    .rk-roster li,
+    .rk-board::before { animation: none !important; transition: none !important; }
 }

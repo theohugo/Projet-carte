@@ -54,6 +54,9 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # Active la langue de la session, du cookie Django ou de l'en-tête
+    # Accept-Language avant que les vues ne construisent leurs payloads.
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -127,7 +130,12 @@ if "test" in sys.argv:
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = "fr-fr"
+LANGUAGE_CODE = "fr"
+
+LANGUAGES = [
+    ("fr", "Français"),
+    ("en", "English"),
+]
 
 TIME_ZONE = "Europe/Paris"
 

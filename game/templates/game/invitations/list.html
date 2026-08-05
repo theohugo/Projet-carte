@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load poketable_i18n %}
 
-{% block title %}Mes invitations de jeu — PokéTable{% endblock %}
+{% block title %}{% bilingual "Mes invitations de jeu" "My game invitations" %} — PokéTable{% endblock %}
 
 {% block content %}
 <section
@@ -10,16 +11,15 @@
     <header class="friends-header">
         <div>
             <p class="section-kicker">
-                Espace multijoueur
+                {% bilingual "Espace multijoueur" "Multiplayer area" %}
             </p>
 
             <h1 id="invitations-title">
-                Mes invitations de jeu
+                {% bilingual "Mes invitations de jeu" "My game invitations" %}
             </h1>
 
             <p>
-                Retrouve les invitations reçues ou envoyées
-                pour tous les jeux PokéTable.
+                {% bilingual "Retrouve les invitations reçues ou envoyées pour tous les jeux PokéTable." "View invitations received or sent across every PokéTable game." %}
             </p>
         </div>
 
@@ -27,7 +27,7 @@
             class="btn btn-ghost"
             href="{% url 'home' %}"
         >
-            Voir les jeux
+            {% bilingual "Voir les jeux" "View games" %}
         </a>
     </header>
 
@@ -37,12 +37,12 @@
     >
         <div class="friends-section-heading">
             <h2 id="received-invitations-title">
-                Invitations reçues
+                {% bilingual "Invitations reçues" "Received invitations" %}
             </h2>
 
             <span
                 class="friends-count"
-                aria-label="{{ received_invitations|length }} invitation{{ received_invitations|length|pluralize }}"
+                aria-label="{{ received_invitations|length }} {% bilingual 'invitations reçues' 'received invitations' %}"
             >
                 {{ received_invitations|length }}
             </span>
@@ -55,7 +55,7 @@
                         <a
                             class="friend-identity"
                             href="{% url 'public_profile' invitation.sender.username %}"
-                            aria-label="Voir le profil de {{ invitation.sender.username }}"
+                            aria-label="{% bilingual 'Voir le profil de' 'View profile for' %} {{ invitation.sender.username }}"
                         >
                             {% if invitation.sender.profile.avatar %}
                                 <img
@@ -85,9 +85,9 @@
                                 </strong>
 
                                 <small>
-                                    T’invite à rejoindre son salon
+                                    {% bilingual "T’invite à rejoindre son salon" "Invites you to join their room" %}
                                     · {{ invitation.player_count }}/{{ invitation.max_players_display }}
-                                    joueur{{ invitation.player_count|pluralize }}
+                                    {% bilingual "joueur(s)" "player(s)" %}
                                 </small>
                             </span>
                         </a>
@@ -98,7 +98,7 @@
                                     class="btn btn-ghost"
                                     href="{{ invitation.detail_url }}"
                                 >
-                                    Voir le salon
+                                    {% bilingual "Voir le salon" "View room" %}
                                 </a>
                             {% endif %}
 
@@ -112,7 +112,7 @@
                                     class="btn btn-ghost"
                                     type="submit"
                                 >
-                                    Refuser
+                                    {% bilingual "Refuser" "Decline" %}
                                 </button>
                             </form>
 
@@ -126,7 +126,7 @@
                                     class="btn btn-primary"
                                     type="submit"
                                 >
-                                    Rejoindre
+                                    {% bilingual "Rejoindre" "Join" %}
                                 </button>
                             </form>
                         </div>
@@ -136,12 +136,11 @@
         {% else %}
             <div class="friends-empty">
                 <h3>
-                    Aucune invitation reçue
+                    {% bilingual "Aucune invitation reçue" "No invitations received" %}
                 </h3>
 
                 <p>
-                    Les invitations envoyées par tes amis
-                    apparaîtront ici.
+                    {% bilingual "Les invitations envoyées par tes amis apparaîtront ici." "Invitations from your friends will appear here." %}
                 </p>
             </div>
         {% endif %}
@@ -153,12 +152,12 @@
     >
         <div class="friends-section-heading">
             <h2 id="sent-invitations-title">
-                Invitations envoyées
+                {% bilingual "Invitations envoyées" "Sent invitations" %}
             </h2>
 
             <span
                 class="friends-count"
-                aria-label="{{ sent_invitations|length }} invitation{{ sent_invitations|length|pluralize }}"
+                aria-label="{{ sent_invitations|length }} {% bilingual 'invitations envoyées' 'sent invitations' %}"
             >
                 {{ sent_invitations|length }}
             </span>
@@ -171,7 +170,7 @@
                         <a
                             class="friend-identity"
                             href="{% url 'public_profile' invitation.recipient.username %}"
-                            aria-label="Voir le profil de {{ invitation.recipient.username }}"
+                            aria-label="{% bilingual 'Voir le profil de' 'View profile for' %} {{ invitation.recipient.username }}"
                         >
                             {% if invitation.recipient.profile.avatar %}
                                 <img
@@ -201,9 +200,9 @@
                                 </strong>
 
                                 <small>
-                                    Invitation en attente
+                                    {% bilingual "Invitation en attente" "Invitation pending" %}
                                     · {{ invitation.player_count }}/{{ invitation.max_players_display }}
-                                    joueur{{ invitation.player_count|pluralize }}
+                                    {% bilingual "joueur(s)" "player(s)" %}
                                 </small>
                             </span>
                         </a>
@@ -214,7 +213,7 @@
                                     class="btn btn-ghost"
                                     href="{{ invitation.detail_url }}"
                                 >
-                                    Voir le salon
+                                    {% bilingual "Voir le salon" "View room" %}
                                 </a>
                             {% endif %}
 
@@ -228,7 +227,7 @@
                                     class="btn btn-ghost"
                                     type="submit"
                                 >
-                                    Annuler
+                                    {% bilingual "Annuler" "Cancel" %}
                                 </button>
                             </form>
                         </div>
@@ -238,19 +237,18 @@
         {% else %}
             <div class="friends-empty">
                 <h3>
-                    Aucune invitation envoyée
+                    {% bilingual "Aucune invitation envoyée" "No invitations sent" %}
                 </h3>
 
                 <p>
-                    Crée un salon dans le jeu de ton choix
-                    pour inviter tes amis.
+                    {% bilingual "Crée un salon dans le jeu de ton choix pour inviter tes amis." "Create a room in any game to invite your friends." %}
                 </p>
 
                 <a
                     class="btn btn-primary"
                     href="{% url 'home' %}"
                 >
-                    Choisir un jeu
+                    {% bilingual "Choisir un jeu" "Choose a game" %}
                 </a>
             </div>
         {% endif %}

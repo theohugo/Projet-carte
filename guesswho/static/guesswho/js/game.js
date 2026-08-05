@@ -4,6 +4,7 @@
     const game = document.getElementById("guesswho-game");
     const stateNode = document.getElementById("guesswho-initial-state");
     if (!game || !stateNode) return;
+    const documentLanguage = document.documentElement.lang.startsWith("en") ? "en" : "fr";
 
     let state;
     try {
@@ -13,10 +14,15 @@
         const fallback = document.createElement("p");
         fallback.className = "gw-feedback";
         fallback.setAttribute("role", "alert");
-        fallback.textContent = "Le plateau n’a pas pu être chargé. Recharge la page pour réessayer.";
+        fallback.textContent = documentLanguage === "en"
+            ? "The board could not be loaded. Refresh the page to try again."
+            : "Le plateau n’a pas pu être chargé. Recharge la page pour réessayer.";
         game.appendChild(fallback);
         return;
     }
+
+    const t = (french, english) => (state.language === "en" ? english : french);
+    const pokemonName = (card) => card?.name || (state.language === "en" ? card?.name_en : card?.name_fr) || card?.name_fr || card?.name_en || "Pokémon";
 
     const elements = {
         status: document.querySelector("[data-game-status]"),
@@ -61,22 +67,22 @@
     };
 
     const STATUS_LABELS = {
-        EN_ATTENTE: "En attente",
-        CHOIX: "Choix secret",
-        EN_COURS: "Partie en cours",
-        TERMINEE: "Terminée",
+        EN_ATTENTE: t("En attente", "Waiting"),
+        CHOIX: t("Choix secret", "Secret choice"),
+        EN_COURS: t("Partie en cours", "Game in progress"),
+        TERMINEE: t("Terminée", "Finished"),
     };
     const TCG_TYPE_NAMES = {
-        grass: "Plante",
-        fire: "Feu",
-        water: "Eau",
-        lightning: "Électrique",
-        psychic: "Psy",
-        fighting: "Combat",
-        darkness: "Obscurité",
-        metal: "Métal",
+        grass: t("Plante", "Grass"),
+        fire: t("Feu", "Fire"),
+        water: t("Eau", "Water"),
+        lightning: t("Électrique", "Lightning"),
+        psychic: t("Psy", "Psychic"),
+        fighting: t("Combat", "Fighting"),
+        darkness: t("Obscurité", "Darkness"),
+        metal: t("Métal", "Metal"),
         dragon: "Dragon",
-        colorless: "Incolore",
+        colorless: t("Incolore", "Colorless"),
     };
     const RAW_TO_TCG = {
         grass: "grass",
@@ -105,7 +111,7 @@
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const precisePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const timeFormatter = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const timeFormatter = new Intl.DateTimeFormat(state.language === "en" ? "en-GB" : "fr-FR", { hour: "2-digit", minute: "2-digit" });
     const csrfToken = game.querySelector('[name="csrfmiddlewaretoken"]')?.value || readCookie("csrftoken");
 
     let phase = "idle";
@@ -143,7 +149,7 @@
     }
 
     function typeName(card) {
-        return TCG_TYPE_NAMES[tcgType(card)] || "Incolore";
+        return TCG_TYPE_NAMES[tcgType(card)] || t("Incolore", "Colorless");
     }
 
     function histories() {
@@ -191,7 +197,7 @@
 
     function setBusy(isBusy) {
         game.setAttribute("aria-busy", String(isBusy));
-        if (isBusy) setSync("syncing", "Envoi…");
+        if (isBusy) setSync("syncing", t("Envoi…", "Sending…"));
     }
 
     function setView(activeView) {
@@ -199,8 +205,29 @@
         elements.waitingView.hidden = activeView !== "waiting";
         elements.boardView.hidden = activeView !== "board";
         elements.resultView.hidden = activeView !== "result";
+        if (activeView !== previousView) {
+            [elements.waitingView, elements.boardView, elements.resultView].forEach((view) => {
+                view.classList.remove("is-entering");
+            });
+            const activeElement = {
+                waiting: elements.waitingView,
+                board: elements.boardView,
+                result: elements.resultView,
+            }[activeView];
+            if (activeElement && !reducedMotion.matches) {
+                void activeElement.offsetWidth;
+                activeElement.classList.add("is-entering");
+            }
+        }
         renderedView = activeView;
         return previousView;
+    }
+
+    function syncViewportMode() {
+        const isActive = state.status === "CHOIX" || state.status === "EN_COURS";
+        game.dataset.gamePhase = state.status || "";
+        document.documentElement.classList.toggle("guesswho-document--active", isActive);
+        document.body.classList.toggle("guesswho-game-shell--active", isActive);
     }
 
     function focusAfterRender(preferred, fallback = null) {
@@ -218,7 +245,8 @@
     }
 
     function render() {
-        elements.status.textContent = STATUS_LABELS[state.status] || "Partie";
+        syncViewportMode();
+        elements.status.textContent = STATUS_LABELS[state.status] || t("Partie", "Game");
 
         if (state.status === "EN_ATTENTE") {
             guessMode = false;
@@ -244,7 +272,7 @@
         const avatar = document.createElement("span");
         avatar.className = `gw-player-avatar${isOpponent ? " gw-player-avatar--opponent" : ""}`;
         avatar.setAttribute("aria-hidden", "true");
-        avatar.textContent = (player?.username || "?").slice(0, 1).toLocaleUpperCase("fr-FR");
+        avatar.textContent = (player?.username || "?").slice(0, 1).toLocaleUpperCase(state.language === "en" ? "en-GB" : "fr-FR");
         return avatar;
     }
 
@@ -264,7 +292,7 @@
                 const name = document.createElement("strong");
                 name.textContent = player.username;
                 const status = document.createElement("small");
-                status.textContent = sameId(player.id, me()?.id) ? "Toi · prêt" : "Adversaire · prêt";
+                status.textContent = sameId(player.id, me()?.id) ? t("Toi · prêt", "You · ready") : t("Adversaire · prêt", "Opponent · ready");
                 copy.append(name, status);
                 seat.appendChild(copy);
             } else {
@@ -274,9 +302,9 @@
                 avatar.textContent = "+";
                 const copy = document.createElement("span");
                 const name = document.createElement("strong");
-                name.textContent = "Place libre";
+                name.textContent = t("Place libre", "Open seat");
                 const status = document.createElement("small");
-                status.textContent = "En attente…";
+                status.textContent = t("En attente…", "Waiting…");
                 copy.append(name, status);
                 seat.append(avatar, copy);
             }
@@ -298,26 +326,26 @@
         elements.guessMode.setAttribute("aria-pressed", String(guessMode));
         elements.resetCandidates.disabled = eliminatedCount === 0;
         elements.candidateCount.textContent = choosing
-            ? `${(state.roster || []).length} Pokémon disponibles`
-            : `${standingCount} encore debout`;
+            ? `${(state.roster || []).length} ${t("Pokémon disponibles", "available Pokémon")}`
+            : `${standingCount} ${t("encore debout", "still standing")}`;
 
         elements.boardHelp.classList.toggle("is-guessing", guessMode);
         if (choosing && !hasChosen) {
-            elements.boardEyebrow.textContent = "Choix confidentiel";
-            elements.boardTitle.textContent = "Choisis ton Pokémon secret";
-            elements.boardHelp.textContent = "Ton adversaire ne verra pas ce choix. Sélectionne 1 carte pour continuer.";
+            elements.boardEyebrow.textContent = t("Choix confidentiel", "Private choice");
+            elements.boardTitle.textContent = t("Choisis ton Pokémon secret", "Choose your secret Pokémon");
+            elements.boardHelp.textContent = t("Ton adversaire ne verra pas ce choix. Sélectionne 1 carte pour continuer.", "Your opponent will not see this choice. Select 1 card to continue.");
         } else if (choosing) {
-            elements.boardEyebrow.textContent = "Choix enregistré";
-            elements.boardTitle.textContent = "Ton Pokémon est bien gardé";
-            elements.boardHelp.textContent = "En attente du choix de ton adversaire…";
+            elements.boardEyebrow.textContent = t("Choix enregistré", "Choice saved");
+            elements.boardTitle.textContent = t("Ton Pokémon est bien gardé", "Your Pokémon is safely hidden");
+            elements.boardHelp.textContent = t("En attente du choix de ton adversaire…", "Waiting for your opponent’s choice…");
         } else if (guessMode) {
-            elements.boardEyebrow.textContent = "Tentative finale";
-            elements.boardTitle.textContent = "Qui se cache chez l’adversaire ?";
-            elements.boardHelp.textContent = "Choisis 1 Pokémon. Attention : une erreur donne la victoire à ton adversaire.";
+            elements.boardEyebrow.textContent = t("Tentative finale", "Final guess");
+            elements.boardTitle.textContent = t("Qui se cache chez l’adversaire ?", "Who is your opponent hiding?");
+            elements.boardHelp.textContent = t("Choisis 1 Pokémon. Attention : une erreur donne la victoire à ton adversaire.", "Choose 1 Pokémon. Be careful: a mistake gives your opponent the win.");
         } else {
-            elements.boardEyebrow.textContent = "Ton plateau";
-            elements.boardTitle.textContent = "24 suspects. 1 seul Pokémon.";
-            elements.boardHelp.textContent = "Clique sur une carte pour la rabattre après chaque indice.";
+            elements.boardEyebrow.textContent = t("Ton plateau", "Your board");
+            elements.boardTitle.textContent = t("24 suspects. 1 seul Pokémon.", "24 suspects. Only 1 Pokémon.");
+            elements.boardHelp.textContent = t("Clique sur une carte pour la rabattre après chaque indice.", "Click a card to fold it down after each clue.");
         }
 
         renderRoster({ choosing, hasChosen });
@@ -391,12 +419,12 @@
 
         const name = document.createElement("span");
         name.className = "gw-card-name";
-        name.textContent = card.name_fr;
+        name.textContent = pokemonName(card);
 
         const eliminated = document.createElement("span");
         eliminated.className = "gw-card-eliminated-label";
         eliminated.setAttribute("aria-hidden", "true");
-        eliminated.textContent = "Écarté";
+        eliminated.textContent = t("Écarté", "Eliminated");
 
         const mode = document.createElement("span");
         mode.className = "gw-card-mode-label";
@@ -425,22 +453,22 @@
         const modeLabel = button.querySelector(".gw-card-mode-label");
         const showModeLabel = (!context.choosing && guessMode) || (context.choosing && !context.hasChosen);
         modeLabel.hidden = !showModeLabel;
-        modeLabel.textContent = context.choosing ? "Choisir" : "Proposer";
+        modeLabel.textContent = context.choosing ? t("Choisir", "Choose") : t("Proposer", "Guess");
 
         if (context.choosing && !context.hasChosen) {
-            button.setAttribute("aria-label", `Choisir ${card.name_fr} comme Pokémon secret, type ${typeName(card)}`);
+            button.setAttribute("aria-label", `${t("Choisir", "Choose")} ${pokemonName(card)}, ${t("type", "type")} ${typeName(card)}`);
             button.removeAttribute("aria-pressed");
         } else if (context.choosing) {
             const isTarget = sameId(card.id, ownTargetId);
-            button.setAttribute("aria-label", isTarget ? `Ton Pokémon secret : ${card.name_fr}` : card.name_fr);
+            button.setAttribute("aria-label", isTarget ? `${t("Ton Pokémon secret :", "Your secret Pokémon:")} ${pokemonName(card)}` : pokemonName(card));
             button.removeAttribute("aria-pressed");
         } else if (guessMode) {
-            button.setAttribute("aria-label", `Proposer ${card.name_fr} comme Pokémon secret adverse`);
+            button.setAttribute("aria-label", `${t("Proposer", "Guess")} ${pokemonName(card)}`);
             button.removeAttribute("aria-pressed");
         } else {
             button.setAttribute(
                 "aria-label",
-                `${card.is_eliminated ? "Relever" : "Rabattre"} ${card.name_fr}, type ${typeName(card)}`,
+                `${card.is_eliminated ? t("Relever", "Restore") : t("Rabattre", "Eliminate")} ${pokemonName(card)}, ${t("type", "type")} ${typeName(card)}`,
             );
             button.setAttribute("aria-pressed", String(Boolean(card.is_eliminated)));
         }
@@ -502,14 +530,14 @@
             const copy = document.createElement("span");
             copy.className = "gw-player-chip-copy";
             const name = document.createElement("strong");
-            name.textContent = isSelf ? `${player.username} (toi)` : player.username;
+            name.textContent = isSelf ? `${player.username} (${t("toi", "you")})` : player.username;
             const status = document.createElement("small");
             if (state.status === "CHOIX") {
-                status.textContent = player.has_chosen ? "Choix verrouillé" : "Choisit son Pokémon…";
+                status.textContent = player.has_chosen ? t("Choix verrouillé", "Choice locked") : t("Choisit son Pokémon…", "Choosing a Pokémon…");
             } else if (sameId(player.id, currentTurnId)) {
-                status.textContent = state.pending_question ? "Question posée" : "Mène l’enquête";
+                status.textContent = state.pending_question ? t("Question posée", "Question asked") : t("Mène l’enquête", "Investigating");
             } else {
-                status.textContent = "Observe les indices";
+                status.textContent = t("Observe les indices", "Watching the clues");
             }
             copy.append(name, status);
             chip.appendChild(copy);
@@ -519,7 +547,7 @@
             if (player.target) {
                 const targetImage = document.createElement("img");
                 targetImage.src = player.target.sprite_url;
-                targetImage.alt = `${isSelf ? "Ton" : "Son"} Pokémon secret : ${player.target.name_fr}`;
+                targetImage.alt = `${isSelf ? t("Ton", "Your") : t("Son", "Their")} Pokémon secret: ${pokemonName(player.target)}`;
                 targetImage.width = 28;
                 targetImage.height = 32;
                 targetImage.loading = "lazy";
@@ -528,24 +556,24 @@
                 chip.classList.add("has-secret");
             } else {
                 secret.textContent = player.has_chosen ? "✓" : "?";
-                secret.setAttribute("aria-label", player.has_chosen ? "Pokémon secret choisi" : "Choix en attente");
+                secret.setAttribute("aria-label", player.has_chosen ? t("Pokémon secret choisi", "Secret Pokémon chosen") : t("Choix en attente", "Choice pending"));
             }
             chip.appendChild(secret);
             elements.players.appendChild(chip);
         });
 
         if (state.status === "CHOIX") {
-            elements.turnBadge.textContent = `${players.filter((player) => player.has_chosen).length}/2 choix`;
+            elements.turnBadge.textContent = `${players.filter((player) => player.has_chosen).length}/2 ${t("choix", "choices")}`;
             elements.turnBadge.classList.remove("is-mine");
         } else if (state.can_answer || state.must_answer) {
-            elements.turnBadge.textContent = "À toi de répondre";
+            elements.turnBadge.textContent = t("À toi de répondre", "Your turn to answer");
             elements.turnBadge.classList.add("is-mine");
         } else if (state.is_my_turn) {
-            elements.turnBadge.textContent = "À toi de jouer";
+            elements.turnBadge.textContent = t("À toi de jouer", "Your turn");
             elements.turnBadge.classList.add("is-mine");
         } else {
-            const current = state.current_turn?.username || "l’adversaire";
-            elements.turnBadge.textContent = `Tour de ${current}`;
+            const current = state.current_turn?.username || t("l’adversaire", "your opponent");
+            elements.turnBadge.textContent = state.language === "en" ? `${current}’s turn` : `Tour de ${current}`;
             elements.turnBadge.classList.remove("is-mine");
         }
     }
@@ -564,13 +592,15 @@
             const isGuess = entry.kind === "GUESS";
             return [
                 sameId(actor.id, currentPlayerId),
-                (actor.username || "?").slice(0, 1).toLocaleUpperCase("fr-FR"),
-                actor.username || "Dresseur",
+                (actor.username || "?").slice(0, 1).toLocaleUpperCase(state.language === "en" ? "en-GB" : "fr-FR"),
+                actor.username || t("Dresseur", "Trainer"),
                 entry.created_at || "",
                 formatTime(entry.created_at),
                 isGuess ? "GUESS" : "QUESTION",
                 isGuess
-                    ? `Je pense que c’est ${entry.guessed_card?.name_fr || "ce Pokémon"}.`
+                    ? state.language === "en"
+                        ? `I think it’s ${pokemonName(entry.guessed_card) || "this Pokémon"}.`
+                        : `Je pense que c’est ${pokemonName(entry.guessed_card) || "ce Pokémon"}.`
                     : entry.question || entry.message || entry.text || "Question",
                 isGuess
                     ? Boolean(entry.is_correct)
@@ -602,14 +632,14 @@
             const avatar = document.createElement("span");
             avatar.className = "gw-history-avatar";
             avatar.setAttribute("aria-hidden", "true");
-            avatar.textContent = (actor.username || "?").slice(0, 1).toLocaleUpperCase("fr-FR");
+            avatar.textContent = (actor.username || "?").slice(0, 1).toLocaleUpperCase(state.language === "en" ? "en-GB" : "fr-FR");
 
             const bubble = document.createElement("div");
             bubble.className = "gw-history-bubble";
             const meta = document.createElement("div");
             meta.className = "gw-history-meta";
             const actorName = document.createElement("strong");
-            actorName.textContent = actor.username || "Dresseur";
+            actorName.textContent = actor.username || t("Dresseur", "Trainer");
             const timestamp = document.createElement("time");
             timestamp.dateTime = entry.created_at || "";
             timestamp.textContent = formatTime(entry.created_at);
@@ -617,10 +647,12 @@
 
             const content = document.createElement("p");
             if (entry.kind === "GUESS") {
-                content.textContent = `Je pense que c’est ${entry.guessed_card?.name_fr || "ce Pokémon"}.`;
+                content.textContent = state.language === "en"
+                    ? `I think it’s ${pokemonName(entry.guessed_card) || "this Pokémon"}.`
+                    : `Je pense que c’est ${pokemonName(entry.guessed_card) || "ce Pokémon"}.`;
                 const result = document.createElement("span");
                 result.className = `gw-guess-token ${entry.is_correct ? "is-correct" : "is-wrong"}`;
-                result.textContent = entry.is_correct ? "Bonne réponse" : "Mauvaise réponse";
+                result.textContent = entry.is_correct ? t("Bonne réponse", "Correct") : t("Mauvaise réponse", "Wrong");
                 bubble.append(meta, content, result);
             } else {
                 content.textContent = entry.question || entry.message || entry.text || "Question";
@@ -628,13 +660,13 @@
                 answer.className = "gw-answer-token";
                 if (entry.answer === true) {
                     answer.dataset.answer = "true";
-                    answer.textContent = "Oui";
+                    answer.textContent = t("Oui", "Yes");
                 } else if (entry.answer === false) {
                     answer.dataset.answer = "false";
-                    answer.textContent = "Non";
+                    answer.textContent = t("Non", "No");
                 } else {
                     answer.classList.add("is-pending");
-                    answer.textContent = "En attente…";
+                    answer.textContent = t("En attente…", "Waiting…");
                 }
                 bubble.append(meta, content, answer);
             }
@@ -664,16 +696,18 @@
         }
 
         let disabled = true;
-        let hint = "Attends le début de la partie.";
+        let hint = t("Attends le début de la partie.", "Wait for the game to begin.");
         if (choosing) {
-            hint = hasChosen ? "Ton choix est enregistré. L’enquête va bientôt commencer." : "Choisis d’abord ton Pokémon secret sur le plateau.";
+            hint = hasChosen ? t("Ton choix est enregistré. L’enquête va bientôt commencer.", "Your choice is saved. The investigation will begin soon.") : t("Choisis d’abord ton Pokémon secret sur le plateau.", "First choose your secret Pokémon on the board.");
         } else if (pending) {
-            hint = "Ton adversaire réfléchit à sa réponse…";
+            hint = t("Ton adversaire réfléchit à sa réponse…", "Your opponent is thinking…");
         } else if (state.is_my_turn) {
             disabled = false;
-            hint = "Pose une question qui appelle « oui » ou « non ».";
+            hint = t("Pose une question qui appelle « oui » ou « non ».", "Ask a yes-or-no question.");
         } else {
-            hint = `Attends la question de ${state.current_turn?.username || "ton adversaire"}.`;
+            hint = state.language === "en"
+                ? `Wait for ${state.current_turn?.username || "your opponent"}’s question.`
+                : `Attends la question de ${state.current_turn?.username || "ton adversaire"}.`;
         }
 
         elements.questionInput.disabled = disabled;
@@ -688,18 +722,24 @@
         const finalGuess = histories().slice().reverse().find((entry) => entry.kind === "GUESS");
         const lostOnWrongGuess = finalGuess?.is_correct === false;
         const madeFinalGuess = sameId(finalGuess?.actor?.id, currentMe?.id);
-        const guessedName = finalGuess?.guessed_card?.name_fr || "ce Pokémon";
-        elements.resultTitle.textContent = didWin ? "Victoire !" : "Le mystère est résolu";
+        const guessedName = pokemonName(finalGuess?.guessed_card) || t("ce Pokémon", "this Pokémon");
+        elements.resultTitle.textContent = didWin ? t("Victoire !", "Victory!") : t("Le mystère est résolu", "Mystery solved");
         if (!winner) {
-            elements.resultCopy.textContent = "La partie est terminée. Les Pokémon secrets sont maintenant révélés.";
+            elements.resultCopy.textContent = t("La partie est terminée. Les Pokémon secrets sont maintenant révélés.", "The game is over. The secret Pokémon are now revealed.");
         } else if (lostOnWrongGuess) {
             elements.resultCopy.textContent = madeFinalGuess
-                ? `Ta proposition, ${guessedName}, était incorrecte. ${winner.username} remporte la partie.`
-                : `Ton adversaire a proposé ${guessedName} et s’est trompé. Tu remportes la partie.`;
+                ? state.language === "en"
+                    ? `Your guess, ${guessedName}, was wrong. ${winner.username} wins the game.`
+                    : `Ta proposition, ${guessedName}, était incorrecte. ${winner.username} remporte la partie.`
+                : state.language === "en"
+                  ? `Your opponent guessed ${guessedName} and was wrong. You win the game.`
+                  : `Ton adversaire a proposé ${guessedName} et s’est trompé. Tu remportes la partie.`;
         } else {
             elements.resultCopy.textContent = didWin
-                ? "Belle déduction : tu as identifié le Pokémon secret avant ton adversaire."
-                : `${winner.username} a trouvé la bonne réponse. Les Pokémon secrets sont maintenant révélés.`;
+                ? t("Belle déduction : tu as identifié le Pokémon secret avant ton adversaire.", "Great deduction: you identified the secret Pokémon first.")
+                : state.language === "en"
+                  ? `${winner.username} found the correct answer. The secret Pokémon are now revealed.`
+                  : `${winner.username} a trouvé la bonne réponse. Les Pokémon secrets sont maintenant révélés.`;
         }
 
         elements.resultPlayers.replaceChildren();
@@ -712,7 +752,7 @@
             const name = document.createElement("strong");
             name.textContent = player.username;
             const target = document.createElement("small");
-            target.textContent = player.target ? `Secret : ${player.target.name_fr}` : "Pokémon secret";
+            target.textContent = player.target ? `${t("Secret :", "Secret:")} ${pokemonName(player.target)}` : t("Pokémon secret", "Secret Pokémon");
             copy.append(name, target);
             item.appendChild(copy);
             if (player.target) {
@@ -735,17 +775,19 @@
 
     function openConfirmation(kind, card, trigger) {
         pendingConfirmation = { kind, card, trigger };
-        elements.dialogEyebrow.textContent = kind === "choose" ? "Choix secret" : "Tentative finale";
-        elements.dialogTitle.textContent = kind === "choose" ? `${card.name_fr}, vraiment ?` : `Est-ce ${card.name_fr} ?`;
+        elements.dialogEyebrow.textContent = kind === "choose" ? t("Choix secret", "Secret choice") : t("Tentative finale", "Final guess");
+        elements.dialogTitle.textContent = kind === "choose"
+            ? state.language === "en" ? `Really choose ${pokemonName(card)}?` : `${pokemonName(card)}, vraiment ?`
+            : state.language === "en" ? `Is it ${pokemonName(card)}?` : `Est-ce ${pokemonName(card)} ?`;
         elements.dialogCopy.textContent = kind === "choose"
-            ? "Ton adversaire ne verra pas ce choix. Il sera verrouillé après confirmation."
-            : "Une mauvaise proposition donne immédiatement la victoire à ton adversaire.";
-        elements.dialogConfirm.textContent = kind === "choose" ? "Choisir ce Pokémon" : "Confirmer ma tentative";
+            ? t("Ton adversaire ne verra pas ce choix. Il sera verrouillé après confirmation.", "Your opponent will not see this choice. It locks after confirmation.")
+            : t("Une mauvaise proposition donne immédiatement la victoire à ton adversaire.", "A wrong guess immediately gives your opponent the win.");
+        elements.dialogConfirm.textContent = kind === "choose" ? t("Choisir ce Pokémon", "Choose this Pokémon") : t("Confirmer ma tentative", "Confirm my guess");
         elements.dialogVisual.replaceChildren();
         elements.dialogVisual.dataset.tcgType = tcgType(card);
         const image = document.createElement("img");
         image.src = card.sprite_url;
-        image.alt = card.name_fr;
+        image.alt = pokemonName(card);
         image.width = 110;
         image.height = 110;
         image.loading = "lazy";
@@ -767,7 +809,9 @@
         lastFocusedCardId = pending.card.id;
         if (pending.kind === "choose") {
             runAction(game.dataset.chooseUrl, { pokemon_card_id: pending.card.id }, {
-                successMessage: `${pending.card.name_fr} est maintenant ton Pokémon secret.`,
+                successMessage: state.language === "en"
+                    ? `${pokemonName(pending.card)} is now your secret Pokémon.`
+                    : `${pokemonName(pending.card)} est maintenant ton Pokémon secret.`,
             });
         } else {
             runAction(game.dataset.guessUrl, { pokemon_card_id: pending.card.id });
@@ -803,11 +847,11 @@
         try {
             data = await response.json();
         } catch (_) {
-            throw new Error("Le serveur a renvoyé une réponse illisible. Recharge la page puis réessaie.");
+            throw new Error(t("Le serveur a renvoyé une réponse illisible. Recharge la page puis réessaie.", "The server returned an unreadable response. Reload the page and try again."));
         }
 
         if (!response.ok) {
-            const error = new Error(data.error || "L’action a échoué. Vérifie ta connexion puis réessaie.");
+            const error = new Error(data.error || t("L’action a échoué. Vérifie ta connexion puis réessaie.", "The action failed. Check your connection and try again."));
             error.latestState = data.state || null;
             throw error;
         }
@@ -830,15 +874,15 @@
             state = nextState;
             render();
             announceStateChange(previous, nextState, options.successMessage);
-            setSync("ready", "Synchronisé");
+            setSync("ready", t("Synchronisé", "Synced"));
             return nextState;
         } catch (error) {
             if (error.latestState) {
                 state = error.latestState;
                 render();
             }
-            showFeedback(`${error.message} Tu peux réessayer maintenant.`);
-            setSync("offline", "À actualiser");
+            showFeedback(`${error.message} ${t("Tu peux réessayer maintenant.", "You can try again now.")}`);
+            setSync("offline", t("À actualiser", "Refresh needed"));
             return null;
         } finally {
             phase = "idle";
@@ -853,17 +897,26 @@
             return;
         }
         if (previous.status !== next.status) {
-            if (next.status === "CHOIX") announce("Un adversaire a rejoint la table. Choisis ton Pokémon secret.");
-            if (next.status === "EN_COURS") announce("Les deux Pokémon secrets sont choisis. La partie commence.");
-            if (next.status === "TERMINEE") announce(`${next.winner?.username || "Un joueur"} remporte la partie.`);
+            if (next.status === "CHOIX") announce(t("Un adversaire a rejoint la table. Choisis ton Pokémon secret.", "An opponent joined the table. Choose your secret Pokémon."));
+            if (next.status === "EN_COURS") announce(t("Les deux Pokémon secrets sont choisis. La partie commence.", "Both secret Pokémon are chosen. The game begins."));
+            if (next.status === "TERMINEE") {
+                const winner = next.winner?.username || t("Un joueur", "A player");
+                announce(state.language === "en" ? `${winner} wins the game.` : `${winner} remporte la partie.`);
+            }
             return;
         }
         const previousHistory = previous.history || previous.messages || [];
         const nextHistory = next.history || next.messages || [];
         if (nextHistory.length > previousHistory.length) {
             const latest = nextHistory[nextHistory.length - 1];
-            if (latest.kind === "QUESTION") announce(`${latest.actor?.username || "Ton adversaire"} pose une nouvelle question.`);
-            if (latest.kind === "GUESS") announce(`${latest.actor?.username || "Un joueur"} tente une réponse.`);
+            if (latest.kind === "QUESTION") {
+                const actor = latest.actor?.username || t("Ton adversaire", "Your opponent");
+                announce(state.language === "en" ? `${actor} asks a new question.` : `${actor} pose une nouvelle question.`);
+            }
+            if (latest.kind === "GUESS") {
+                const actor = latest.actor?.username || t("Un joueur", "A player");
+                announce(state.language === "en" ? `${actor} makes a guess.` : `${actor} tente une réponse.`);
+            }
         }
     }
 
@@ -873,7 +926,9 @@
         button.classList.toggle("is-eliminated", nextEliminated);
         button.classList.add("is-pending");
         const nextState = await runAction(toggleUrl(card.id), { is_eliminated: nextEliminated }, {
-            successMessage: nextEliminated ? `${card.name_fr} est écarté.` : `${card.name_fr} est de nouveau candidat.`,
+            successMessage: nextEliminated
+                ? state.language === "en" ? `${pokemonName(card)} is eliminated.` : `${pokemonName(card)} est écarté.`
+                : state.language === "en" ? `${pokemonName(card)} is a candidate again.` : `${pokemonName(card)} est de nouveau candidat.`,
         });
         button.classList.remove("is-pending");
         if (!nextState) render();
@@ -886,7 +941,7 @@
         elements.resetCandidates.setAttribute("aria-busy", "true");
         try {
             const nextState = await runAction(game.dataset.resetUrl, {}, {
-                successMessage: "Tous les candidats sont relevés.",
+                successMessage: t("Tous les candidats sont relevés.", "All candidates are restored."),
             });
             if (nextState) {
                 focusAfterRender(null, elements.boardTitle);
@@ -915,7 +970,7 @@
         }
 
         pollController = new AbortController();
-        setSync("syncing", "Actualisation…");
+        setSync("syncing", t("Actualisation…", "Refreshing…"));
         try {
             const nextState = await requestJSON(game.dataset.stateUrl, undefined, { signal: pollController.signal });
             if (stateFingerprint(nextState) !== stateFingerprint(state)) {
@@ -924,9 +979,9 @@
                 render();
                 announceStateChange(previous, nextState);
             }
-            setSync("ready", "Synchronisé");
+            setSync("ready", t("Synchronisé", "Synced"));
         } catch (error) {
-            if (error.name !== "AbortError") setSync("offline", "Hors ligne");
+            if (error.name !== "AbortError") setSync("offline", t("Hors ligne", "Offline"));
         } finally {
             pollController = null;
             schedulePoll();
@@ -959,7 +1014,7 @@
             if (elements.guessMode.disabled || phase !== "idle") return;
             guessMode = !guessMode;
             renderBoard();
-            if (guessMode) announce("Mode tentative activé. Choisis le Pokémon adverse sur le plateau.");
+            if (guessMode) announce(t("Mode tentative activé. Choisis le Pokémon adverse sur le plateau.", "Guess mode enabled. Choose your opponent’s Pokémon on the board."));
             return;
         }
 
@@ -977,7 +1032,7 @@
         if (phase !== "idle" || elements.questionInput.disabled) return;
         const question = elements.questionInput.value.replace(/\s+/g, " ").trim();
         if (!question) {
-            showFeedback("Saisis une question avant de l’envoyer.");
+            showFeedback(t("Saisis une question avant de l’envoyer.", "Type a question before sending it."));
             elements.questionInput.focus();
             return;
         }
@@ -999,14 +1054,14 @@
         const label = button.querySelector("[data-copy-label]");
         try {
             await navigator.clipboard.writeText(window.location.href);
-            label.textContent = "Lien copié";
-            announce("Lien d’invitation copié.");
+            label.textContent = t("Lien copié", "Link copied");
+            announce(t("Lien d’invitation copié.", "Invitation link copied."));
         } catch (_) {
-            label.textContent = "Copie l’adresse du navigateur";
-            showFeedback("La copie automatique est bloquée. Copie l’adresse affichée dans la barre du navigateur.");
+            label.textContent = t("Copie l’adresse du navigateur", "Copy the browser address");
+            showFeedback(t("La copie automatique est bloquée. Copie l’adresse affichée dans la barre du navigateur.", "Automatic copying is blocked. Copy the address from your browser bar."));
         }
         window.setTimeout(() => {
-            label.textContent = "Copier le lien";
+            label.textContent = t("Copier le lien", "Copy link");
         }, 2400);
     }
 
@@ -1019,6 +1074,6 @@
     window.addEventListener("beforeunload", cancelPoll);
 
     render();
-    setSync("ready", "Synchronisé");
+    setSync("ready", t("Synchronisé", "Synced"));
     schedulePoll();
 })();

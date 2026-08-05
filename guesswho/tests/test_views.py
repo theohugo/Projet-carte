@@ -3,6 +3,7 @@ import json
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from game.tests.i18n import LanguageIsolationMixin
 from guesswho.models import GuessWhoTurn
 from guesswho.services import choose_target, create_game, join_game
 
@@ -10,7 +11,7 @@ from .factories import make_catalog, make_users
 
 
 @override_settings(ROOT_URLCONF="guesswho.tests.urls")
-class GuessWhoApiTests(TestCase):
+class GuessWhoApiTests(LanguageIsolationMixin, TestCase):
     def setUp(self):
         self.cards = make_catalog()
         self.host, self.guest, self.outsider = make_users()
@@ -46,9 +47,26 @@ class GuessWhoApiTests(TestCase):
         response = self.client.get(state_url)
         self.assertEqual(response.status_code, 403)
 
-    def test_lobby_state_refresh_requires_authentication_and_lists_my_game(self):
+    def test_accept_language_adds_a_localized_roster_name(self):
+        self.client.force_login(self.host)
+        url = reverse("guesswho:api_state", kwargs={"game_id": self.game.id})
+
+        french = self.client.get(url, HTTP_ACCEPT_LANGUAGE="fr-FR").json()
+        english = self.client.get(url, HTTP_ACCEPT_LANGUAGE="en-GB").json()
+
+        self.assertEqual(french["language"], "fr")
+        self.assertEqual(french["roster"][0]["name"], french["roster"][0]["name_fr"])
+        self.assertEqual(english["language"], "en")
+        self.assertEqual(english["roster"][0]["name"], english["roster"][0]["name_en"])
+        self.assertIn("name_fr", english["roster"][0])
+
+    def test_lobby_state_is_public_but_only_lists_my_game_after_login(self):
         lobby_state_url = reverse("guesswho:api_lobby_state")
-        self.assertEqual(self.client.get(lobby_state_url).status_code, 302)
+        anonymous = self.client.get(lobby_state_url)
+
+        self.assertEqual(anonymous.status_code, 200)
+        self.assertEqual(anonymous.json()["my_games"], [])
+        self.assertEqual(anonymous.json()["my_game_ids"], [])
 
         self.client.force_login(self.host)
         response = self.client.get(lobby_state_url)
@@ -215,13 +233,40 @@ class GuessWhoApiTests(TestCase):
         self.assertEqual(revision.status_code, 400)
         self.assertEqual(invalid_json.status_code, 400)
 
+    def test_accept_language_localizes_invalid_json_and_business_errors(self):
+        url = reverse("guesswho:api_ask_question", kwargs={"game_id": self.game.id})
+        self.client.force_login(self.guest)
+
+        invalid_json = self.client.post(
+            url,
+            data="{",
+            content_type="application/json",
+            HTTP_ACCEPT_LANGUAGE="en-US",
+        )
+        out_of_turn = self.client.post(
+            url,
+            data=json.dumps(
+                {
+                    "question": "Is it a Water type?",
+                    "expected_turn_revision": self.game.turn_revision,
+                }
+            ),
+            content_type="application/json",
+            HTTP_ACCEPT_LANGUAGE="en-US",
+        )
+
+        self.assertEqual(invalid_json.status_code, 400)
+        self.assertEqual(invalid_json.json()["error"], "Invalid JSON request.")
+        self.assertEqual(out_of_turn.status_code, 400)
+        self.assertEqual(out_of_turn.json()["error"], "It is not your turn.")
+
     def test_mutating_endpoints_refuse_get(self):
         self.client.force_login(self.host)
         url = reverse("guesswho:api_guess", kwargs={"game_id": self.game.id})
         self.assertEqual(self.client.get(url).status_code, 405)
 
 
-class GuessWhoIntegratedPageTests(TestCase):
+class GuessWhoIntegratedPageTests(LanguageIsolationMixin, TestCase):
     def setUp(self):
         make_catalog()
         self.host, self.guest, self.outsider = make_users()
@@ -236,6 +281,39 @@ class GuessWhoIntegratedPageTests(TestCase):
         self.assertContains(response, "PokéTable")
         self.assertContains(response, reverse("guesswho:api_lobby_state"))
         self.assertContains(response, reverse("home"))
+
+    def test_anonymous_visitors_can_read_the_lobby_and_public_state(self):
+        game = create_game(self.host)
+
+        page = self.client.get(reverse("guesswho:lobby"))
+        state = self.client.get(reverse("guesswho:api_lobby_state"))
+
+        self.assertEqual(page.status_code, 200)
+        self.assertTemplateUsed(page, "guesswho/lobby.html")
+        self.assertNotContains(page, "guest_gate")
+        self.assertEqual(state.status_code, 200)
+        self.assertEqual(state.json()["my_games"], [])
+        self.assertEqual(state.json()["my_game_ids"], [])
+        self.assertIn(str(game.id), [entry["id"] for entry in state.json()["open_games"]])
+        self.assertContains(page, f'action="{reverse("guesswho:create_game")}"', html=False)
+        self.assertContains(
+            page,
+            f'action="{reverse("guesswho:join_game", kwargs={"game_id": game.id})}"',
+            html=False,
+        )
+
+        joined = self.client.post(reverse("guesswho:join_game", kwargs={"game_id": game.id}))
+        self.assertRedirects(joined, reverse("guesswho:game_detail", kwargs={"game_id": game.id}))
+        self.assertTrue(game.players.filter(user__profile__is_guest=True).exists())
+
+    def test_accept_language_renders_the_lobby_in_english(self):
+        self.client.force_login(self.host)
+
+        response = self.client.get(reverse("guesswho:lobby"), HTTP_ACCEPT_LANGUAGE="en-GB")
+
+        self.assertContains(response, "Create a table")
+        self.assertContains(response, "How to play")
+        self.assertNotContains(response, "Créer une table")
 
     def test_joined_player_can_render_the_complete_board_contract(self):
         game = create_game(self.host)

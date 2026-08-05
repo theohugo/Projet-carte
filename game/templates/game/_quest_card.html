@@ -1,4 +1,4 @@
-{% load icons %}
+{% load icons poketable_i18n %}
 {# Une ligne de quête : progression, récompense et bouton d'encaissement. #}
 <li class="quest-card {% if quest.claimed %}is-claimed{% elif quest.claimable %}is-claimable{% endif %}">
     <div class="quest-copy">
@@ -7,7 +7,7 @@
     </div>
 
     <div class="quest-progress">
-        <div class="quest-bar" role="progressbar" aria-valuenow="{{ quest.progress }}" aria-valuemin="0" aria-valuemax="{{ quest.target }}" aria-label="Progression de « {{ quest.label }} »">
+        <div class="quest-bar" role="progressbar" aria-valuenow="{{ quest.progress }}" aria-valuemin="0" aria-valuemax="{{ quest.target }}" aria-label="{% bilingual "Progression de" "Progress for" %} « {{ quest.label }} »">
             <span style="width: {{ quest.percent }}%"></span>
         </div>
         <small>{{ quest.progress }} / {{ quest.target }}</small>
@@ -21,14 +21,14 @@
         </span>
         {% endif %}
         {% if quest.claimed %}
-            <span class="quest-done">{% icon "star" "icon-sm" %}Récupérée</span>
+            <span class="quest-done">{% icon "star" "icon-sm" %}{% bilingual "Récupérée" "Collected" %}</span>
         {% elif quest.claimable %}
             <form method="post" action="{% url 'claim_quest' quest_key=quest.key %}">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-primary">{% icon "coin" "icon-sm" %}Récupérer</button>
+                <button type="submit" class="btn btn-primary">{% icon "coin" "icon-sm" %}{% bilingual "Récupérer" "Collect" %}</button>
             </form>
         {% else %}
-            <span class="quest-todo">En cours</span>
+            <span class="quest-todo">{% bilingual "En cours" "In progress" %}</span>
         {% endif %}
     </div>
 </li>

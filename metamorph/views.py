@@ -8,8 +8,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
-from game.guests import guest_allowed
+from game.guests import guest_action, guest_allowed, public_lobby
 from game.models import PokemonCard
+from game.pokemon_names import bilingual_text
 
 from .models import MetamorphGame
 from .services import (
@@ -17,8 +18,11 @@ from .services import (
     MetamorphError,
     MetamorphPermissionError,
     StaleRevisionError,
+    add_bot,
     draw_card,
     get_lobby_state,
+    play_bot_turn,
+    remove_bot,
     serialize_game_state,
     start_game,
 )
@@ -30,10 +34,18 @@ def _read_json_object(request):
     try:
         payload = json.loads(request.body or "{}")
     except (json.JSONDecodeError, UnicodeDecodeError):
-        return None, JsonResponse({"error": "Requête JSON invalide."}, status=400)
+        return None, JsonResponse(
+            {"error": bilingual_text("Requête JSON invalide.", "Invalid JSON request.")},
+            status=400,
+        )
     if not isinstance(payload, dict):
         return None, JsonResponse(
-            {"error": "La requête doit contenir un objet JSON."},
+            {
+                "error": bilingual_text(
+                    "La requête doit contenir un objet JSON.",
+                    "The request must contain a JSON object.",
+                )
+            },
             status=400,
         )
     return payload, None
@@ -42,7 +54,10 @@ def _read_json_object(request):
 def _read_revision(payload):
     revision = payload.get("expected_turn_revision")
     if isinstance(revision, bool) or not isinstance(revision, int) or revision < 0:
-        return None, JsonResponse({"error": "Révision de tour invalide."}, status=400)
+        return None, JsonResponse(
+            {"error": bilingual_text("Révision de tour invalide.", "Invalid turn revision.")},
+            status=400,
+        )
     return revision, None
 
 
@@ -61,7 +76,7 @@ def _error_response(exc, game_id, user):
     return JsonResponse({"error": str(exc)}, status=status)
 
 
-@guest_allowed
+@public_lobby
 def lobby(request):
     open_games = list(
         MetamorphGame.objects.filter(status=MetamorphGame.Status.EN_ATTENTE)
@@ -70,13 +85,15 @@ def lobby(request):
         .filter(player_count__lt=MAX_PLAYERS)
         .order_by("-created_at")
     )
-    my_games = list(
-        MetamorphGame.objects.annotate(player_count=Count("players", distinct=True))
-        .filter(players__user=request.user)
-        .select_related("created_by")
-        .distinct()
-        .order_by("-created_at")
-    )
+    my_games = []
+    if request.user.is_authenticated:
+        my_games = list(
+            MetamorphGame.objects.annotate(player_count=Count("players", distinct=True))
+            .filter(players__user=request.user)
+            .select_related("created_by")
+            .distinct()
+            .order_by("-created_at")
+        )
     return render(
         request,
         "metamorph/lobby.html",
@@ -89,20 +106,19 @@ def lobby(request):
     )
 
 
-@login_required
 @require_GET
 def api_lobby_state(request):
     return JsonResponse(get_lobby_state(request.user))
 
 
-@login_required
+@guest_action
 @require_POST
 def create_game(request):
     game = create_game_service(request.user)
     return redirect("metamorph:game_detail", game_id=game.id)
 
 
-@login_required
+@guest_action
 @require_POST
 def join_game(request, game_id):
     try:
@@ -125,8 +141,11 @@ def game_detail(request, game_id):
             request,
             "join_invitation.html",
             {
-                "mode_name": "Métamorph Mystère",
-                "mode_kicker": "Paires · bluff · 2 à 6 joueurs",
+                "mode_name": bilingual_text("Métamorph Mystère", "Ditto Mystery"),
+                "mode_kicker": bilingual_text(
+                    "Paires · bluff · 2 à 6 joueurs",
+                    "Pairs · bluffing · 2 to 6 players",
+                ),
                 "host_name": game.created_by.get_username(),
                 "player_count": player_count,
                 "max_players": MAX_PLAYERS,
@@ -176,6 +195,60 @@ def api_start(request, game_id):
 
 @login_required
 @require_POST
+def api_add_bot(request, game_id):
+    payload, error = _read_json_object(request)
+    if error:
+        return error
+    revision, error = _read_revision(payload)
+    if error:
+        return error
+    try:
+        game = add_bot(game_id, request.user, revision)
+        return JsonResponse(serialize_game_state(game, request.user))
+    except MetamorphGame.DoesNotExist:
+        get_object_or_404(MetamorphGame, pk=game_id)
+    except MetamorphError as exc:
+        return _error_response(exc, game_id, request.user)
+
+
+@login_required
+@require_POST
+def api_remove_bot(request, game_id, bot_id):
+    payload, error = _read_json_object(request)
+    if error:
+        return error
+    revision, error = _read_revision(payload)
+    if error:
+        return error
+    try:
+        game = remove_bot(game_id, request.user, bot_id, revision)
+        return JsonResponse(serialize_game_state(game, request.user))
+    except MetamorphGame.DoesNotExist:
+        get_object_or_404(MetamorphGame, pk=game_id)
+    except MetamorphError as exc:
+        return _error_response(exc, game_id, request.user)
+
+
+@login_required
+@require_POST
+def api_bot_turn(request, game_id):
+    payload, error = _read_json_object(request)
+    if error:
+        return error
+    revision, error = _read_revision(payload)
+    if error:
+        return error
+    try:
+        game = play_bot_turn(game_id, request.user, revision)
+        return JsonResponse(serialize_game_state(game, request.user))
+    except MetamorphGame.DoesNotExist:
+        get_object_or_404(MetamorphGame, pk=game_id)
+    except MetamorphError as exc:
+        return _error_response(exc, game_id, request.user)
+
+
+@login_required
+@require_POST
 def api_draw(request, game_id):
     payload, error = _read_json_object(request)
     if error:
@@ -185,7 +258,10 @@ def api_draw(request, game_id):
         return error
     card_position = payload.get("card_position")
     if isinstance(card_position, bool) or not isinstance(card_position, int) or card_position <= 0:
-        return JsonResponse({"error": "Carte face cachée invalide."}, status=400)
+        return JsonResponse(
+            {"error": bilingual_text("Carte face cachée invalide.", "Invalid face-down card.")},
+            status=400,
+        )
     try:
         game = draw_card(
             game_id,

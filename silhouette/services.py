@@ -15,11 +15,16 @@ from django.utils import timezone
 from game.models import PokemonCard
 from game.pokemon_names import (
     GEN_ONE_MAX_POKEDEX_ID,
+    active_language,
+    bilingual_text,
     letter_count,
     letter_hint,
+    localized_pokemon_name,
+    localized_type_name,
     name_matches,
 )
 from game.quests import EVENT_SILHOUETTE_FOUND, record_event
+from game.type_icons import type_icon_url
 from silhouette.models import SilhouetteGame, SilhouetteGuess, SilhouettePlayer, SilhouetteRound
 
 ROUND_SECONDS = 30
@@ -29,6 +34,10 @@ REVEAL_SECONDS = 5
 MAX_POINTS = 1000
 MIN_POINTS = 100
 MAX_GUESS_LENGTH = 60
+MAX_BOTS = 5
+BOT_NAMES = ("IA Zorua", "IA Motisma", "IA Porygon", "IA Métamorph", "IA Mew")
+BOT_MIN_CORRECT_DELAY = 8
+BOT_CORRECT_DELAY_SPAN = 13
 
 
 class SilhouetteError(Exception):
@@ -61,15 +70,22 @@ def _bump_revision(game: SilhouetteGame):
 
 def _check_revision(game: SilhouetteGame, expected_revision):
     if expected_revision is not None and expected_revision != game.turn_revision:
-        raise StaleRevisionError("La partie a changé entre-temps.")
+        raise StaleRevisionError(
+            bilingual_text("La partie a changé entre-temps.", "The game changed in the meantime.")
+        )
 
 
 @transaction.atomic
 def create_game(user, round_count: int) -> SilhouetteGame:
     if round_count not in SilhouetteGame.RoundCount.values:
-        raise SilhouetteError("Nombre de manches invalide.")
+        raise SilhouetteError(bilingual_text("Nombre de manches invalide.", "Invalid number of rounds."))
     if _pokemon_pool().count() < 1:
-        raise SilhouetteError("Le catalogue ne contient aucun Pokémon de la première génération.")
+        raise SilhouetteError(
+            bilingual_text(
+                "Le catalogue ne contient aucun Pokémon de la première génération.",
+                "The catalogue does not contain any first-generation Pokémon.",
+            )
+        )
 
     game = SilhouetteGame.objects.create(created_by=user, round_count=round_count)
     SilhouettePlayer.objects.create(game=game, user=user)
@@ -80,8 +96,64 @@ def create_game(user, round_count: int) -> SilhouetteGame:
 def join_game(game_id, user) -> SilhouetteGame:
     game = SilhouetteGame.objects.select_for_update().get(pk=game_id)
     if game.status != SilhouetteGame.Status.EN_ATTENTE:
-        raise SilhouetteError("Cette partie a déjà commencé.")
+        raise SilhouetteError(
+            bilingual_text("Cette partie a déjà commencé.", "This game has already started.")
+        )
     SilhouettePlayer.objects.get_or_create(game=game, user=user)
+    _bump_revision(game)
+    return game
+
+
+@transaction.atomic
+def add_bot(game_id, user) -> SilhouettePlayer:
+    """Add one server-controlled opponent while the room is waiting."""
+
+    game = SilhouetteGame.objects.select_for_update().get(pk=game_id)
+    if game.created_by_id != user.id:
+        raise SilhouettePermissionError(
+            bilingual_text("Seul l'hôte peut ajouter une IA.", "Only the host can add an AI.")
+        )
+    if game.status != SilhouetteGame.Status.EN_ATTENTE:
+        raise SilhouetteError(
+            bilingual_text(
+                "Impossible d'ajouter une IA après le lancement.",
+                "An AI cannot be added after the game starts.",
+            )
+        )
+    used_names = set(game.players.filter(user__isnull=True).values_list("bot_name", flat=True))
+    available_name = next((name for name in BOT_NAMES if name not in used_names), None)
+    if available_name is None or len(used_names) >= MAX_BOTS:
+        raise SilhouetteError(
+            bilingual_text(
+                f"Un salon accepte au plus {MAX_BOTS} IA.",
+                f"A room allows at most {MAX_BOTS} AIs.",
+            )
+        )
+    player = SilhouettePlayer.objects.create(game=game, bot_name=available_name)
+    _bump_revision(game)
+    return player
+
+
+@transaction.atomic
+def remove_bot(game_id, user, player_id: int) -> SilhouetteGame:
+    """Remove a bot; human participants can never be targeted by this action."""
+
+    game = SilhouetteGame.objects.select_for_update().get(pk=game_id)
+    if game.created_by_id != user.id:
+        raise SilhouettePermissionError(
+            bilingual_text("Seul l'hôte peut retirer une IA.", "Only the host can remove an AI.")
+        )
+    if game.status != SilhouetteGame.Status.EN_ATTENTE:
+        raise SilhouetteError(
+            bilingual_text(
+                "Impossible de retirer une IA après le lancement.",
+                "An AI cannot be removed after the game starts.",
+            )
+        )
+    bot = game.players.filter(pk=player_id, user__isnull=True).first()
+    if bot is None:
+        raise SilhouetteError(bilingual_text("Cette IA n'existe plus.", "This AI no longer exists."))
+    bot.delete()
     _bump_revision(game)
     return game
 
@@ -90,9 +162,13 @@ def join_game(game_id, user) -> SilhouetteGame:
 def start_game(game_id, user) -> SilhouetteGame:
     game = SilhouetteGame.objects.select_for_update().get(pk=game_id)
     if game.created_by_id != user.id:
-        raise SilhouettePermissionError("Seul l'hôte peut lancer la partie.")
+        raise SilhouettePermissionError(
+            bilingual_text("Seul l'hôte peut lancer la partie.", "Only the host can start the game.")
+        )
     if game.status != SilhouetteGame.Status.EN_ATTENTE:
-        raise SilhouetteError("Cette partie a déjà commencé.")
+        raise SilhouetteError(
+            bilingual_text("Cette partie a déjà commencé.", "This game has already started.")
+        )
 
     game.status = SilhouetteGame.Status.EN_COURS
     game.started_at = timezone.now()
@@ -134,6 +210,74 @@ def _round_is_over(game: SilhouetteGame, round_obj: SilhouetteRound, now) -> boo
     return player_count > 0 and found >= player_count
 
 
+def _bot_delays(round_obj: SilhouetteRound, player: SilhouettePlayer) -> tuple[int, int]:
+    """Stable, non-secret timings so repeated polls cannot reroll a bot."""
+
+    seed = (round_obj.pk * 37) + (player.pk * 17)
+    correct_after = BOT_MIN_CORRECT_DELAY + (seed % BOT_CORRECT_DELAY_SPAN)
+    wrong_after = max(4, correct_after - 4 - (seed % 3))
+    return wrong_after, correct_after
+
+
+def _bot_decoy(round_obj: SilhouetteRound, player: SilhouettePlayer):
+    candidates = list(
+        _pokemon_pool()
+        .exclude(pk=round_obj.pokemon_card_id)
+        .order_by("pokedex_id")
+        .values_list("name_fr", flat=True)
+    )
+    if not candidates:
+        return None
+    return candidates[(round_obj.pk + player.pk) % len(candidates)]
+
+
+def _play_bot_guesses(game: SilhouetteGame, round_obj: SilhouetteRound, now) -> bool:
+    """Materialise due bot guesses during normal polling, never client-side.
+
+    A bot first submits at most one real catalogue name as a plausible decoy,
+    then its correct answer after a stable 8–20 second delay.  Neither answer
+    is serialized before the normal reveal; only the public "found" marker is.
+    """
+
+    elapsed = (now - round_obj.started_at).total_seconds()
+    if elapsed < 0 or round_obj.revealed_at is not None:
+        return False
+
+    changed = False
+    for bot in game.players.filter(user__isnull=True).order_by("pk"):
+        guesses = round_obj.guesses.filter(player=bot)
+        if guesses.filter(is_correct=True).exists():
+            continue
+        wrong_after, correct_after = _bot_delays(round_obj, bot)
+        if elapsed >= correct_after:
+            points = points_for(elapsed)
+            SilhouetteGuess.objects.create(
+                round=round_obj,
+                player=bot,
+                text=round_obj.pokemon_card.name_fr,
+                is_correct=True,
+                elapsed_ms=max(0, int(elapsed * 1000)),
+                points=points,
+            )
+            bot.score += points
+            bot.save(update_fields=["score"])
+            changed = True
+        elif elapsed >= wrong_after and not guesses.exists():
+            decoy = _bot_decoy(round_obj, bot)
+            if decoy:
+                SilhouetteGuess.objects.create(
+                    round=round_obj,
+                    player=bot,
+                    text=decoy,
+                    is_correct=False,
+                    elapsed_ms=max(0, int(elapsed * 1000)),
+                )
+                changed = True
+    if changed:
+        _bump_revision(game)
+    return changed
+
+
 @transaction.atomic
 def advance_if_needed(game_id) -> SilhouetteGame:
     """Fait avancer l'horloge de la partie : révélation puis manche suivante.
@@ -155,6 +299,7 @@ def advance_if_needed(game_id) -> SilhouetteGame:
         return game
 
     if round_obj.revealed_at is None:
+        _play_bot_guesses(game, round_obj, now)
         if not _round_is_over(game, round_obj, now):
             return game
         round_obj.revealed_at = now
@@ -180,28 +325,39 @@ def submit_guess(game_id, user, text: str, expected_revision=None) -> dict:
     game = SilhouetteGame.objects.select_for_update().get(pk=game_id)
     player = game.players.filter(user=user).first()
     if player is None:
-        raise SilhouettePermissionError("Vous ne participez pas à cette partie.")
+        raise SilhouettePermissionError(
+            bilingual_text("Vous ne participez pas à cette partie.", "You are not in this game.")
+        )
     _check_revision(game, expected_revision)
 
     if game.status != SilhouetteGame.Status.EN_COURS:
-        raise SilhouetteError("La partie n'est pas en cours.")
+        raise SilhouetteError(bilingual_text("La partie n'est pas en cours.", "The game is not in progress."))
 
     normalized_text = (text or "").strip()
     if not normalized_text:
-        raise SilhouetteError("Écris un nom de Pokémon.")
+        raise SilhouetteError(bilingual_text("Écris un nom de Pokémon.", "Enter a Pokémon name."))
     if len(normalized_text) > MAX_GUESS_LENGTH:
-        raise SilhouetteError(f"Une proposition fait au plus {MAX_GUESS_LENGTH} caractères.")
+        raise SilhouetteError(
+            bilingual_text(
+                f"Une proposition fait au plus {MAX_GUESS_LENGTH} caractères.",
+                f"A guess can contain at most {MAX_GUESS_LENGTH} characters.",
+            )
+        )
 
     round_obj = current_round(game)
     if round_obj is None or round_obj.revealed_at is not None:
-        raise SilhouetteError("Cette manche est terminée.")
+        raise SilhouetteError(bilingual_text("Cette manche est terminée.", "This round is over."))
     if round_obj.guesses.filter(player=player, is_correct=True).exists():
-        raise SilhouetteError("Tu as déjà trouvé cette manche.")
+        raise SilhouetteError(
+            bilingual_text("Tu as déjà trouvé cette manche.", "You have already solved this round.")
+        )
 
     now = timezone.now()
     elapsed = (now - round_obj.started_at).total_seconds()
     if elapsed >= ROUND_SECONDS:
-        raise SilhouetteError("Le temps de cette manche est écoulé.")
+        raise SilhouetteError(
+            bilingual_text("Le temps de cette manche est écoulé.", "Time is up for this round.")
+        )
 
     is_correct = name_matches(normalized_text, round_obj.pokemon_card)
     points = points_for(elapsed) if is_correct else 0
@@ -232,10 +388,20 @@ def _hint_payload(round_obj: SilhouetteRound, elapsed: float, revealed: bool) ->
     card = round_obj.pokemon_card
     hints = {"type": None, "letters": None, "letter_count": None}
     if revealed or elapsed >= TYPE_HINT_AFTER:
-        hints["type"] = [pokemon_type.name_fr for pokemon_type in card.types]
+        hints["type"] = [
+            {
+                "slug": pokemon_type.slug,
+                "name": localized_type_name(pokemon_type),
+                "name_fr": pokemon_type.name_fr,
+                "name_en": pokemon_type.name_en,
+                "icon_url": type_icon_url(pokemon_type.slug),
+            }
+            for pokemon_type in card.types
+        ]
     if revealed or elapsed >= LETTER_HINT_AFTER:
-        hints["letters"] = letter_hint(card.name_fr)
-        hints["letter_count"] = letter_count(card.name_fr)
+        name = localized_pokemon_name(card)
+        hints["letters"] = letter_hint(name)
+        hints["letter_count"] = letter_count(name)
     return hints
 
 
@@ -247,12 +413,14 @@ def serialize_game_state(game: SilhouetteGame, user) -> dict:
     players_payload = [
         {
             "id": entry.id,
-            "username": entry.user.get_username(),
+            "username": entry.display_name,
             "score": entry.score,
+            "is_bot": entry.is_bot,
             "is_me": player is not None and entry.pk == player.pk,
         }
         for entry in game.players.select_related("user").all()
     ]
+    bot_count = sum(1 for entry in players_payload if entry["is_bot"])
 
     round_payload = None
     if round_obj is not None:
@@ -269,12 +437,12 @@ def serialize_game_state(game: SilhouetteGame, user) -> dict:
             "seconds_left": max(0, round(ROUND_SECONDS - elapsed)) if not revealed else 0,
             "round_seconds": ROUND_SECONDS,
             "revealed": revealed,
-            "answer": round_obj.pokemon_card.name_fr if revealed else None,
+            "answer": localized_pokemon_name(round_obj.pokemon_card) if revealed else None,
             "hints": _hint_payload(round_obj, elapsed, revealed),
             "i_found": any(guess.player_id == getattr(player, "pk", None) for guess in found),
             "found": [
                 {
-                    "username": guess.player.user.get_username(),
+                    "username": guess.player.display_name,
                     "seconds": round(guess.elapsed_ms / 1000, 1),
                     "points": guess.points,
                 }
@@ -290,10 +458,18 @@ def serialize_game_state(game: SilhouetteGame, user) -> dict:
 
     return {
         "game_id": str(game.id),
+        "language": active_language(),
         "status": game.status,
         "turn_revision": game.turn_revision,
         "round_count": game.round_count,
         "is_host": game.created_by_id == user.id,
+        "bot_count": bot_count,
+        "max_bots": MAX_BOTS,
+        "can_add_bot": (
+            game.created_by_id == user.id
+            and game.status == SilhouetteGame.Status.EN_ATTENTE
+            and bot_count < MAX_BOTS
+        ),
         "is_player": player is not None,
         "players": players_payload,
         "round": round_payload,
@@ -301,6 +477,7 @@ def serialize_game_state(game: SilhouetteGame, user) -> dict:
 
 
 def get_lobby_state(user) -> dict:
+    is_authenticated = getattr(user, "is_authenticated", False)
     open_games = (
         SilhouetteGame.objects.filter(status=SilhouetteGame.Status.EN_ATTENTE)
         .select_related("created_by")
@@ -313,7 +490,7 @@ def get_lobby_state(user) -> dict:
                 "host": game.created_by.get_username(),
                 "player_count": game.player_count,
                 "round_count": game.round_count,
-                "is_mine": game.players.filter(user=user).exists(),
+                "is_mine": is_authenticated and game.players.filter(user=user).exists(),
             }
             for game in open_games
         ]

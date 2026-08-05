@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load poketable_i18n %}
 
-{% block title %}Rechercher un joueur — PokéTable{% endblock %}
+{% block title %}{% bilingual "Rechercher un joueur" "Find a player" %} — PokéTable{% endblock %}
 
 {% block content %}
 <section
@@ -9,15 +10,14 @@
 >
     <header class="friends-header">
         <div>
-            <p class="section-kicker">Recherche</p>
+            <p class="section-kicker">{% bilingual "Recherche" "Search" %}</p>
 
             <h1 id="player-search-title">
-                Trouver un joueur
+                {% bilingual "Trouver un joueur" "Find a player" %}
             </h1>
 
             <p>
-                Recherche une personne avec son pseudo,
-                son prénom ou son nom.
+                {% bilingual "Recherche une personne avec son pseudo, son prénom ou son nom." "Search by username, first name or last name." %}
             </p>
         </div>
 
@@ -25,7 +25,7 @@
             class="btn btn-ghost"
             href="{% url 'friends' %}"
         >
-            Mes amis
+            {% bilingual "Mes amis" "My friends" %}
         </a>
     </header>
 
@@ -35,7 +35,7 @@
         role="search"
     >
         <label for="player-search">
-            Nom du joueur
+            {% bilingual "Nom du joueur" "Player name" %}
         </label>
 
         <div>
@@ -44,7 +44,7 @@
                 type="search"
                 name="q"
                 value="{{ query }}"
-                placeholder="Exemple : Riri"
+                placeholder="{% bilingual 'Exemple : Riri' 'Example: Ash' %}"
                 autocomplete="off"
                 maxlength="150"
                 aria-describedby="player-search-help"
@@ -54,7 +54,7 @@
                 class="btn btn-primary"
                 type="submit"
             >
-                Rechercher
+                {% bilingual "Rechercher" "Search" %}
             </button>
         </div>
 
@@ -62,7 +62,7 @@
             id="player-search-help"
             class="profile-file-help"
         >
-            Tu peux saisir un pseudo, un prénom ou un nom.
+            {% bilingual "Tu peux saisir un pseudo, un prénom ou un nom." "Enter a username, first name or last name." %}
         </p>
     </form>
 
@@ -73,15 +73,15 @@
             <div class="friends-section-heading">
                 <h2 id="search-results-title">
                     {% if query %}
-                        Résultats pour « {{ query }} »
+                        {% bilingual "Résultats pour" "Results for" %} « {{ query }} »
                     {% else %}
-                        Derniers inscrits
+                        {% bilingual "Derniers inscrits" "Newest players" %}
                     {% endif %}
                 </h2>
 
                 <span
                     class="friends-count"
-                    aria-label="{{ search_results|length }} résultat{{ search_results|length|pluralize }}"
+                    aria-label="{{ search_results|length }} {% bilingual 'résultats' 'results' %}"
                 >
                     {{ search_results|length }}
                 </span>
@@ -89,8 +89,7 @@
 
             {% if not query %}
                 <p class="friends-section-note">
-                    Les joueurs qui viennent de rejoindre PokéTable.
-                    Cherche un pseudo pour trouver quelqu’un en particulier.
+                    {% bilingual "Les joueurs qui viennent de rejoindre PokéTable. Cherche un pseudo pour trouver quelqu’un en particulier." "Players who just joined PokéTable. Search a username to find someone specific." %}
                 </p>
             {% endif %}
 
@@ -100,13 +99,13 @@
                         <article class="player-card">
                             <a
                                 href="{% url 'public_profile' result.user.username %}"
-                                aria-label="Voir le profil de {{ result.user.username }}"
+                                aria-label="{% bilingual 'Voir le profil de' 'View profile for' %} {{ result.user.username }}"
                             >
                                 {% if result.profile.avatar %}
                                     <img
                                         class="player-card-avatar"
                                         src="{{ result.profile.avatar.url }}"
-                                        alt="Photo de profil de {{ result.user.username }}"
+                                        alt="{% bilingual 'Photo de profil de' 'Profile picture for' %} {{ result.user.username }}"
                                     >
                                 {% else %}
                                     <span
@@ -127,19 +126,19 @@
                                     </p>
                                 {% else %}
                                     <p>
-                                        Joueur PokéTable
+                                        {% bilingual "Joueur PokéTable" "PokéTable player" %}
                                     </p>
                                 {% endif %}
                             </a>
 
                             {% if result.status == "friends" %}
                                 <span class="friend-status">
-                                    Déjà dans tes amis
+                                    {% bilingual "Déjà dans tes amis" "Already friends" %}
                                 </span>
 
                             {% elif result.status == "sent" %}
                                 <span class="friend-status">
-                                    Demande envoyée
+                                    {% bilingual "Demande envoyée" "Request sent" %}
                                 </span>
 
                                 {% if result.friendship %}
@@ -153,7 +152,7 @@
                                             class="btn btn-ghost btn-block"
                                             type="submit"
                                         >
-                                            Annuler la demande
+                                            {% bilingual "Annuler la demande" "Cancel request" %}
                                         </button>
                                     </form>
                                 {% endif %}
@@ -170,7 +169,7 @@
                                             class="btn btn-ghost"
                                             type="submit"
                                         >
-                                            Refuser
+                                            {% bilingual "Refuser" "Decline" %}
                                         </button>
                                     </form>
 
@@ -184,7 +183,7 @@
                                             class="btn btn-primary"
                                             type="submit"
                                         >
-                                            Accepter
+                                            {% bilingual "Accepter" "Accept" %}
                                         </button>
                                     </form>
                                 </div>
@@ -200,7 +199,7 @@
                                         class="btn btn-primary btn-block"
                                         type="submit"
                                     >
-                                        Ajouter en ami
+                                        {% bilingual "Ajouter en ami" "Add friend" %}
                                     </button>
                                 </form>
                             {% endif %}
@@ -211,21 +210,19 @@
                 <div class="friends-empty">
                     {% if query %}
                         <h3>
-                            Aucun joueur trouvé
+                            {% bilingual "Aucun joueur trouvé" "No players found" %}
                         </h3>
 
                         <p>
-                            Essaie avec un autre pseudo,
-                            prénom ou nom.
+                            {% bilingual "Essaie avec un autre pseudo, prénom ou nom." "Try another username, first name or last name." %}
                         </p>
                     {% else %}
                         <h3>
-                            Tu es le premier
+                            {% bilingual "Tu es le premier" "You are the first" %}
                         </h3>
 
                         <p>
-                            Personne d’autre n’a encore de compte.
-                            Reviens quand tes amis auront rejoint la table.
+                            {% bilingual "Personne d’autre n’a encore de compte. Reviens quand tes amis auront rejoint la table." "Nobody else has an account yet. Come back after your friends join the table." %}
                         </p>
                     {% endif %}
                 </div>

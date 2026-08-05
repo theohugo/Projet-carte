@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
+from game.pokemon_names import localized_pokemon_name
 from pictionary.models import PictionaryGame, PictionaryStroke
 from pictionary.services import (
     DRAWER_POINTS_PER_FINDER,
@@ -180,7 +181,10 @@ class PictionaryStateTests(TestCase):
         guesser_state = serialize_game_state(self.game, self.guest)
 
         self.assertTrue(drawer_state["round"]["am_drawer"])
-        self.assertEqual(drawer_state["round"]["word"], current_round(self.game).pokemon_card.name_fr)
+        self.assertEqual(
+            drawer_state["round"]["word"],
+            localized_pokemon_name(current_round(self.game).pokemon_card),
+        )
         self.assertFalse(guesser_state["round"]["am_drawer"])
         self.assertIsNone(guesser_state["round"]["word"])
 
@@ -192,7 +196,7 @@ class PictionaryStateTests(TestCase):
         guesser_state = serialize_game_state(self.game, self.guest)
 
         self.assertTrue(guesser_state["round"]["ended"])
-        self.assertEqual(guesser_state["round"]["word"], round_obj.pokemon_card.name_fr)
+        self.assertEqual(guesser_state["round"]["word"], localized_pokemon_name(round_obj.pokemon_card))
 
     def test_strokes_are_sent_incrementally(self):
         add_stroke(self.game.id, self.host, {"points": [[0.1, 0.1]]})

@@ -3,12 +3,36 @@
 
     const root = document.getElementById("rocket-game");
     const initial = document.getElementById("rocket-initial-state");
-    if (!root || !initial) return;
+    const i18nNode = document.getElementById("rocket-i18n");
+    if (!root || !initial || !i18nNode) return;
 
-    let state = JSON.parse(initial.textContent);
+    let messages = {};
+    let state;
+    try {
+        messages = JSON.parse(i18nNode.textContent);
+        state = JSON.parse(initial.textContent);
+    } catch (_) {
+        root.textContent = "The mission could not be loaded. Refresh the page.";
+        return;
+    }
+
+    function t(key, variables = {}) {
+        const template = messages[key] || key;
+        return template.replace(/\{(\w+)\}/g, (match, name) => (
+            Object.hasOwn(variables, name) ? String(variables[name]) : match
+        ));
+    }
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let busy = false;
     let pollTimer = null;
+    let phaseAnimationTimer = null;
     let lastAnnouncement = "";
+    let lastStatus = state.game.status;
+    let knownAliveIds = new Set(
+        state.players.filter((player) => player.is_alive).map((player) => player.id),
+    );
+    let lastEventSignature = JSON.stringify(state.game.last_event || {});
 
     const elements = {
         error: root.querySelector("[data-error]"),
@@ -50,7 +74,11 @@
 
     function cookie(name) {
         const prefix = `${name}=`;
-        return document.cookie.split(";").map((value) => value.trim()).find((value) => value.startsWith(prefix))?.slice(prefix.length) || "";
+        return document.cookie
+            .split(";")
+            .map((value) => value.trim())
+            .find((value) => value.startsWith(prefix))
+            ?.slice(prefix.length) || "";
     }
 
     function setHidden(element, hidden) {
@@ -58,7 +86,7 @@
     }
 
     function showError(message) {
-        elements.error.textContent = message || "Une erreur est survenue.";
+        elements.error.textContent = message || t("general_error");
         elements.error.hidden = false;
     }
 
@@ -81,8 +109,14 @@
         try {
             const response = await fetch(url, {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "X-CSRFToken": cookie("csrftoken") },
-                body: JSON.stringify({ ...payload, expected_turn_revision: state.game.turn_revision }),
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": cookie("csrftoken"),
+                },
+                body: JSON.stringify({
+                    ...payload,
+                    expected_turn_revision: state.game.turn_revision,
+                }),
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
@@ -90,7 +124,7 @@
                     state = data.state;
                     render();
                 }
-                throw new Error(data.error || "Action refusée.");
+                throw new Error(data.error || t("action_denied"));
             }
             if (data.state) {
                 state = data.state;
@@ -112,7 +146,9 @@
         if (!player.is_alive || !state.me.is_alive) return false;
         if (state.game.status === "VOTE") return player.id !== state.me.id;
         if (state.game.status !== "NUIT" || !state.me.night_action_kind) return false;
-        if (state.me.night_action_kind === "KILL") return player.id !== state.me.id && !roleIs(player, "ROCKET");
+        if (state.me.night_action_kind === "KILL") {
+            return player.id !== state.me.id && !roleIs(player, "ROCKET");
+        }
         if (state.me.night_action_kind === "INSPECT") return player.id !== state.me.id;
         return state.me.night_action_kind === "PROTECT";
     }
@@ -122,15 +158,19 @@
     }
 
     function selectedTargetId() {
-        return state.game.status === "VOTE" ? state.me.vote_target_id : state.me.night_action_target_id;
+        return state.game.status === "VOTE"
+            ? state.me.vote_target_id
+            : state.me.night_action_target_id;
     }
 
     function playerSubtitle(player) {
-        if (!player.is_alive) return "Éliminé";
+        if (!player.is_alive) return t("eliminated");
         if (player.role) return player.role.name;
-        if (player.is_me && state.game.status === "VOTE" && state.vote.own_submitted) return "Vote enregistré";
-        if (player.is_me) return "Toi";
-        return "En mission";
+        if (player.is_me && state.game.status === "VOTE" && state.vote.own_submitted) {
+            return t("vote_saved");
+        }
+        if (player.is_me) return t("you");
+        return t("on_mission");
     }
 
     function renderPlayerGrid() {
@@ -139,19 +179,31 @@
         state.players.forEach((player) => {
             const interactive = canTarget(player);
             const card = document.createElement(interactive ? "button" : "div");
+            card.dataset.playerId = String(player.id);
             if (interactive) {
                 card.type = "button";
-                card.addEventListener("click", () => post(targetEndpoint(), { target_id: player.id }));
+                card.addEventListener("click", () => {
+                    if (!reducedMotion.matches) {
+                        card.classList.add(
+                            state.game.status === "VOTE" ? "is-casting-vote" : "is-night-choice",
+                        );
+                    }
+                    post(targetEndpoint(), { target_id: player.id });
+                });
             }
             card.className = "rk-agent-card";
             card.classList.toggle("is-dead", !player.is_alive);
             card.classList.toggle("is-selected", selected === player.id);
             if (player.is_me) card.classList.add("is-me");
-            if (interactive) card.setAttribute("aria-label", `Choisir ${player.username}`);
+            if (interactive) {
+                card.setAttribute("aria-label", t("choose_player", { player: player.username }));
+            }
 
             const number = document.createElement("span");
             number.className = "rk-agent-number";
-            number.textContent = `AGENT ${String(player.turn_order + 1).padStart(2, "0")}`;
+            number.textContent = t("agent_number", {
+                number: String(player.turn_order + 1).padStart(2, "0"),
+            });
             const live = document.createElement("span");
             live.className = "rk-agent-state";
             live.setAttribute("aria-hidden", "true");
@@ -168,6 +220,7 @@
         elements.roster.replaceChildren();
         state.players.forEach((player) => {
             const item = document.createElement("li");
+            item.dataset.playerId = String(player.id);
             item.classList.toggle("is-dead", !player.is_alive);
             const name = document.createElement("b");
             name.textContent = player.username;
@@ -196,13 +249,17 @@
         if (role.key === "DETECTIVE") {
             if (!reports.length) {
                 const empty = document.createElement("li");
-                empty.textContent = "Aucun rapport pour l’instant.";
+                empty.textContent = t("no_report");
                 elements.detectiveResults.append(empty);
             }
             reports.forEach((report) => {
                 const item = document.createElement("li");
                 item.classList.toggle("is-rocket", report.is_rocket);
-                item.textContent = `Nuit ${report.round} · ${report.target_name} : ${report.is_rocket ? "Team Rocket" : "Alliance"}`;
+                item.textContent = t("night_report", {
+                    round: report.round,
+                    player: report.target_name,
+                    side: report.is_rocket ? "Team Rocket" : t("alliance_short"),
+                });
                 elements.detectiveResults.append(item);
             });
         }
@@ -211,13 +268,15 @@
     function eventDescription(event) {
         if (!event?.kind) return "";
         if (event.kind === "night") {
-            if (event.attack_blocked) return "Le sabotage de la Team Rocket a été bloqué pendant la nuit.";
-            if (event.victim_name) return `${event.victim_name} a été éliminé pendant la nuit.`;
-            return "La nuit s’est achevée sans victime.";
+            if (event.attack_blocked) return t("blocked_event");
+            if (event.victim_name) return t("night_elimination", { player: event.victim_name });
+            return t("no_victim");
         }
-        if (event.tie) return "Le conseil s’est terminé sur une égalité : personne n’est éliminé.";
-        if (event.eliminated_name) return `${event.eliminated_name} a été éliminé par le conseil.`;
-        return "Le vote est terminé.";
+        if (event.tie) return t("vote_tie");
+        if (event.eliminated_name) {
+            return t("vote_elimination", { player: event.eliminated_name });
+        }
+        return t("vote_finished");
     }
 
     function renderDirective() {
@@ -228,67 +287,77 @@
         elements.finished.hidden = true;
 
         if (status === "NUIT") {
-            elements.directiveKicker.textContent = `Nuit ${state.game.round}`;
+            elements.directiveKicker.textContent = t("night_round", { round: state.game.round });
             if (!alive) {
-                elements.directiveTitle.textContent = "Observe la mission.";
-                elements.directiveText.textContent = "Tu es éliminé : les actions restantes se déroulent sans toi.";
+                elements.directiveTitle.textContent = t("observe_title");
+                elements.directiveText.textContent = t("observe_text");
             } else if (state.me.night_action_kind === "KILL") {
-                elements.directiveTitle.textContent = "Choisis une cible à saboter.";
-                elements.directiveText.textContent = "Les agents Rocket votent pendant la nuit. En cas d’égalité, la cible la plus ancienne dans l’escouade est retenue.";
+                elements.directiveTitle.textContent = t("kill_title");
+                elements.directiveText.textContent = t("kill_text");
             } else if (state.me.night_action_kind === "INSPECT") {
-                elements.directiveTitle.textContent = "Ouvre une enquête secrète.";
-                elements.directiveText.textContent = "Choisis un joueur : son camp sera ajouté à tes rapports privés.";
+                elements.directiveTitle.textContent = t("inspect_title");
+                elements.directiveText.textContent = t("inspect_text");
             } else if (state.me.night_action_kind === "PROTECT") {
-                elements.directiveTitle.textContent = "Place ta protection.";
-                elements.directiveText.textContent = "Choisis n’importe quel survivant, toi compris. Une attaque contre lui sera annulée.";
+                elements.directiveTitle.textContent = t("protect_title");
+                elements.directiveText.textContent = t("protect_text");
             } else {
-                elements.directiveTitle.textContent = "La ville s’endort…";
-                elements.directiveText.textContent = "Ton rôle n’agit pas la nuit. Attends que les rôles spéciaux terminent leur mission.";
+                elements.directiveTitle.textContent = t("sleep_title");
+                elements.directiveText.textContent = t("sleep_text");
             }
             elements.progress.hidden = false;
             elements.progressBar.style.width = state.night.own_submitted ? "100%" : "18%";
-            elements.progressLabel.textContent = state.night.own_submitted ? "Ton choix est verrouillé · attente des autres rôles" : "Résolution automatique à la fin du délai";
+            elements.progressLabel.textContent = state.night.own_submitted
+                ? t("choice_locked")
+                : t("auto_resolution");
         } else if (status === "DISCUSSION") {
-            elements.directiveKicker.textContent = `Jour ${state.game.round}`;
-            elements.directiveTitle.textContent = alive ? "Débusque les infiltrés." : "Écoute le débat.";
-            elements.directiveText.textContent = alive ? "Compare les versions, partage tes indices sans dévoiler trop vite ton rôle, puis laisse l’hôte ouvrir le conseil." : "Tu peux lire les échanges, mais les joueurs éliminés ne peuvent plus intervenir.";
+            elements.directiveKicker.textContent = t("day_round", { round: state.game.round });
+            elements.directiveTitle.textContent = alive ? t("find_title") : t("listen_title");
+            elements.directiveText.textContent = alive
+                ? t("discussion_alive")
+                : t("discussion_dead");
             elements.chat.hidden = false;
         } else if (status === "VOTE") {
-            elements.directiveKicker.textContent = "Conseil en cours";
-            elements.directiveTitle.textContent = alive ? "Vote contre un suspect." : "Le conseil délibère.";
-            elements.directiveText.textContent = alive ? "Ton bulletin reste secret jusqu’à la résolution. Tu peux changer de cible tant que tous les survivants n’ont pas voté." : "Les survivants choisissent le prochain joueur éliminé.";
+            elements.directiveKicker.textContent = t("council");
+            elements.directiveTitle.textContent = alive ? t("vote_title") : t("deliberating");
+            elements.directiveText.textContent = alive ? t("vote_alive") : t("vote_dead");
             elements.progress.hidden = false;
             const required = Math.max(1, state.vote.required);
             elements.progressBar.style.width = `${Math.min(100, state.vote.submitted / required * 100)}%`;
-            elements.progressLabel.textContent = `${state.vote.submitted}/${state.vote.required} bulletins déposés`;
+            elements.progressLabel.textContent = t("ballots", {
+                submitted: state.vote.submitted,
+                required: state.vote.required,
+            });
         } else if (status === "TERMINEE") {
-            elements.directiveKicker.textContent = "Dossiers déclassifiés";
-            elements.directiveTitle.textContent = "Tous les rôles sont révélés.";
-            elements.directiveText.textContent = "L’escouade peut maintenant reconstituer chaque bluff de la mission.";
+            elements.directiveKicker.textContent = t("declassified");
+            elements.directiveTitle.textContent = t("roles_revealed");
+            elements.directiveText.textContent = t("rebuild_bluffs");
             elements.finished.hidden = false;
-            elements.winner.textContent = `${state.game.winner_label} gagne`;
-            elements.resultCopy.textContent = state.me.team_won ? "Ton camp remporte cette infiltration." : "Ton camp a été démasqué. La revanche t’attend.";
+            elements.winner.textContent = t("winner", { side: state.game.winner_label });
+            elements.resultCopy.textContent = state.me.team_won ? t("team_won") : t("team_lost");
         }
     }
 
     function renderChat() {
         elements.chatRound.textContent = state.game.round;
         elements.messages.replaceChildren();
-        const messages = state.messages || [];
-        if (!messages.length) {
+        const chatMessages = state.messages || [];
+        if (!chatMessages.length) {
             const empty = document.createElement("li");
             const copy = document.createElement("p");
-            copy.textContent = "Le canal est silencieux. Qui prendra la parole en premier ?";
+            copy.textContent = t("chat_empty");
             empty.append(copy);
             elements.messages.append(empty);
         }
-        messages.forEach((message) => {
+        chatMessages.forEach((message) => {
             const item = document.createElement("li");
             const author = document.createElement("strong");
             author.textContent = message.username;
             const time = document.createElement("time");
             time.dateTime = message.created_at;
-            time.textContent = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(new Date(message.created_at));
+            time.textContent = new Intl.DateTimeFormat(undefined, {
+                hour: "2-digit",
+                minute: "2-digit",
+            }).format(new Date(message.created_at));
             const body = document.createElement("p");
             body.textContent = message.body;
             item.append(author, time, body);
@@ -299,18 +368,78 @@
         elements.openVote.hidden = !state.me.is_alive;
     }
 
+    function animateChanges() {
+        const status = state.game.status;
+        const eventSignature = JSON.stringify(state.game.last_event || {});
+        const eliminated = state.players.filter(
+            (player) => !player.is_alive && knownAliveIds.has(player.id),
+        );
+
+        if (!reducedMotion.matches && status !== lastStatus) {
+            window.clearTimeout(phaseAnimationTimer);
+            root.classList.remove(
+                "is-phase-changing",
+                "phase-night",
+                "phase-day",
+                "phase-vote",
+                "phase-finished",
+            );
+            void root.offsetWidth;
+            const phaseClass = {
+                NUIT: "phase-night",
+                DISCUSSION: "phase-day",
+                VOTE: "phase-vote",
+                TERMINEE: "phase-finished",
+            }[status];
+            if (phaseClass) {
+                root.classList.add("is-phase-changing", phaseClass);
+                phaseAnimationTimer = window.setTimeout(() => {
+                    root.classList.remove("is-phase-changing", phaseClass);
+                }, 1050);
+            }
+        }
+
+        if (!reducedMotion.matches) {
+            eliminated.forEach((player) => {
+                root.querySelectorAll(`[data-player-id="${player.id}"]`).forEach((element) => {
+                    element.classList.add("was-eliminated");
+                });
+            });
+            if (eventSignature !== lastEventSignature && state.game.last_event?.kind) {
+                elements.event.classList.remove("is-new-event");
+                void elements.event.offsetWidth;
+                elements.event.classList.add("is-new-event");
+            }
+        }
+
+        lastStatus = status;
+        lastEventSignature = eventSignature;
+        knownAliveIds = new Set(
+            state.players.filter((player) => player.is_alive).map((player) => player.id),
+        );
+    }
+
     function render() {
         const waiting = state.game.status === "EN_ATTENTE";
+        root.dataset.status = state.game.status;
         elements.waiting.hidden = !waiting;
         elements.board.hidden = waiting;
         elements.phase.textContent = state.game.status_label;
-        elements.round.textContent = waiting ? `${state.players.length}/${state.game.max_players} joueurs` : `Cycle ${state.game.round}`;
+        elements.round.textContent = waiting
+            ? t("players_count", { count: `${state.players.length}/${state.game.max_players}` })
+            : t("cycle", { round: state.game.round });
         elements.phasePill.dataset.status = state.game.status;
-        root.querySelectorAll("[data-host-only]").forEach((element) => { element.hidden = !state.me.is_host; });
-        elements.minimum.textContent = state.players.length < state.game.min_players ? `${state.game.min_players - state.players.length} joueur(s) encore nécessaire(s) pour démarrer.` : "Escouade suffisante : l’hôte peut lancer la mission.";
+        root.querySelectorAll("[data-host-only]").forEach((element) => {
+            element.hidden = !state.me.is_host;
+        });
+        const missing = state.game.min_players - state.players.length;
+        elements.minimum.textContent = missing > 0
+            ? t(missing === 1 ? "minimum_one" : "minimum_many", { count: missing })
+            : t("squad_ready");
 
         if (waiting) {
-            announce(`${state.players.length} joueurs dans le salon.`);
+            animateChanges();
+            announce(t("room_announce", { count: state.players.length }));
             return;
         }
 
@@ -320,18 +449,28 @@
         renderRoster();
         renderChat();
         const alive = state.players.filter((player) => player.is_alive).length;
-        elements.aliveCount.textContent = `${alive} survivant${alive > 1 ? "s" : ""}`;
-        elements.playerCount.textContent = `${state.players.length} joueurs`;
+        elements.aliveCount.textContent = alive === 1
+            ? t("survivor_one")
+            : t("survivor_many", { count: alive });
+        elements.playerCount.textContent = t("players_count", { count: state.players.length });
         const report = eventDescription(state.game.last_event);
         elements.event.hidden = !report;
         elements.eventText.textContent = report;
-        announce(`${state.game.status_label}, cycle ${state.game.round}. ${report}`);
+        animateChanges();
+        announce(t("phase_announce", {
+            phase: state.game.status_label,
+            round: state.game.round,
+            report,
+        }));
     }
 
     async function poll() {
         if (busy || document.hidden) return;
         try {
-            const response = await fetch(root.dataset.stateUrl, { headers: { Accept: "application/json" }, cache: "no-store" });
+            const response = await fetch(root.dataset.stateUrl, {
+                headers: { Accept: "application/json" },
+                cache: "no-store",
+            });
             if (!response.ok) return;
             const next = await response.json();
             if (next.game.turn_revision !== state.game.turn_revision) {
@@ -339,7 +478,7 @@
                 render();
             }
         } catch (_) {
-            // Le prochain polling reprendra automatiquement après une coupure brève.
+            // A later poll resumes automatically after a brief network interruption.
         }
     }
 
@@ -352,18 +491,23 @@
         elements.messageInput.value = "";
         elements.messageInput.focus();
     });
-    elements.openVote?.addEventListener("click", () => post(root.dataset.startVoteUrl));
+    elements.openVote?.addEventListener("click", (event) => {
+        if (!reducedMotion.matches) event.currentTarget.classList.add("is-casting-vote");
+        post(root.dataset.startVoteUrl);
+    });
     root.querySelector("[data-copy-link]")?.addEventListener("click", async (event) => {
         try {
             await navigator.clipboard.writeText(window.location.href);
-            event.currentTarget.textContent = "Lien copié";
+            event.currentTarget.textContent = t("link_copied");
         } catch (_) {
-            showError("Impossible de copier automatiquement le lien.");
+            showError(t("copy_failed"));
         }
     });
 
     render();
     pollTimer = window.setInterval(poll, 1800);
     window.addEventListener("pagehide", () => window.clearInterval(pollTimer), { once: true });
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) poll();
+    });
 })();

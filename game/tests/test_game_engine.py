@@ -261,7 +261,10 @@ class MoveValidationTests(GameEngineTestCase):
         # On force une carte légendaire dans la main du joueur courant.
         legendary_instance = GameCard.objects.filter(
             game=self.game, pokemon_card=self.cards["zapdos"]
-        ).first()
+        ).first() or self._put_card(
+            self.cards["zapdos"],
+            location=GameCard.Location.PIOCHE,
+        )
         legendary_instance.location = GameCard.Location.MAIN
         legendary_instance.owner = self.current
         legendary_instance.save(update_fields=["location", "owner"])

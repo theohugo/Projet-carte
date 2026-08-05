@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 
 from django.contrib.auth.password_validation import get_default_password_validators
 
+from game.pokemon_names import bilingual_text
+
 # Le serveur reste seul juge : `checked_client_side` indique simplement si
 # `signup.js` sait évaluer la règle pendant la frappe.
 PENDING = "pending"
@@ -45,17 +47,29 @@ def _rule_for(validator):
     if name == "MinimumLengthValidator":
         return PasswordRule(
             code="length",
-            label=f"Au moins {validator.min_length} caractères",
+            label=bilingual_text(
+                f"Au moins {validator.min_length} caractères",
+                f"At least {validator.min_length} characters",
+            ),
             parameters={"min_length": validator.min_length},
         )
     if name == "NumericPasswordValidator":
-        return PasswordRule(code="not-numeric", label="Pas uniquement des chiffres")
+        return PasswordRule(
+            code="not-numeric",
+            label=bilingual_text("Pas uniquement des chiffres", "Not entirely numeric"),
+        )
     if name == "UserAttributeSimilarityValidator":
-        return PasswordRule(code="not-similar", label="Différent du nom d'utilisateur")
+        return PasswordRule(
+            code="not-similar",
+            label=bilingual_text("Différent du nom d'utilisateur", "Different from your username"),
+        )
     if name == "CommonPasswordValidator":
         return PasswordRule(
             code="not-common",
-            label="Pas un mot de passe trop courant (vérifié à l'envoi)",
+            label=bilingual_text(
+                "Pas un mot de passe trop courant (vérifié à l'envoi)",
+                "Not a commonly used password (checked on submit)",
+            ),
             checked_client_side=False,
         )
     return None
@@ -69,7 +83,12 @@ def build_password_rules(failed_codes=frozenset(), evaluated=False):
     """
 
     rules = [rule for validator in get_default_password_validators() if (rule := _rule_for(validator))]
-    rules.append(PasswordRule(code="match", label="Les deux mots de passe sont identiques"))
+    rules.append(
+        PasswordRule(
+            code="match",
+            label=bilingual_text("Les deux mots de passe sont identiques", "Both passwords match"),
+        )
+    )
     rules.sort(key=lambda rule: DISPLAY_ORDER.index(rule.code))
 
     for rule in rules:

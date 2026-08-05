@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load icons %}
+{% load icons poketable_i18n %}
 
-{% block title %}Inviter un ami — {{ mode_label }} — PokéTable{% endblock %}
+{% block title %}{% bilingual "Inviter un ami" "Invite a friend" %} — {{ mode_label }} — PokéTable{% endblock %}
 
 {% block content %}
 <section
@@ -11,12 +11,12 @@
     <header class="friends-header">
         <div>
             <p class="section-kicker">
-                Invitation de partie
+                {% bilingual "Invitation de partie" "Game invitation" %}
             </p>
 
             <div class="invite-game-heading">
                 <h1 id="invite-friend-title">
-                    Inviter un ami
+                    {% bilingual "Inviter un ami" "Invite a friend" %}
                 </h1>
 
                 <span
@@ -28,10 +28,9 @@
             </div>
 
             <p>
-                Choisis un ami à inviter dans ce salon.
-                Le salon contient actuellement
+                {% bilingual "Choisis un ami à inviter dans ce salon. Le salon contient actuellement" "Choose a friend to invite to this room. The room currently has" %}
                 {{ player_count }}/{{ max_players }}
-                joueur{{ player_count|pluralize }}.
+                {% bilingual "joueur(s)." "player(s)." %}
             </p>
         </div>
 
@@ -40,7 +39,7 @@
             href="{{ room_detail_url }}"
         >
             {% icon "back" %}
-            Retour au salon
+            {% bilingual "Retour au salon" "Back to room" %}
         </a>
     </header>
 
@@ -50,7 +49,7 @@
     >
         <div class="friends-section-heading">
             <h2 id="available-friends-title">
-                Mes amis
+                {% bilingual "Mes amis" "My friends" %}
             </h2>
 
             <span class="friends-count">
@@ -61,12 +60,11 @@
         {% if game_is_full %}
             <div class="friends-empty">
                 <h3>
-                    Le salon est complet
+                    {% bilingual "Le salon est complet" "The room is full" %}
                 </h3>
 
                 <p>
-                    Aucune nouvelle invitation ne peut être envoyée
-                    tant qu’une place ne s’est pas libérée.
+                    {% bilingual "Aucune nouvelle invitation ne peut être envoyée tant qu’une place ne s’est pas libérée." "No new invitations can be sent until a seat becomes available." %}
                 </p>
 
                 <a
@@ -74,7 +72,7 @@
                     href="{{ room_detail_url }}"
                 >
                     {% icon "back" %}
-                    Retourner au salon
+                    {% bilingual "Retourner au salon" "Return to room" %}
                 </a>
             </div>
 
@@ -84,7 +82,7 @@
                     <article class="player-card">
                         <a
                             href="{% url 'public_profile' entry.user.username %}"
-                            aria-label="Voir le profil de {{ entry.user.username }}"
+                            aria-label="{% bilingual 'Voir le profil de' 'View profile for' %} {{ entry.user.username }}"
                         >
                             {% if entry.profile.avatar %}
                                 <img
@@ -111,19 +109,19 @@
                                 </p>
                             {% else %}
                                 <p>
-                                    Ami PokéTable
+                                    {% bilingual "Ami PokéTable" "PokéTable friend" %}
                                 </p>
                             {% endif %}
                         </a>
 
                         {% if entry.status == "joined" %}
                             <span class="friend-status">
-                                Déjà dans le salon
+                                {% bilingual "Déjà dans le salon" "Already in the room" %}
                             </span>
 
                         {% elif entry.status == "pending" %}
                             <span class="friend-status">
-                                Invitation envoyée
+                                {% bilingual "Invitation envoyée" "Invitation sent" %}
                             </span>
 
                             {% if entry.invitation %}
@@ -137,7 +135,7 @@
                                         class="btn btn-ghost btn-block"
                                         type="submit"
                                     >
-                                        Annuler l’invitation
+                                        {% bilingual "Annuler l’invitation" "Cancel invitation" %}
                                     </button>
                                 </form>
                             {% endif %}
@@ -153,7 +151,7 @@
                                     class="btn btn-primary btn-block"
                                     type="submit"
                                 >
-                                    Inviter à jouer
+                                    {% bilingual "Inviter à jouer" "Invite to play" %}
                                 </button>
                             </form>
                         {% endif %}
@@ -164,19 +162,18 @@
         {% else %}
             <div class="friends-empty">
                 <h3>
-                    Aucun ami à inviter
+                    {% bilingual "Aucun ami à inviter" "No friends to invite" %}
                 </h3>
 
                 <p>
-                    Ajoute d’abord des joueurs à ta liste d’amis,
-                    puis reviens dans ce salon.
+                    {% bilingual "Ajoute d’abord des joueurs à ta liste d’amis, puis reviens dans ce salon." "Add players to your friends list first, then return to this room." %}
                 </p>
 
                 <a
                     class="btn btn-primary"
                     href="{% url 'player_search' %}"
                 >
-                    Rechercher des joueurs
+                    {% bilingual "Rechercher des joueurs" "Find players" %}
                 </a>
             </div>
         {% endif %}

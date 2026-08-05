@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load poketable_i18n %}
 
-{% block title %}Mes amis — PokéTable{% endblock %}
+{% block title %}{% bilingual "Mes amis" "My friends" %} — PokéTable{% endblock %}
 
 {% block content %}
 <section
@@ -9,15 +10,14 @@
 >
     <header class="friends-header">
         <div>
-            <p class="section-kicker">Espace social</p>
+            <p class="section-kicker">{% bilingual "Espace social" "Social space" %}</p>
 
             <h1 id="friends-page-title">
-                Mes amis
+                {% bilingual "Mes amis" "My friends" %}
             </h1>
 
             <p>
-                Retrouve tes amis et gère les demandes reçues
-                ou envoyées.
+                {% bilingual "Retrouve tes amis et gère les demandes reçues ou envoyées." "Find your friends and manage incoming or outgoing requests." %}
             </p>
         </div>
 
@@ -25,7 +25,7 @@
             class="btn btn-primary"
             href="{% url 'player_search' %}"
         >
-            Rechercher un joueur
+            {% bilingual "Rechercher un joueur" "Find a player" %}
         </a>
     </header>
 
@@ -36,12 +36,12 @@
         >
             <div class="friends-section-heading">
                 <h2 id="received-requests-title">
-                    Demandes reçues
+                    {% bilingual "Demandes reçues" "Incoming requests" %}
                 </h2>
 
                 <span
                     class="friends-count"
-                    aria-label="{{ received_requests|length }} demande{{ received_requests|length|pluralize }}"
+                    aria-label="{{ received_requests|length }} {% bilingual 'demande reçue' 'incoming requests' %}"
                 >
                     {{ received_requests|length }}
                 </span>
@@ -53,13 +53,13 @@
                         <a
                             class="friend-identity"
                             href="{% url 'public_profile' friendship.requester.username %}"
-                            aria-label="Voir le profil de {{ friendship.requester.username }}"
+                            aria-label="{% bilingual 'Voir le profil de' 'View profile for' %} {{ friendship.requester.username }}"
                         >
                             {% if friendship.requester.profile.avatar %}
                                 <img
                                     class="friend-avatar"
                                     src="{{ friendship.requester.profile.avatar.url }}"
-                                    alt="Photo de profil de {{ friendship.requester.username }}"
+                                    alt="{% bilingual 'Photo de profil de' 'Profile picture for' %} {{ friendship.requester.username }}"
                                 >
                             {% else %}
                                 <span
@@ -81,7 +81,7 @@
                                     </small>
                                 {% else %}
                                     <small>
-                                        Souhaite devenir ton ami
+                                        {% bilingual "Souhaite devenir ton ami" "Wants to be your friend" %}
                                     </small>
                                 {% endif %}
                             </span>
@@ -98,7 +98,7 @@
                                     class="btn btn-ghost"
                                     type="submit"
                                 >
-                                    Refuser
+                                    {% bilingual "Refuser" "Decline" %}
                                 </button>
                             </form>
 
@@ -112,7 +112,7 @@
                                     class="btn btn-primary"
                                     type="submit"
                                 >
-                                    Accepter
+                                    {% bilingual "Accepter" "Accept" %}
                                 </button>
                             </form>
                         </div>
@@ -128,12 +128,12 @@
     >
         <div class="friends-section-heading">
             <h2 id="friends-list-title">
-                Liste d’amis
+                {% bilingual "Liste d’amis" "Friends list" %}
             </h2>
 
             <span
                 class="friends-count"
-                aria-label="{{ friend_entries|length }} ami{{ friend_entries|length|pluralize }}"
+                aria-label="{{ friend_entries|length }} {% bilingual 'amis' 'friends' %}"
             >
                 {{ friend_entries|length }}
             </span>
@@ -145,13 +145,13 @@
                     <article class="player-card">
                         <a
                             href="{% url 'public_profile' entry.user.username %}"
-                            aria-label="Voir le profil de {{ entry.user.username }}"
+                            aria-label="{% bilingual 'Voir le profil de' 'View profile for' %} {{ entry.user.username }}"
                         >
                             {% if entry.profile.avatar %}
                                 <img
                                     class="player-card-avatar"
                                     src="{{ entry.profile.avatar.url }}"
-                                    alt="Photo de profil de {{ entry.user.username }}"
+                                    alt="{% bilingual 'Photo de profil de' 'Profile picture for' %} {{ entry.user.username }}"
                                 >
                             {% else %}
                                 <span
@@ -172,7 +172,7 @@
                                 </p>
                             {% else %}
                                 <p>
-                                    Ami PokéTable
+                                    {% bilingual "Ami PokéTable" "PokéTable friend" %}
                                 </p>
                             {% endif %}
                         </a>
@@ -187,7 +187,7 @@
                                 class="btn btn-ghost btn-block"
                                 type="submit"
                             >
-                                Retirer de mes amis
+                                {% bilingual "Retirer de mes amis" "Remove friend" %}
                             </button>
                         </form>
                     </article>
@@ -196,19 +196,18 @@
         {% else %}
             <div class="friends-empty">
                 <h3>
-                    Ta liste d’amis est encore vide
+                    {% bilingual "Ta liste d’amis est encore vide" "Your friends list is empty" %}
                 </h3>
 
                 <p>
-                    Recherche un joueur pour lui envoyer
-                    une demande d’ami.
+                    {% bilingual "Recherche un joueur pour lui envoyer une demande d’ami." "Find a player and send them a friend request." %}
                 </p>
 
                 <a
                     class="btn btn-primary"
                     href="{% url 'player_search' %}"
                 >
-                    Trouver des joueurs
+                    {% bilingual "Trouver des joueurs" "Find players" %}
                 </a>
             </div>
         {% endif %}
@@ -221,12 +220,12 @@
         >
             <div class="friends-section-heading">
                 <h2 id="sent-requests-title">
-                    Demandes envoyées
+                    {% bilingual "Demandes envoyées" "Sent requests" %}
                 </h2>
 
                 <span
                     class="friends-count"
-                    aria-label="{{ sent_requests|length }} demande{{ sent_requests|length|pluralize }} envoyée{{ sent_requests|length|pluralize }}"
+                    aria-label="{{ sent_requests|length }} {% bilingual 'demandes envoyées' 'sent requests' %}"
                 >
                     {{ sent_requests|length }}
                 </span>
@@ -238,13 +237,13 @@
                         <a
                             class="friend-identity"
                             href="{% url 'public_profile' friendship.addressee.username %}"
-                            aria-label="Voir le profil de {{ friendship.addressee.username }}"
+                            aria-label="{% bilingual 'Voir le profil de' 'View profile for' %} {{ friendship.addressee.username }}"
                         >
                             {% if friendship.addressee.profile.avatar %}
                                 <img
                                     class="friend-avatar"
                                     src="{{ friendship.addressee.profile.avatar.url }}"
-                                    alt="Photo de profil de {{ friendship.addressee.username }}"
+                                    alt="{% bilingual 'Photo de profil de' 'Profile picture for' %} {{ friendship.addressee.username }}"
                                 >
                             {% else %}
                                 <span
@@ -263,11 +262,11 @@
                                 {% if friendship.addressee.get_full_name %}
                                     <small>
                                         {{ friendship.addressee.get_full_name }}
-                                        · Demande en attente
+                                        · {% bilingual "Demande en attente" "Request pending" %}
                                     </small>
                                 {% else %}
                                     <small>
-                                        Demande en attente
+                                        {% bilingual "Demande en attente" "Request pending" %}
                                     </small>
                                 {% endif %}
                             </span>
@@ -283,7 +282,7 @@
                                 class="btn btn-ghost"
                                 type="submit"
                             >
-                                Annuler
+                                {% bilingual "Annuler" "Cancel" %}
                             </button>
                         </form>
                     </article>

@@ -6,6 +6,7 @@
     if (!board || !initialStateElement) return;
 
     const initialGameState = JSON.parse(initialStateElement.textContent);
+    const t = (french, english) => (initialGameState.language === "en" ? english : french);
     const myPlayer = initialGameState.players.find((player) => Array.isArray(player.hand));
     const feedback = document.getElementById("game-feedback");
     const announcer = document.getElementById("game-announcer");
@@ -285,7 +286,7 @@
             body: JSON.stringify(body),
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Une erreur est survenue. Réessaie.");
+        if (!response.ok) throw new Error(data.error || t("Une erreur est survenue. Réessaie.", "Something went wrong. Try again."));
         return data;
     }
 
@@ -411,8 +412,8 @@
         pill.className = "type-pill";
         pill.style.setProperty("--type-accent", cardType.color);
         pill.setAttribute("role", "img");
-        pill.setAttribute("aria-label", cardType.name_fr);
-        pill.title = cardType.name_fr;
+        pill.setAttribute("aria-label", cardType.name || cardType.name_fr);
+        pill.title = cardType.name || cardType.name_fr;
         pill.appendChild(buildTypeIcon(cardType.icon_url));
         return pill;
     }
@@ -457,7 +458,7 @@
 
         const name = document.createElement("span");
         name.className = "card-unit-name";
-        name.textContent = card.name_fr;
+        name.textContent = card.name || card.name_fr;
         face.appendChild(name);
         return face;
     }
@@ -500,7 +501,11 @@
             if (!target) continue;
             const visibleCount = Math.min(draw.count, 4);
             const isMine = myPlayer && String(draw.player.id) === String(myPlayer.id);
-            announce(`${draw.player.username} pioche ${draw.count} carte${draw.count > 1 ? "s" : ""}.`);
+            announce(
+                initialGameState.language === "en"
+                    ? `${draw.player.username} draws ${draw.count} card${draw.count > 1 ? "s" : ""}.`
+                    : `${draw.player.username} pioche ${draw.count} carte${draw.count > 1 ? "s" : ""}.`,
+            );
             await Promise.all(
                 Array.from({ length: visibleCount }, (_, index) =>
                     animateCardFlight(deck, target, {
@@ -534,7 +539,11 @@
             const source = context.kind === "play" ? context.source : opponentBack(actor?.id);
             const discard = board.querySelector("[data-motion-discard]") || board.querySelector(".discard-pile");
             if (actor && nextState.top_discard) {
-                announce(`${actor.username} joue ${nextState.top_discard.name_fr}.`);
+                announce(
+                    initialGameState.language === "en"
+                        ? `${actor.username} plays ${nextState.top_discard.name || nextState.top_discard.name_en}.`
+                        : `${actor.username} joue ${nextState.top_discard.name || nextState.top_discard.name_fr}.`,
+                );
             }
             await animateCardFlight(source, discard, { duration: 610 });
             if (context.kind !== "play") {
@@ -726,12 +735,12 @@
         const label = button.querySelector("[data-copy-label]");
         try {
             await navigator.clipboard.writeText(window.location.href);
-            label.textContent = "Lien copié";
+            label.textContent = t("Lien copié", "Link copied");
         } catch (_) {
-            label.textContent = "Copie le lien de la barre d’adresse";
+            label.textContent = t("Copie le lien de la barre d’adresse", "Copy the link from the address bar");
         }
         window.setTimeout(() => {
-            label.textContent = "Copier le lien d’invitation";
+            label.textContent = t("Copier le lien d’invitation", "Copy invitation link");
         }, 2200);
     }
 
@@ -834,7 +843,11 @@
                 scheduleBotTurn(600);
                 return;
             }
-            announce(`${currentPlayer.username} réfléchit…`);
+            announce(
+                initialGameState.language === "en"
+                    ? `${currentPlayer.username} is thinking…`
+                    : `${currentPlayer.username} réfléchit…`,
+            );
             submitAction(
                 board.dataset.botTurnUrl,
                 { expected_turn_revision: initialGameState.turn_revision },
@@ -869,13 +882,14 @@
 
         const paint = (slot, pokemonType) => {
             slot.style.setProperty("--type-accent", pokemonType.color);
-            slot.querySelector(".type-draw-name").textContent = pokemonType.name_fr;
+            slot.querySelector(".type-draw-name").textContent = pokemonType.name || pokemonType.name_fr;
             slot.querySelector("[data-type-glyph]").replaceChildren(buildTypeIcon(pokemonType.icon_url));
         };
 
         const reveal = (slot) => {
             slot.classList.add("is-revealed");
             paint(slot, {
+                name: slot.dataset.finalType,
                 name_fr: slot.dataset.finalType,
                 color: slot.dataset.finalColor,
                 icon_url: slot.dataset.finalIcon,

@@ -8,19 +8,24 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
-from game.guests import guest_allowed
+from game.guests import guest_action, guest_allowed, public_lobby
 from game.models import PokemonCard
 
-from .models import IslandGame
+from .i18n import pokemon_name, text
+from .models import IslandGame, Shot
 from .services import (
     IslandError,
     IslandPermissionError,
     StaleRevisionError,
+    add_bot,
     fire,
     get_lobby_state,
     place_formation,
+    play_bot_turn,
     ready_player,
+    remove_bot,
     serialize_game_state,
+    start_bot_game,
 )
 from .services import create_game as create_game_service
 from .services import join_game as join_game_service
@@ -30,10 +35,18 @@ def _read_json_object(request):
     try:
         payload = json.loads(request.body or "{}")
     except (json.JSONDecodeError, UnicodeDecodeError):
-        return None, JsonResponse({"error": "Requête JSON invalide."}, status=400)
+        return None, JsonResponse(
+            {"error": text("Requête JSON invalide.", "Invalid JSON request.")},
+            status=400,
+        )
     if not isinstance(payload, dict):
         return None, JsonResponse(
-            {"error": "La requête doit contenir un objet JSON."},
+            {
+                "error": text(
+                    "La requête doit contenir un objet JSON.",
+                    "The request must contain a JSON object.",
+                )
+            },
             status=400,
         )
     return payload, None
@@ -42,7 +55,10 @@ def _read_json_object(request):
 def _read_revision(payload):
     revision = payload.get("expected_turn_revision")
     if isinstance(revision, bool) or not isinstance(revision, int) or revision < 0:
-        return None, JsonResponse({"error": "Révision de tour invalide."}, status=400)
+        return None, JsonResponse(
+            {"error": text("Révision de tour invalide.", "Invalid turn revision.")},
+            status=400,
+        )
     return revision, None
 
 
@@ -70,18 +86,54 @@ def _error_response(exc, game_id, user):
     )
 
 
-@guest_allowed
+def _action_result(game, shot, *, include_capture=True):
+    combo = 0
+    if shot.result != Shot.Result.MISS:
+        for result in (
+            game.shots.filter(shooter=shot.shooter)
+            .order_by("-created_at", "-pk")
+            .values_list("result", flat=True)
+        ):
+            if result == Shot.Result.MISS:
+                break
+            combo += 1
+    payload = {
+        "row": shot.row,
+        "col": shot.col,
+        "coordinate": f"{chr(65 + shot.col)}{shot.row + 1}",
+        "result": shot.result,
+        "combo": combo,
+        "keeps_turn": (game.status == IslandGame.Status.EN_COURS and game.current_turn_id == shot.shooter_id),
+    }
+    if include_capture:
+        payload["captured_pokemon"] = (
+            {
+                "name": pokemon_name(shot.formation.pokemon_card),
+                "name_fr": shot.formation.pokemon_card.name_fr,
+                "name_en": shot.formation.pokemon_card.name_en,
+                "sprite_url": shot.formation.pokemon_card.sprite_url,
+            }
+            if shot.result == Shot.Result.CAPTURED
+            else None
+        )
+    return payload
+
+
+@public_lobby
 def lobby(request):
     open_games = (
         IslandGame.objects.filter(status=IslandGame.Status.EN_ATTENTE)
         .select_related("created_by")
         .annotate(player_count=Count("players"))
+        .filter(player_count__lt=2)
     )
     my_games = (
         IslandGame.objects.annotate(player_count=Count("players"))
         .filter(players__user=request.user)
         .select_related("winner__user")
         .distinct()
+        if request.user.is_authenticated
+        else IslandGame.objects.none()
     )
     hero_cards = list(
         PokemonCard.objects.filter(Q(primary_type__slug="water") | Q(secondary_type__slug="water"))
@@ -100,13 +152,12 @@ def lobby(request):
     )
 
 
-@login_required
 @require_GET
 def api_lobby_state(request):
     return JsonResponse(get_lobby_state(request.user))
 
 
-@login_required
+@guest_action
 @require_POST
 def create_game(request):
     try:
@@ -117,7 +168,7 @@ def create_game(request):
     return redirect("islands:game_detail", game_id=game.id)
 
 
-@login_required
+@guest_action
 @require_POST
 def join_game(request, game_id):
     try:
@@ -140,8 +191,11 @@ def game_detail(request, game_id):
             request,
             "join_invitation.html",
             {
-                "mode_name": "Bataille des Îles",
-                "mode_kicker": "Stratégie · exploration · duel",
+                "mode_name": text("Bataille des Îles", "Island Battle"),
+                "mode_kicker": text(
+                    "Stratégie · exploration · duel",
+                    "Strategy · exploration · duel",
+                ),
                 "host_name": game.created_by.get_username(),
                 "player_count": player_count,
                 "max_players": 2,
@@ -170,6 +224,60 @@ def api_state(request, game_id):
 
 @login_required
 @require_POST
+def api_add_bot(request, game_id):
+    payload, error = _read_json_object(request)
+    if error:
+        return error
+    revision, error = _read_revision(payload)
+    if error:
+        return error
+    try:
+        game = add_bot(game_id, request.user, revision)
+        return JsonResponse(serialize_game_state(game, request.user))
+    except IslandGame.DoesNotExist:
+        get_object_or_404(IslandGame, pk=game_id)
+    except IslandError as exc:
+        return _error_response(exc, game_id, request.user)
+
+
+@login_required
+@require_POST
+def api_remove_bot(request, game_id, bot_id):
+    payload, error = _read_json_object(request)
+    if error:
+        return error
+    revision, error = _read_revision(payload)
+    if error:
+        return error
+    try:
+        game = remove_bot(game_id, request.user, bot_id, revision)
+        return JsonResponse(serialize_game_state(game, request.user))
+    except IslandGame.DoesNotExist:
+        get_object_or_404(IslandGame, pk=game_id)
+    except IslandError as exc:
+        return _error_response(exc, game_id, request.user)
+
+
+@login_required
+@require_POST
+def api_start(request, game_id):
+    payload, error = _read_json_object(request)
+    if error:
+        return error
+    revision, error = _read_revision(payload)
+    if error:
+        return error
+    try:
+        game = start_bot_game(game_id, request.user, revision)
+        return JsonResponse(serialize_game_state(game, request.user))
+    except IslandGame.DoesNotExist:
+        get_object_or_404(IslandGame, pk=game_id)
+    except IslandError as exc:
+        return _error_response(exc, game_id, request.user)
+
+
+@login_required
+@require_POST
 def api_place(request, game_id):
     payload, error = _read_json_object(request)
     if error:
@@ -177,18 +285,25 @@ def api_place(request, game_id):
     revision, error = _read_revision(payload)
     if error:
         return error
-    formation_id, error = _read_int(payload, "formation_id", "Formation invalide.")
+    formation_id, error = _read_int(
+        payload,
+        "formation_id",
+        text("Formation invalide.", "Invalid formation."),
+    )
     if error:
         return error
-    row, error = _read_int(payload, "row", "Ligne invalide.")
+    row, error = _read_int(payload, "row", text("Ligne invalide.", "Invalid row."))
     if error:
         return error
-    col, error = _read_int(payload, "col", "Colonne invalide.")
+    col, error = _read_int(payload, "col", text("Colonne invalide.", "Invalid column."))
     if error:
         return error
     orientation = payload.get("orientation")
     if not isinstance(orientation, str):
-        return JsonResponse({"error": "Orientation invalide."}, status=400)
+        return JsonResponse(
+            {"error": text("Orientation invalide.", "Invalid orientation.")},
+            status=400,
+        )
     try:
         game = place_formation(
             game_id,
@@ -233,29 +348,36 @@ def api_fire(request, game_id):
     revision, error = _read_revision(payload)
     if error:
         return error
-    row, error = _read_int(payload, "row", "Ligne invalide.")
+    row, error = _read_int(payload, "row", text("Ligne invalide.", "Invalid row."))
     if error:
         return error
-    col, error = _read_int(payload, "col", "Colonne invalide.")
+    col, error = _read_int(payload, "col", text("Colonne invalide.", "Invalid column."))
     if error:
         return error
     try:
         game, shot = fire(game_id, request.user, row, col, revision)
         state = serialize_game_state(game, request.user)
-        state["action_result"] = {
-            "row": shot.row,
-            "col": shot.col,
-            "coordinate": f"{chr(65 + shot.col)}{shot.row + 1}",
-            "result": shot.result,
-            "captured_pokemon": (
-                {
-                    "name_fr": shot.formation.pokemon_card.name_fr,
-                    "sprite_url": shot.formation.pokemon_card.sprite_url,
-                }
-                if shot.result == "CAPTURED"
-                else None
-            ),
-        }
+        state["action_result"] = _action_result(game, shot)
+        return JsonResponse(state)
+    except IslandGame.DoesNotExist:
+        get_object_or_404(IslandGame, pk=game_id)
+    except IslandError as exc:
+        return _error_response(exc, game_id, request.user)
+
+
+@login_required
+@require_POST
+def api_bot_turn(request, game_id):
+    payload, error = _read_json_object(request)
+    if error:
+        return error
+    revision, error = _read_revision(payload)
+    if error:
+        return error
+    try:
+        game, shot = play_bot_turn(game_id, request.user, revision)
+        state = serialize_game_state(game, request.user)
+        state["action_result"] = _action_result(game, shot, include_capture=False)
         return JsonResponse(state)
     except IslandGame.DoesNotExist:
         get_object_or_404(IslandGame, pk=game_id)

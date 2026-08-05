@@ -40,11 +40,13 @@
     // Le serveur est la seule horloge qui fasse foi : on interpole entre deux
     // réponses pour que le compte à rebours reste fluide sans dériver.
     let state = JSON.parse(initialStateElement.textContent);
+    const t = (french, english) => (state.language === "en" ? english : french);
     let stateReceivedAt = performance.now();
     let pollTimer = null;
     let imageKey = "";
     let revealedRound = null;
     let isSending = false;
+    let celebrationTimer = null;
 
     timerProgress.style.strokeDasharray = String(RING_LENGTH);
 
@@ -62,9 +64,23 @@
         if (announcer) announcer.textContent = message;
     }
 
-    function avatar(username) {
+    function celebrateCorrectGuess() {
+        window.clearTimeout(celebrationTimer);
+        stage.classList.remove("is-correct-answer");
+        guessForm.classList.remove("is-celebrating");
+        // Restart the short animation even if two state updates land quickly.
+        void stage.offsetWidth;
+        stage.classList.add("is-correct-answer");
+        guessForm.classList.add("is-celebrating");
+        celebrationTimer = window.setTimeout(() => {
+            stage.classList.remove("is-correct-answer");
+            guessForm.classList.remove("is-celebrating");
+        }, reducedMotion.matches ? 100 : 1100);
+    }
+
+    function avatar(username, isBot = false) {
         const element = document.createElement("span");
-        element.className = "user-avatar";
+        element.className = `user-avatar${isBot ? " is-bot" : ""}`;
         element.setAttribute("aria-hidden", "true");
         element.textContent = (username[0] || "?").toUpperCase();
         return element;
@@ -79,14 +95,18 @@
             name.className = "room-player-name";
             name.textContent = player.username;
             const role = document.createElement("small");
-            role.textContent = player.is_me ? "C’est toi" : "Prêt à jouer";
+            role.textContent = player.is_me
+                ? t("C’est toi", "That’s you")
+                : player.is_bot
+                  ? t("IA · prête", "AI · ready")
+                  : t("Prêt à jouer", "Ready to play");
             name.appendChild(role);
-            item.append(avatar(player.username), name);
+            item.append(avatar(player.username, player.is_bot), name);
             return item;
         });
         const seat = document.createElement("li");
         seat.className = "room-player room-seat";
-        seat.textContent = "Place libre — le lien suffit pour rejoindre";
+        seat.textContent = t("Place libre — le lien suffit pour rejoindre", "Open seat — use the link to join");
         rows.push(seat);
         waitingPlayers.replaceChildren(...rows);
     }
@@ -128,11 +148,11 @@
                     points.className = "score-points";
                     points.textContent = `${player.score} pts`;
 
-                    item.append(rank, avatar(player.username), name);
+                    item.append(rank, avatar(player.username, player.is_bot), name);
                     if (foundNames.has(player.username)) {
                         const flag = document.createElement("span");
                         flag.className = "score-found-flag";
-                        flag.textContent = "trouvé";
+                        flag.textContent = t("trouvé", "found");
                         item.appendChild(flag);
                     }
                     item.appendChild(points);
@@ -143,39 +163,72 @@
         if (!scoresNote) return;
         if (state.status === "TERMINEE") {
             const best = [...state.players].sort((a, b) => b.score - a.score)[0];
-            scoresNote.textContent = best ? `Partie terminée — ${best.username} l’emporte.` : "";
+            scoresNote.textContent = best
+                ? state.language === "en"
+                    ? `Game over — ${best.username} wins.`
+                    : `Partie terminée — ${best.username} l’emporte.`
+                : "";
         } else {
-            scoresNote.textContent = "Plus tu réponds tôt, plus la manche rapporte.";
+            scoresNote.textContent = t(
+                "Plus tu réponds tôt, plus la manche rapporte.",
+                "The faster you answer, the more points the round is worth.",
+            );
         }
     }
 
     function renderHints(round) {
         const typeHint = round?.hints?.type;
         hints.type.hidden = !typeHint;
-        if (typeHint) hints.type.querySelector("[data-hint-value]").textContent = typeHint.join(" / ");
+        if (typeHint) {
+            const value = hints.type.querySelector("[data-hint-value]");
+            value.replaceChildren(
+                ...typeHint.map((pokemonType) => {
+                    const item = document.createElement("span");
+                    item.className = "sil-type-hint";
+
+                    const icon = document.createElement("img");
+                    icon.className = "sil-type-icon";
+                    icon.src = pokemonType.icon_url;
+                    icon.alt = "";
+                    icon.width = 26;
+                    icon.height = 26;
+                    icon.setAttribute("aria-hidden", "true");
+
+                    const label = document.createElement("span");
+                    label.textContent = pokemonType.name;
+                    item.append(icon, label);
+                    return item;
+                }),
+            );
+        }
 
         const letters = round?.hints?.letters;
         hints.letters.hidden = !letters;
         if (letters) {
             hints.letters.querySelector("[data-hint-value]").textContent =
-                `${letters} (${round.hints.letter_count} lettres)`;
+                `${letters} (${round.hints.letter_count} ${t("lettres", "letters")})`;
         }
     }
 
     function renderRound() {
         const round = state.round;
         const isPlaying = state.status === "EN_COURS" && round;
+        root.dataset.gameStatus = state.status;
         stage.hidden = !isPlaying;
         waiting.hidden = state.status !== "EN_ATTENTE";
         if (statusBadge) {
             statusBadge.textContent =
-                { EN_ATTENTE: "En attente", EN_COURS: "En cours", TERMINEE: "Terminée" }[state.status] || "";
+                {
+                    EN_ATTENTE: t("En attente", "Waiting"),
+                    EN_COURS: t("En cours", "In progress"),
+                    TERMINEE: t("Terminée", "Finished"),
+                }[state.status] || "";
             statusBadge.dataset.status = state.status.toLowerCase();
         }
         renderRoundDots();
         if (!isPlaying) return;
 
-        roundNumber.textContent = `Manche ${round.number} / ${round.total}`;
+        roundNumber.textContent = `${t("Manche", "Round")} ${round.number} / ${round.total}`;
 
         // L'URL de l'image ne change pas entre silhouette et révélation : la
         // révision force le rechargement au bon moment.
@@ -188,10 +241,10 @@
         frame.classList.toggle("is-revealed", round.revealed);
         answer.hidden = !round.revealed;
         if (round.revealed) {
-            answer.textContent = `C’était ${round.answer} !`;
+            answer.textContent = state.language === "en" ? `It was ${round.answer}!` : `C’était ${round.answer} !`;
             if (revealedRound !== round.number) {
                 revealedRound = round.number;
-                announce(`C’était ${round.answer}.`);
+                announce(state.language === "en" ? `It was ${round.answer}.` : `C’était ${round.answer}.`);
                 if (!reducedMotion.matches) {
                     frame.classList.remove("is-popping");
                     void frame.offsetWidth;
@@ -205,7 +258,9 @@
         const canGuess = !round.revealed && !round.i_found;
         guessInput.disabled = !canGuess;
         guessSubmit.disabled = !canGuess;
-        guessInput.placeholder = round.i_found ? "Trouvé ! On attend les autres…" : "Son nom…";
+        guessInput.placeholder = round.i_found
+            ? t("Trouvé ! On attend les autres…", "Found! Waiting for the others…")
+            : t("Son nom…", "Its name…");
         guessForm.classList.toggle("is-found", Boolean(round.i_found));
 
         myGuesses.replaceChildren(
@@ -237,7 +292,9 @@
         // La couleur double l'information du chiffre : jamais la couleur seule.
         const color = secondsLeft <= 5 ? "var(--color-danger)" : secondsLeft <= 12 ? "#f2ce3e" : "var(--color-brand)";
         timerRing.style.setProperty("--timer-color", color);
+        timerRing.classList.toggle("is-warning", secondsLeft > 5 && secondsLeft <= 12);
         timerRing.classList.toggle("is-urgent", secondsLeft > 0 && secondsLeft <= 5);
+        timerRing.classList.toggle("is-critical", secondsLeft > 0 && secondsLeft <= 3);
 
         if (hintPending) {
             const elapsed = round.round_seconds - secondsLeft;
@@ -301,7 +358,14 @@
             if (response.ok) {
                 guessInput.value = "";
                 applyState(payload.state);
-                announce(payload.is_correct ? `Trouvé, +${payload.points} points.` : "Raté.");
+                if (payload.is_correct) celebrateCorrectGuess();
+                announce(
+                    payload.is_correct
+                        ? state.language === "en"
+                            ? `Found it, +${payload.points} points.`
+                            : `Trouvé, +${payload.points} points.`
+                        : t("Raté.", "Wrong guess."),
+                );
                 if (!payload.is_correct && !reducedMotion.matches) {
                     guessForm.classList.remove("is-wrong");
                     void guessForm.offsetWidth;
@@ -311,10 +375,10 @@
                 applyState(payload.state);
                 showFeedback(payload.error || "");
             } else {
-                showFeedback(payload.error || "Impossible d'envoyer la proposition.");
+                showFeedback(payload.error || t("Impossible d'envoyer la proposition.", "Could not send the guess."));
             }
         } catch (_) {
-            showFeedback("Connexion perdue, réessaie.");
+            showFeedback(t("Connexion perdue, réessaie.", "Connection lost. Try again."));
         } finally {
             isSending = false;
             guessSubmit.classList.remove("is-busy");
@@ -328,12 +392,12 @@
         const label = button.querySelector("[data-copy-label]");
         try {
             await navigator.clipboard.writeText(window.location.href);
-            label.textContent = "Lien copié";
+            label.textContent = t("Lien copié", "Link copied");
         } catch (_) {
             label.textContent = window.location.href;
         }
         window.setTimeout(() => {
-            label.textContent = "Copier le lien d’invitation";
+            label.textContent = t("Copier le lien d’invitation", "Copy invitation link");
         }, 2500);
     });
 

@@ -1,34 +1,35 @@
 {% extends "base.html" %}
+{% load poketable_i18n %}
 
-{% block title %}Rejoindre la partie — PokéTable{% endblock %}
+{% block title %}{% bilingual "Rejoindre la partie" "Join the game" %} — PokéTable{% endblock %}
 
 {% block content %}
 <section class="gate" aria-labelledby="gate-title">
     <div class="gate-card">
-        <p class="section-kicker"><span class="live-pulse" aria-hidden="true"></span> Une table t’attend</p>
-        <h1 id="gate-title">Joue tout de suite,<br><span>sans créer de compte</span></h1>
-        <p class="gate-lead">Un pseudo temporaire suffit pour entrer dans la partie. Tu pourras transformer ce pseudo en vrai compte à tout moment : tes parties en cours te suivront.</p>
+        <p class="section-kicker"><span class="live-pulse" aria-hidden="true"></span> {% bilingual "Une table t’attend" "A table is waiting" %}</p>
+        <h1 id="gate-title">{% bilingual "Joue tout de suite," "Play right now," %}<br><span>{% bilingual "sans créer de compte" "without creating an account" %}</span></h1>
+        <p class="gate-lead">{% bilingual "Un pseudo temporaire suffit pour entrer dans la partie. Tu pourras transformer ce pseudo en vrai compte à tout moment : tes parties en cours te suivront." "A temporary nickname is all you need to join. You can turn it into a full account at any time and keep your active games." %}</p>
 
         <form method="post" action="{% url 'play_as_guest' %}" class="gate-actions">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ next }}">
-            <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="guest">Jouer en invité</button>
+            <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="guest">{% bilingual "Jouer en invité" "Play as guest" %}</button>
         </form>
 
-        <p class="gate-switch">Déjà un compte ? <a href="{% url 'login' %}?next={{ next|urlencode }}">Se connecter</a> · <a href="{% url 'signup' %}?next={{ next|urlencode }}">Créer un compte</a></p>
+        <p class="gate-switch">{% bilingual "Déjà un compte ?" "Already have an account?" %} <a href="{% url 'login' %}?next={{ next|urlencode }}">{% bilingual "Se connecter" "Sign in" %}</a> · <a href="{% url 'signup' %}?next={{ next|urlencode }}">{% bilingual "Créer un compte" "Create an account" %}</a></p>
 
-        <ul class="gate-compare" aria-label="Ce que change un compte">
+        <ul class="gate-compare" aria-label="{% bilingual "Ce que change un compte" "What an account changes" %}">
             <li>
-                <p class="gate-compare-title">En invité</p>
-                <span>Les quatre jeux, tout de suite</span>
-                <span>Un pseudo temporaire</span>
-                <span class="is-off">Rien n’est conservé</span>
+                <p class="gate-compare-title">{% bilingual "En invité" "As a guest" %}</p>
+                <span>{% bilingual "Les huit jeux, tout de suite" "All eight games, right away" %}</span>
+                <span>{% bilingual "Un pseudo temporaire" "A temporary nickname" %}</span>
+                <span class="is-off">{% bilingual "Rien n’est conservé" "Nothing is saved" %}</span>
             </li>
             <li class="is-highlight">
-                <p class="gate-compare-title">Avec un compte</p>
-                <span>Les quatre jeux, tout de suite</span>
-                <span>Ton pseudo, ton avatar</span>
-                <span>Collection, quêtes, amis et scores gardés</span>
+                <p class="gate-compare-title">{% bilingual "Avec un compte" "With an account" %}</p>
+                <span>{% bilingual "Les huit jeux, tout de suite" "All eight games, right away" %}</span>
+                <span>{% bilingual "Ton pseudo, ton avatar" "Your nickname and avatar" %}</span>
+                <span>{% bilingual "Collection, quêtes, amis et scores gardés" "Saved collection, quests, friends and scores" %}</span>
             </li>
         </ul>
     </div>

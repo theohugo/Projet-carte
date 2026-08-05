@@ -1,24 +1,25 @@
 {% extends "base.html" %}
-{% load static icons %}
+{% load static icons poketable_i18n %}
 
-{% block title %}Infiltration Rocket — rôles cachés Pokémon{% endblock %}
+{% block title %}{% bilingual "Infiltration Rocket — rôles cachés Pokémon" "Team Rocket Infiltration — Pokémon hidden roles" %}{% endblock %}
+{% block meta_description %}{% bilingual "Joue à Infiltration Rocket sur PokéTable : 6 à 12 joueurs, rôles cachés, actions nocturnes, discussion et vote dans l’univers Pokémon." "Play Team Rocket Infiltration on PokéTable: 6 to 12 players, hidden roles, night actions, discussion, and voting in the Pokémon universe." %}{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'rocket/css/rocket.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'rocket/css/rocket.css' %}?v=3">
 
-<main class="rk-lobby">
+<div class="rk-lobby">
     <section class="rk-hero" aria-labelledby="rocket-title">
         <div class="rk-hero-copy">
-            <a class="back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} Tous les jeux</a>
-            <p class="section-kicker"><span class="live-pulse" aria-hidden="true"></span> Mission multijoueur</p>
-            <h1 id="rocket-title">Infiltration<br><span>Rocket</span></h1>
-            <p class="rk-lead">La Team Rocket s’est glissée parmi les Dresseurs. La nuit, les rôles secrets agissent. Le jour, débattez puis éliminez un suspect.</p>
-            <div class="rk-facts" aria-label="Caractéristiques">
-                <span>6 à 12 joueurs</span><span>Rôles cachés</span><span>Difficulté élevée</span>
+            <a class="back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} {% bilingual "Tous les jeux" "All games" %}</a>
+            <p class="section-kicker"><span class="live-pulse" aria-hidden="true"></span> {% bilingual "Mission multijoueur" "Multiplayer mission" %}</p>
+            <h1 id="rocket-title">{% bilingual "Infiltration" "Team Rocket" %}<br><span>{% bilingual "Rocket" "Infiltration" %}</span></h1>
+            <p class="rk-lead">{% bilingual "La Team Rocket s’est glissée parmi les Dresseurs. La nuit, les rôles secrets agissent. Le jour, débattez puis éliminez un suspect." "Team Rocket has slipped in among the Trainers. Secret roles act at night; by day, debate and eliminate a suspect." %}</p>
+            <div class="rk-facts" aria-label="{% bilingual 'Caractéristiques' 'Game features' %}">
+                <span>{% bilingual "6 à 12 joueurs" "6 to 12 players" %}</span><span>{% bilingual "Rôles cachés" "Hidden roles" %}</span><span>{% bilingual "Difficulté élevée" "High difficulty" %}</span>
             </div>
             <form method="post" action="{% url 'rocket:create_game' %}" class="rk-create">
                 {% csrf_token %}
-                <button class="btn btn-primary btn-large" type="submit">Créer une infiltration</button>
+                <button class="btn btn-primary btn-large" type="submit">{% bilingual "Créer une infiltration" "Create an infiltration" %}</button>
             </form>
         </div>
         <div class="rk-hero-scene" aria-hidden="true">
@@ -31,45 +32,44 @@
 
     <section class="rk-rules" aria-labelledby="rk-rules-title">
         <div>
-            <p class="section-kicker">Une manche en trois temps</p>
-            <h2 id="rk-rules-title">Observe. Argumente. Vote.</h2>
+            <p class="section-kicker">{% bilingual "Une manche en trois temps" "Three phases per round" %}</p>
+            <h2 id="rk-rules-title">{% bilingual "Observe. Argumente. Vote." "Observe. Debate. Vote." %}</h2>
         </div>
         <ol>
-            <li><b>01</b><span><strong>Nuit</strong>Rocket sabote, Looker enquête, Leuphorie protège.</span></li>
-            <li><b>02</b><span><strong>Discussion</strong>Les survivants confrontent leurs indices en direct.</span></li>
-            <li><b>03</b><span><strong>Conseil</strong>Chacun vote en secret ; les égalités n’éliminent personne.</span></li>
+            <li><b>01</b><span><strong>{% bilingual "Nuit" "Night" %}</strong>{% bilingual "Rocket sabote, Looker enquête, Leuphorie protège." "Rocket sabotages, Looker investigates, and Blissey protects." %}</span></li>
+            <li><b>02</b><span><strong>{% bilingual "Discussion" "Discussion" %}</strong>{% bilingual "Les survivants confrontent leurs indices en direct." "Survivors compare their clues live." %}</span></li>
+            <li><b>03</b><span><strong>{% bilingual "Conseil" "Council" %}</strong>{% bilingual "Chacun vote en secret ; les égalités n’éliminent personne." "Everyone votes in secret; a tie eliminates nobody." %}</span></li>
         </ol>
     </section>
 
     <div class="rk-lobby-columns">
         <section class="rk-panel" aria-labelledby="rk-open-title">
-            <div class="rk-panel-head"><div><p class="section-kicker">À rejoindre</p><h2 id="rk-open-title">Infiltrations ouvertes</h2></div><span>{{ lobby_state.open_games|length }}</span></div>
+            <div class="rk-panel-head"><div><p class="section-kicker">{% bilingual "À rejoindre" "Join a mission" %}</p><h2 id="rk-open-title">{% bilingual "Infiltrations ouvertes" "Open infiltrations" %}</h2></div><span>{{ lobby_state.open_games|length }}</span></div>
             <ul class="game-list">
                 {% for room in lobby_state.open_games %}
                 <li class="game-list-item">
-                    <span class="game-list-copy"><strong>Mission de {{ room.host }}</strong><span>{{ room.player_count }}/{{ room.max_players }} agents en place</span></span>
+                    <span class="game-list-copy"><strong>{% bilingual "Mission de" "Mission hosted by" %} {{ room.host }}</strong><span>{{ room.player_count }}/{{ room.max_players }} {% bilingual "agents en place" "agents ready" %}</span></span>
                     {% if room.can_join %}
-                    <form method="post" action="{% url 'rocket:join_game' game_id=room.id %}">{% csrf_token %}<button class="btn btn-secondary" type="submit">Rejoindre</button></form>
+                    <form method="post" action="{% url 'rocket:join_game' game_id=room.id %}">{% csrf_token %}<button class="btn btn-secondary" type="submit">{% bilingual "Rejoindre" "Join" %}</button></form>
                     {% else %}
-                    <a class="btn btn-ghost" href="{% url 'rocket:game_detail' game_id=room.id %}">Ouvrir</a>
+                    <a class="btn btn-ghost" href="{% url 'rocket:game_detail' game_id=room.id %}">{% bilingual "Ouvrir" "Open" %}</a>
                     {% endif %}
                 </li>
                 {% empty %}
-                <li class="empty-state">Aucune mission ouverte. Crée la première infiltration.</li>
+                <li class="empty-state">{% bilingual "Aucune mission ouverte. Crée la première infiltration." "No open missions. Create the first infiltration." %}</li>
                 {% endfor %}
             </ul>
         </section>
         <section class="rk-panel" aria-labelledby="rk-mine-title">
-            <div class="rk-panel-head"><div><p class="section-kicker">Ton espace</p><h2 id="rk-mine-title">Mes missions</h2></div><span>{{ lobby_state.my_games|length }}</span></div>
+            <div class="rk-panel-head"><div><p class="section-kicker">{% bilingual "Ton espace" "Your space" %}</p><h2 id="rk-mine-title">{% bilingual "Mes missions" "My missions" %}</h2></div><span>{{ lobby_state.my_games|length }}</span></div>
             <ul class="game-list">
                 {% for room in lobby_state.my_games %}
-                <li class="game-list-item"><span class="game-list-copy"><strong>Nuit {{ room.round|default:"—" }}</strong><span>{{ room.status_label }}</span></span><a class="btn btn-ghost" href="{% url 'rocket:game_detail' game_id=room.id %}">Ouvrir</a></li>
+                <li class="game-list-item"><span class="game-list-copy"><strong>{% bilingual "Nuit" "Night" %} {{ room.round|default:"—" }}</strong><span>{{ room.status_label }}</span></span><a class="btn btn-ghost" href="{% url 'rocket:game_detail' game_id=room.id %}">{% bilingual "Ouvrir" "Open" %}</a></li>
                 {% empty %}
-                <li class="empty-state">Tes missions commencées apparaîtront ici.</li>
+                <li class="empty-state">{% bilingual "Tes missions commencées apparaîtront ici." "Your started missions will appear here." %}</li>
                 {% endfor %}
             </ul>
         </section>
     </div>
-</main>
+</div>
 {% endblock %}
-

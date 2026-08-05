@@ -7,8 +7,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
-from game.guests import guest_allowed
+from game.guests import guest_action, guest_allowed, public_lobby
 
+from .i18n import javascript_catalog, text
 from .models import RocketGame
 from .services import (
     RocketError,
@@ -31,9 +32,19 @@ def _json_payload(request):
     try:
         payload = json.loads(request.body or "{}")
     except (json.JSONDecodeError, UnicodeDecodeError):
-        return None, JsonResponse({"error": "Requête JSON invalide."}, status=400)
+        return None, JsonResponse(
+            {"error": text("Requête JSON invalide.", "Invalid JSON request.")}, status=400
+        )
     if not isinstance(payload, dict):
-        return None, JsonResponse({"error": "La requête doit contenir un objet JSON."}, status=400)
+        return None, JsonResponse(
+            {
+                "error": text(
+                    "La requête doit contenir un objet JSON.",
+                    "The request must contain a JSON object.",
+                )
+            },
+            status=400,
+        )
     return payload, None
 
 
@@ -48,31 +59,33 @@ def _error_response(exc, game, user):
     return JsonResponse({"error": str(exc)}, status=status)
 
 
-@guest_allowed
+@public_lobby
 def lobby(request):
     return render(request, "rocket/lobby.html", {"lobby_state": get_lobby_state(request.user)})
 
 
-@login_required
 @require_GET
 def api_lobby_state(request):
     return JsonResponse(get_lobby_state(request.user))
 
 
-@login_required
+@guest_action
 @require_POST
 def create_game_view(request):
     game = create_game(request.user)
     return redirect("rocket:game_detail", game_id=game.id)
 
 
-@login_required
+@guest_action
 @require_POST
 def join_game_view(request, game_id):
     try:
         join_game(game_id, request.user)
     except RocketGame.DoesNotExist:
-        messages.error(request, "Cette infiltration n'existe plus.")
+        messages.error(
+            request,
+            text("Cette infiltration n'existe plus.", "This infiltration no longer exists."),
+        )
         return redirect("rocket:lobby")
     except RocketError as exc:
         messages.error(request, str(exc))
@@ -85,7 +98,10 @@ def start_game_view(request, game_id):
     try:
         start_game(game_id, request.user)
     except RocketGame.DoesNotExist:
-        messages.error(request, "Cette infiltration n'existe plus.")
+        messages.error(
+            request,
+            text("Cette infiltration n'existe plus.", "This infiltration no longer exists."),
+        )
         return redirect("rocket:lobby")
     except RocketError as exc:
         messages.error(request, str(exc))
@@ -102,8 +118,11 @@ def game_detail(request, game_id):
             request,
             "join_invitation.html",
             {
-                "mode_name": "Infiltration Rocket",
-                "mode_kicker": "Rôles cachés · nuit · débat · vote",
+                "mode_name": text("Infiltration Rocket", "Team Rocket Infiltration"),
+                "mode_kicker": text(
+                    "Rôles cachés · nuit · débat · vote",
+                    "Hidden roles · night · debate · vote",
+                ),
                 "host_name": game.created_by.get_username(),
                 "player_count": count,
                 "max_players": game.max_players,
@@ -118,7 +137,11 @@ def game_detail(request, game_id):
     return render(
         request,
         "rocket/detail.html",
-        {"game": game, "game_state": serialize_game_state(game, request.user)},
+        {
+            "game": game,
+            "game_state": serialize_game_state(game, request.user),
+            "ui_i18n": javascript_catalog(),
+        },
     )
 
 

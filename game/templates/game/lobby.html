@@ -1,19 +1,20 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static poketable_i18n %}
 {% block title %}Poké-Uno — PokéTable{% endblock %}
+{% block meta_description %}{% bilingual "Joue gratuitement à Poké-Uno en ligne avec tes amis ou contre des adversaires IA : types Pokémon, cartes pouvoir et parties instantanées." "Play Poké-Uno online for free with friends or AI opponents, featuring Pokémon types, power cards and instant games." %}{% endblock %}
 {% block content %}
 <div id="lobby-app" class="lobby-page" data-state-url="{% url 'api_lobby_state' %}">
     <section class="lobby-hero">
         <div class="lobby-hero-copy">
             <p class="section-kicker">PokéTable · Poké-Uno</p>
-            <h1>L’arène est<br><span>à toi.</span></h1>
-            <p class="lobby-intro">Quatre types tirés au sort à chaque partie : enchaîne les Pokémon qui partagent un type et sois le premier à vider ta main.</p>
+            <h1>{% bilingual "L’arène est" "The arena is" %}<br><span>{% bilingual "à toi." "yours." %}</span></h1>
+            <p class="lobby-intro">{% bilingual "Quatre types tirés au sort à chaque partie : enchaîne les Pokémon qui partagent un type et sois le premier à vider ta main." "Four types are drawn for each game: chain Pokémon sharing a type and be the first to empty your hand." %}</p>
             <div class="lobby-hero-actions">
                 <form method="post">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary" data-reload-focus-key="create-game">Créer une partie</button>
+                    <button type="submit" class="btn btn-primary" data-reload-focus-key="create-game">{% bilingual "Créer une partie" "Create a game" %}</button>
                 </form>
-                <span class="live-label"><span class="lobby-status-dot" aria-hidden="true"></span>Salons actualisés en direct</span>
+                <span class="live-label"><span class="lobby-status-dot" aria-hidden="true"></span>{% bilingual "Salons actualisés en direct" "Rooms updated live" %}</span>
             </div>
         </div>
         <div class="lobby-hero-art">{% include "partials/art/uno.html" %}</div>
@@ -22,42 +23,42 @@
     <div class="lobby-grid">
         <section class="lobby-panel" aria-labelledby="open-games-heading">
             <div class="lobby-panel-heading">
-                <div><p class="section-kicker">À rejoindre</p><h2 id="open-games-heading">Salles ouvertes</h2></div>
+                <div><p class="section-kicker">{% bilingual "À rejoindre" "Join a game" %}</p><h2 id="open-games-heading">{% bilingual "Salles ouvertes" "Open rooms" %}</h2></div>
                 <span class="count-badge">{{ open_games|length }}</span>
             </div>
             {% if open_games %}
             <ul class="game-list">
                 {% for g in open_games %}
                 <li class="game-list-item">
-                    <div class="game-list-copy"><strong>Partie de {{ g.created_by.username }}</strong><span>{{ g.players.count }}/{{ g.max_players }} joueurs</span></div>
+                    <div class="game-list-copy"><strong>{% bilingual "Partie de" "Game hosted by" %} {{ g.created_by.username }}</strong><span>{{ g.players.count }}/{{ g.max_players }} {% bilingual "joueurs" "players" %}</span></div>
                     <form method="post" action="{% url 'join_game' game_id=g.id %}" class="inline-form">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-secondary" data-reload-focus-key="join-game-{{ g.id }}">{% if g.created_by_id == user.id %}Ouvrir{% else %}Rejoindre{% endif %}</button>
+                        <button type="submit" class="btn btn-secondary" data-reload-focus-key="join-game-{{ g.id }}">{% if g.created_by_id == user.id %}{% bilingual "Ouvrir" "Open" %}{% else %}{% bilingual "Rejoindre" "Join" %}{% endif %}</button>
                     </form>
                 </li>
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="empty-state">Aucune salle ouverte. Crée la première partie.</p>
+            <p class="empty-state">{% bilingual "Aucune salle ouverte. Crée la première partie." "No open room yet. Create the first game." %}</p>
             {% endif %}
         </section>
 
         <section class="lobby-panel" aria-labelledby="my-games-heading">
             <div class="lobby-panel-heading">
-                <div><p class="section-kicker">Historique</p><h2 id="my-games-heading">Mes parties</h2></div>
+                <div><p class="section-kicker">{% bilingual "Historique" "History" %}</p><h2 id="my-games-heading">{% bilingual "Mes parties" "My games" %}</h2></div>
                 <span class="count-badge">{{ my_games|length }}</span>
             </div>
             {% if my_games %}
             <ul class="game-list">
                 {% for g in my_games %}
                 <li class="game-list-item">
-                    <div class="game-list-copy"><strong>Partie {{ forloop.counter }}</strong><span>{{ g.get_status_display }}</span></div>
-                    <a class="btn btn-ghost" href="{% url 'game_detail' game_id=g.id %}" data-reload-focus-key="open-game-{{ g.id }}">Ouvrir</a>
+                    <div class="game-list-copy"><strong>{% bilingual "Partie" "Game" %} {{ forloop.counter }}</strong><span>{% if g.status == "EN_ATTENTE" %}{% bilingual "En attente" "Waiting" %}{% elif g.status == "EN_COURS" %}{% bilingual "En cours" "In progress" %}{% else %}{% bilingual "Terminée" "Finished" %}{% endif %}</span></div>
+                    <a class="btn btn-ghost" href="{% url 'game_detail' game_id=g.id %}" data-reload-focus-key="open-game-{{ g.id }}">{% bilingual "Ouvrir" "Open" %}</a>
                 </li>
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="empty-state">Tes prochaines parties apparaîtront ici.</p>
+            <p class="empty-state">{% bilingual "Tes prochaines parties apparaîtront ici." "Your next games will appear here." %}</p>
             {% endif %}
         </section>
     </div>

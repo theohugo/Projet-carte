@@ -1,6 +1,9 @@
 import json
+import random
+from unittest.mock import patch
 
 from django.test import TestCase
+from django.utils.translation import override
 
 from game.models import PokemonCard
 from islands.models import IslandGame, Shot
@@ -10,15 +13,33 @@ from islands.services import (
     IslandPlacementError,
     IslandStateError,
     StaleRevisionError,
+    add_bot,
+    choose_bot_coordinate,
     create_game,
     fire,
     join_game,
     place_formation,
+    play_bot_turn,
     ready_player,
+    remove_bot,
     serialize_game_state,
+    start_bot_game,
 )
 
 from .factories import deploy_all, make_catalog, make_users, ready_both
+
+
+class FirstChoice:
+    def choice(self, values):
+        return values[0]
+
+
+class CoordinateChoice(FirstChoice):
+    def __init__(self, coordinate):
+        self.coordinate = coordinate
+
+    def choice(self, values):
+        return self.coordinate if self.coordinate in values else super().choice(values)
 
 
 class IslandServiceTests(TestCase):
@@ -33,6 +54,13 @@ class IslandServiceTests(TestCase):
 
     def make_started_game(self):
         return ready_both(self.make_joined_game(), self.host, self.guest)
+
+    def make_started_bot_game(self):
+        game = create_game(self.host)
+        game = add_bot(game.id, self.host, game.turn_revision)
+        game = start_bot_game(game.id, self.host, game.turn_revision, rng=random.Random(7))
+        game = deploy_all(game, self.host)
+        return ready_player(game.id, self.host, game.turn_revision)
 
     def test_creation_registers_host_and_four_water_formations(self):
         game = create_game(self.host)
@@ -90,6 +118,160 @@ class IslandServiceTests(TestCase):
         with self.assertRaisesMessage(IslandStateError, "n'accepte plus"):
             join_game(game.id, self.outsider)
 
+    def test_host_manages_one_revision_protected_bot_before_deployment(self):
+        game = create_game(self.host)
+        original_revision = game.turn_revision
+
+        game = add_bot(game.id, self.host, original_revision)
+        bot = game.players.get(user__isnull=True)
+
+        self.assertTrue(bot.is_bot)
+        self.assertTrue(bot.display_name.startswith("IA "))
+        self.assertEqual(bot.turn_order, 1)
+        self.assertEqual(game.players.count(), 2)
+        self.assertEqual(game.status, IslandGame.Status.EN_ATTENTE)
+        with self.assertRaises(StaleRevisionError):
+            add_bot(game.id, self.host, original_revision)
+        with self.assertRaises(IslandPermissionError):
+            remove_bot(game.id, self.outsider, bot.id, game.turn_revision)
+
+        game = remove_bot(game.id, self.host, bot.id, game.turn_revision)
+        self.assertEqual(game.players.count(), 1)
+        self.assertFalse(game.players.filter(user__isnull=True).exists())
+
+    def test_bot_start_deploys_a_legal_secret_fleet(self):
+        game = create_game(self.host)
+        game = add_bot(game.id, self.host, game.turn_revision)
+        bot = game.players.get(user__isnull=True)
+
+        self.assertTrue(all(not formation.is_placed for formation in bot.formations.all()))
+        waiting_state = serialize_game_state(game, self.host)
+        self.assertEqual(waiting_state["opponent_formations"], [])
+        self.assertTrue(waiting_state["can_start"])
+
+        game = start_bot_game(game.id, self.host, game.turn_revision, rng=random.Random(13))
+        bot.refresh_from_db()
+        formations = list(bot.formations.select_related("pokemon_card").order_by("slot"))
+        occupied = [cell for formation in formations for cell in formation.cells]
+
+        self.assertEqual(game.status, IslandGame.Status.PLACEMENT)
+        self.assertTrue(bot.is_ready)
+        self.assertEqual(len(occupied), sum(formation.size for formation in formations))
+        self.assertEqual(len(occupied), len(set(occupied)))
+        self.assertTrue(all(0 <= row < 8 and 0 <= col < 8 for row, col in occupied))
+        private_state = serialize_game_state(game, self.host)
+        self.assertEqual(private_state["opponent_formations"], [])
+        opponent_branch = json.dumps(
+            {
+                "formations": private_state["opponent_formations"],
+                "shots": private_state["shots_fired"],
+            }
+        )
+        for formation in formations:
+            self.assertNotIn(str(formation.id), opponent_branch)
+            self.assertNotIn(formation.pokemon_card.sprite_url, opponent_branch)
+
+    def test_bot_name_is_localized_without_changing_its_database_identity(self):
+        game = create_game(self.host)
+        game = add_bot(game.id, self.host, game.turn_revision)
+        bot = game.players.get(user__isnull=True)
+
+        with override("fr"):
+            french_name = serialize_game_state(game, self.host)["opponent"]["username"]
+        with override("en"):
+            english_name = serialize_game_state(game, self.host)["opponent"]["username"]
+
+        bot.refresh_from_db()
+        self.assertEqual(french_name, "IA Lokhlass")
+        self.assertEqual(english_name, "Lapras AI")
+        self.assertEqual(bot.bot_name, "IA Lokhlass")
+
+    def test_bot_hunts_on_a_checkerboard_then_targets_visible_hits(self):
+        game = self.make_started_bot_game()
+        bot = game.players.get(user__isnull=True)
+        bot_target = bot.formations.first().cells[0]
+        bot_cells = {cell for formation in bot.formations.all() for cell in formation.cells}
+        bot_empty_coordinates = [
+            (row, col) for row in range(8) for col in range(8) if (row, col) not in bot_cells
+        ]
+
+        game, _ = fire(game.id, self.host, *bot_target, game.turn_revision)
+        game, _ = fire(game.id, self.host, *bot_empty_coordinates[0], game.turn_revision)
+        self.assertEqual(choose_bot_coordinate(game, bot, rng=FirstChoice()), (0, 0))
+        game, first_bot_shot = play_bot_turn(
+            game.id,
+            self.host,
+            game.turn_revision,
+            rng=FirstChoice(),
+        )
+        self.assertEqual((first_bot_shot.row, first_bot_shot.col), (0, 0))
+        self.assertEqual(first_bot_shot.result, Shot.Result.HIT)
+        self.assertEqual(game.current_turn, bot)
+
+        game, targeted = play_bot_turn(
+            game.id,
+            self.host,
+            game.turn_revision,
+            rng=FirstChoice(),
+        )
+        self.assertEqual((targeted.row, targeted.col), (0, 1))
+        self.assertEqual(targeted.result, Shot.Result.CAPTURED)
+        self.assertEqual(game.current_turn, bot)
+
+        game, resumed_hunt = play_bot_turn(
+            game.id,
+            self.host,
+            game.turn_revision,
+            rng=FirstChoice(),
+        )
+        self.assertEqual((resumed_hunt.row, resumed_hunt.col), (0, 2))
+
+    def test_bot_victory_records_only_the_human_and_no_bot_winner(self):
+        game = self.make_started_bot_game()
+        bot = game.players.get(user__isnull=True)
+        human = game.players.get(user=self.host)
+        formations = list(human.formations.order_by("slot"))
+        final_coordinate = formations[-1].cells[-1]
+
+        for formation in formations[:-1]:
+            for index, (row, col) in enumerate(formation.cells):
+                Shot.objects.create(
+                    game=game,
+                    shooter=bot,
+                    target=human,
+                    row=row,
+                    col=col,
+                    result=(Shot.Result.CAPTURED if index == len(formation.cells) - 1 else Shot.Result.HIT),
+                    formation=formation,
+                )
+        for row, col in formations[-1].cells[:-1]:
+            Shot.objects.create(
+                game=game,
+                shooter=bot,
+                target=human,
+                row=row,
+                col=col,
+                result=Shot.Result.HIT,
+                formation=formations[-1],
+            )
+        game.current_turn = bot
+        game.save(update_fields=["current_turn"])
+
+        with patch("islands.services.record_completed_game") as record:
+            game, final_shot = play_bot_turn(
+                game.id,
+                self.host,
+                game.turn_revision,
+                rng=CoordinateChoice(final_coordinate),
+            )
+
+        self.assertEqual(final_shot.result, Shot.Result.CAPTURED)
+        self.assertEqual(game.status, IslandGame.Status.TERMINEE)
+        self.assertEqual(game.winner, bot)
+        recorded_users, winner_ids = record.call_args.args
+        self.assertEqual(list(recorded_users), [self.host])
+        self.assertEqual(winner_ids, set())
+
     def test_placement_accepts_borders_but_rejects_overflow_and_overlap(self):
         game = self.make_joined_game()
         formations = list(game.players.get(user=self.host).formations.order_by("slot"))
@@ -132,20 +314,22 @@ class IslandServiceTests(TestCase):
         self.assertEqual(game.current_turn.user, self.host)
         self.assertIsNotNone(game.started_at)
 
-    def test_fire_alternates_turns_and_reports_miss_hit_then_capture(self):
+    def test_hit_keeps_the_turn_while_a_miss_passes_it_to_the_opponent(self):
         game = self.make_started_game()
         target_formation = game.players.get(user=self.guest).formations.get(slot=0)
 
         game, first = fire(game.id, self.host, 0, 0, game.turn_revision)
         self.assertEqual(first.result, Shot.Result.HIT)
         self.assertEqual(first.formation, target_formation)
-        self.assertEqual(game.current_turn.user, self.guest)
-        game, missed = fire(game.id, self.guest, 6, 7, game.turn_revision)
-        self.assertEqual(missed.result, Shot.Result.MISS)
-        self.assertIsNone(missed.formation)
+        self.assertEqual(game.current_turn.user, self.host)
         game, captured = fire(game.id, self.host, 0, 1, game.turn_revision)
         self.assertEqual(captured.result, Shot.Result.CAPTURED)
         self.assertEqual(captured.formation, target_formation)
+        self.assertEqual(game.current_turn.user, self.host)
+        game, missed = fire(game.id, self.host, 6, 7, game.turn_revision)
+        self.assertEqual(missed.result, Shot.Result.MISS)
+        self.assertIsNone(missed.formation)
+        self.assertEqual(game.current_turn.user, self.guest)
 
     def test_wrong_turn_duplicate_and_out_of_range_shots_are_rejected(self):
         game = self.make_started_game()
@@ -155,7 +339,8 @@ class IslandServiceTests(TestCase):
             fire(game.id, self.host, 8, 0, game.turn_revision)
 
         game, _ = fire(game.id, self.host, 0, 0, game.turn_revision)
-        game, _ = fire(game.id, self.guest, 6, 7, game.turn_revision)
+        game, _ = fire(game.id, self.host, 6, 7, game.turn_revision)
+        game, _ = fire(game.id, self.guest, 6, 6, game.turn_revision)
         with self.assertRaisesMessage(IslandStateError, "déjà"):
             fire(game.id, self.host, 0, 0, game.turn_revision)
 
@@ -166,12 +351,8 @@ class IslandServiceTests(TestCase):
             for formation in game.players.get(user=self.guest).formations.order_by("slot")
             for cell in formation.cells
         ]
-        guest_misses = [(6, col) for col in range(7, -1, -1)] + [(5, col) for col in range(7, 3, -1)]
-        for index, (row, col) in enumerate(target_cells):
+        for row, col in target_cells:
             game, _ = fire(game.id, self.host, row, col, game.turn_revision)
-            if index < len(target_cells) - 1:
-                miss_row, miss_col = guest_misses[index]
-                game, _ = fire(game.id, self.guest, miss_row, miss_col, game.turn_revision)
 
         self.assertEqual(game.status, IslandGame.Status.TERMINEE)
         self.assertEqual(game.winner.user, self.host)

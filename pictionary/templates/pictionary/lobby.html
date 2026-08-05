@@ -1,40 +1,41 @@
 {% extends "base.html" %}
-{% load static icons %}
+{% load static icons poketable_i18n %}
 
-{% block title %}Pictionary Pokémon — PokéTable{% endblock %}
+{% block title %}{% bilingual "Pictionary Pokémon" "Pokémon Pictionary" %} — PokéTable{% endblock %}
+{% block meta_description %}{% bilingual "Dessine un Pokémon de la première génération et fais-le deviner en direct : des manches rapides pour jouer entre amis." "Draw a first-generation Pokémon and have friends guess it live in quick multiplayer rounds." %}{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'pictionary/css/pictionary.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'pictionary/css/pictionary.css' %}?v=3">
 
 <div id="pictionary-lobby" class="pic-lobby" data-state-url="{% url 'pictionary:api_lobby_state' %}">
     <section class="pic-hero" aria-labelledby="pictionary-title">
         <div>
-            <a class="back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} Tous les jeux</a>
-            <p class="section-kicker">Dessin · devinette</p>
-            <h1 id="pictionary-title">Pictionary Pokémon</h1>
-            <p class="pic-lead">À chaque manche, un joueur reçoit un Pokémon de la première génération et le dessine. Les autres écrivent leur réponse.</p>
+            <a class="back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} {% bilingual "Tous les jeux" "All games" %}</a>
+            <p class="section-kicker">{% bilingual "Dessin · devinette" "Drawing · guessing" %}</p>
+            <h1 id="pictionary-title">{% bilingual "Pictionary Pokémon" "Pokémon Pictionary" %}</h1>
+            <p class="pic-lead">{% bilingual "À chaque manche, un joueur reçoit un Pokémon de la première génération et le dessine. Les autres écrivent leur réponse." "Each round, one player receives a first-generation Pokémon to draw. Everyone else types a guess." %}</p>
             <ol class="pic-steps">
-                <li><b>1</b> Le crayon tourne</li>
-                <li><b>90 s</b> pour dessiner</li>
-                <li><b>Vite</b> = plus de points</li>
-                <li><b>+150</b> au dessinateur par bonne réponse</li>
+                <li><b>1</b> {% bilingual "Le crayon tourne" "The pencil rotates" %}</li>
+                <li><b>90 s</b> {% bilingual "pour dessiner" "to draw" %}</li>
+                <li><b>{% bilingual "Vite" "Fast" %}</b> = {% bilingual "plus de points" "more points" %}</li>
+                <li><b>+150</b> {% bilingual "au dessinateur par bonne réponse" "for the artist per correct guess" %}</li>
             </ol>
 
             <form method="post" action="{% url 'pictionary:create_game' %}" class="pic-create">
                 {% csrf_token %}
                 <fieldset>
-                    <legend class="section-kicker">Longueur de la partie</legend>
+                    <legend class="section-kicker">{% bilingual "Longueur de la partie" "Game length" %}</legend>
                     <div class="pic-round-choices">
                         {% for value, label in round_choices %}
                         <label class="pic-round-choice">
                             <input type="radio" name="round_count" value="{{ value }}" {% if value == 6 %}checked{% endif %}>
-                            <span>{{ label }}</span>
+                            <span>{{ value }} {% bilingual "manches" "rounds" %}</span>
                             <small>≈ {{ value }} × 1 min 30</small>
                         </label>
                         {% endfor %}
                     </div>
                 </fieldset>
-                <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="create-game">Ouvrir un salon</button>
+                <button type="submit" class="btn btn-primary btn-large" data-reload-focus-key="create-game">{% bilingual "Ouvrir un salon" "Open a room" %}</button>
             </form>
         </div>
 
@@ -42,36 +43,36 @@
     </section>
 
     <section class="pic-section" aria-labelledby="pic-open-title">
-        <h2 id="pic-open-title">Salons ouverts</h2>
+        <h2 id="pic-open-title">{% bilingual "Salons ouverts" "Open rooms" %}</h2>
         <ul class="game-list" data-open-games>
             {% for game in lobby_state.open_games %}
             <li class="game-list-item">
                 <span class="game-list-copy">
-                    <strong>Salon de {{ game.host }}</strong>
-                    <span>{{ game.player_count }} joueur{{ game.player_count|pluralize }} · {{ game.round_count }} manches</span>
+                    <strong>{% bilingual "Salon de" "Room hosted by" %} {{ game.host }}</strong>
+                    <span>{{ game.player_count }} {% bilingual "joueur(s)" "player(s)" %} · {{ game.round_count }} {% bilingual "manches" "rounds" %}</span>
                 </span>
                 <form method="post" action="{% url 'pictionary:join_game' game_id=game.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-secondary" data-reload-focus-key="join-{{ game.id }}">{% if game.is_mine %}Rejoindre mon salon{% else %}Rejoindre{% endif %}</button>
+                    <button type="submit" class="btn btn-secondary" data-reload-focus-key="join-{{ game.id }}">{% if game.is_mine %}{% bilingual "Rejoindre mon salon" "Open my room" %}{% else %}{% bilingual "Rejoindre" "Join" %}{% endif %}</button>
                 </form>
             </li>
             {% empty %}
-            <li class="empty-state">Aucun salon ouvert pour l’instant. Ouvre le tien !</li>
+            <li class="empty-state">{% bilingual "Aucun salon ouvert pour l’instant. Ouvre le tien !" "No open rooms yet. Open yours!" %}</li>
             {% endfor %}
         </ul>
     </section>
 
     {% if my_games %}
     <section class="pic-section" aria-labelledby="pic-mine-title">
-        <h2 id="pic-mine-title">Mes parties</h2>
+        <h2 id="pic-mine-title">{% bilingual "Mes parties" "My games" %}</h2>
         <ul class="game-list">
             {% for game in my_games %}
             <li class="game-list-item">
                 <span class="game-list-copy">
-                    <strong>Salon de {{ game.created_by.username }}</strong>
-                    <span>{{ game.get_status_display }} · {{ game.round_count }} manches</span>
+                    <strong>{% bilingual "Salon de" "Room hosted by" %} {{ game.created_by.username }}</strong>
+                    <span>{% if game.status == "EN_COURS" %}{% bilingual "En cours" "In progress" %}{% else %}{% bilingual "Terminée" "Finished" %}{% endif %} · {{ game.round_count }} {% bilingual "manches" "rounds" %}</span>
                 </span>
-                <a class="btn btn-ghost" href="{% url 'pictionary:game_detail' game_id=game.id %}">Ouvrir</a>
+                <a class="btn btn-ghost" href="{% url 'pictionary:game_detail' game_id=game.id %}">{% bilingual "Ouvrir" "Open" %}</a>
             </li>
             {% endfor %}
         </ul>

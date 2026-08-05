@@ -4,8 +4,10 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from game.tests.i18n import LanguageIsolationMixin
 from starterrace.models import Move
-from starterrace.services import create_game, join_game, start_game
+from starterrace.services import add_bot, create_game, join_game, start_game
+from starterrace.services import advance_bot_step as engine_advance_bot_step
 from starterrace.services import roll_dice as engine_roll
 
 from .factories import FixedRng, make_starter_catalog, make_users
@@ -119,7 +121,7 @@ class StarterRaceApiTests(TestCase):
 
 
 @override_settings(ROOT_URLCONF="starterrace.tests.urls")
-class StarterRacePagesTests(TestCase):
+class StarterRacePagesTests(LanguageIsolationMixin, TestCase):
     def setUp(self):
         self.cards = make_starter_catalog()
         self.host, self.guest, self.outsider = make_users(3)
@@ -151,6 +153,26 @@ class StarterRacePagesTests(TestCase):
         self.assertContains(response, reverse("starterrace:api_move", kwargs={"game_id": game.id}))
         self.assertContains(response, 'aria-label="Piste commune de 40 cases"')
 
+    def test_host_can_add_and_remove_a_bot_from_the_waiting_room(self):
+        game = create_game(self.host)
+        self.client.force_login(self.host)
+
+        added = self.client.post(reverse("starterrace:add_bot", kwargs={"game_id": game.id}))
+        bot = game.players.get(user__isnull=True)
+        page = self.client.get(reverse("starterrace:game_detail", kwargs={"game_id": game.id}))
+        removed = self.client.post(
+            reverse(
+                "starterrace:remove_bot",
+                kwargs={"game_id": game.id, "player_id": bot.id},
+            )
+        )
+
+        self.assertEqual(added.status_code, 302)
+        self.assertContains(page, reverse("starterrace:add_bot", kwargs={"game_id": game.id}))
+        self.assertContains(page, "data-remove-bot-url-template=")
+        self.assertEqual(removed.status_code, 302)
+        self.assertFalse(game.players.filter(user__isnull=True).exists())
+
     def test_outsider_gets_join_invitation_for_an_open_game(self):
         game = create_game(self.host)
         self.client.force_login(self.outsider)
@@ -172,3 +194,94 @@ class StarterRacePagesTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertTemplateUsed(response, "join_invitation.html")
+
+    def test_browser_language_switches_template_js_and_pokemon_names(self):
+        self.client.force_login(self.host)
+        game = create_game(self.host)
+
+        english = self.client.get(reverse("starterrace:lobby"), HTTP_ACCEPT_LANGUAGE="en")
+        english_detail = self.client.get(
+            reverse("starterrace:game_detail", kwargs={"game_id": game.id}),
+            HTTP_ACCEPT_LANGUAGE="en",
+        )
+        french = self.client.get(reverse("starterrace:lobby"), HTTP_ACCEPT_LANGUAGE="fr")
+
+        self.assertContains(english, "Starter Race")
+        self.assertContains(english, "Create a race")
+        self.assertContains(english, "Bulbasaur")
+        self.assertContains(english, "Play Starter Race online on PokéTable")
+        self.assertContains(english, "starterrace/css/starterrace.css?v=3")
+        self.assertNotContains(english, "Créer une course")
+        self.assertContains(english_detail, 'id="starterrace-i18n"')
+        self.assertContains(english_detail, "Roll the die")
+        self.assertContains(english_detail, "Live Starter Race table")
+        self.assertContains(english_detail, "starterrace/js/game.js?v=4")
+        self.assertContains(french, "Course des Starters")
+        self.assertContains(french, "Créer une course")
+        self.assertContains(french, "Bulbizarre")
+        self.assertContains(french, "Joue à Course des Starters en ligne sur PokéTable")
+
+
+@override_settings(ROOT_URLCONF="starterrace.tests.urls")
+class StarterRaceBotApiTests(LanguageIsolationMixin, TestCase):
+    def setUp(self):
+        make_starter_catalog()
+        self.host = make_users(1)[0]
+        self.game = create_game(self.host)
+        add_bot(self.game.id, self.host)
+        self.game = start_game(self.game.id, self.host)
+        self.client.force_login(self.host)
+
+    def test_api_exposes_bot_rolls_and_moves_one_poll_at_a_time(self):
+        bot_rng = FixedRng(6, 2)
+        with (
+            patch(
+                "starterrace.views.roll_dice",
+                side_effect=lambda game_id, user, revision: engine_roll(
+                    game_id,
+                    user,
+                    revision,
+                    rng=FixedRng(1),
+                ),
+            ),
+            patch(
+                "starterrace.views.advance_bot_step",
+                side_effect=lambda game_id: engine_advance_bot_step(
+                    game_id,
+                    rng=bot_rng,
+                ),
+            ),
+        ):
+            response = self.client.post(
+                reverse("starterrace:api_roll", kwargs={"game_id": self.game.id}),
+                data=json.dumps({"expected_turn_revision": self.game.turn_revision}),
+                content_type="application/json",
+            )
+            state_url = reverse("starterrace:api_state", kwargs={"game_id": self.game.id})
+            first_roll = self.client.get(state_url)
+            first_move = self.client.get(state_url)
+            second_roll = self.client.get(state_url)
+            second_move = self.client.get(state_url)
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["current_turn"]["is_bot"])
+        self.assertIsNone(payload["pending_roll"])
+        self.assertEqual(first_roll.json()["pending_roll"], 6)
+        self.assertEqual(first_move.json()["players"][1]["pawns"][0]["position"], 0)
+        self.assertIsNone(first_move.json()["pending_roll"])
+        self.assertEqual(second_roll.json()["pending_roll"], 2)
+        self.assertEqual(second_move.json()["players"][1]["pawns"][0]["position"], 2)
+        self.assertEqual(second_move.json()["current_turn"]["username"], self.host.username)
+        self.assertEqual(list(Move.objects.values_list("roll", flat=True)), [1, 6, 2])
+
+    def test_english_api_validation_error_is_localized(self):
+        response = self.client.post(
+            reverse("starterrace:api_roll", kwargs={"game_id": self.game.id}),
+            data="{",
+            content_type="application/json",
+            HTTP_ACCEPT_LANGUAGE="en",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "Invalid JSON request.")

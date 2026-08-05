@@ -1,14 +1,17 @@
 {% extends "base.html" %}
-{% load static icons %}
+{% load static icons poketable_i18n %}
 
-{% block title %}Qui est ce Pokémon ? — partie{% endblock %}
+{% block title %}{% bilingual "Qui est ce Pokémon ? — partie" "Who’s That Pokémon? — game" %}{% endblock %}
+{% block html_class %}sil-game-document{% endblock %}
+{% block body_class %}sil-game-shell{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'silhouette/css/silhouette.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'silhouette/css/silhouette.css' %}?v=4">
 
 <div
     id="silhouette-game"
     class="room-shell sil-game"
+    data-game-status="{{ game_state.status }}"
     data-state-url="{% url 'silhouette:api_state' game_id=game.id %}"
     data-guess-url="{% url 'silhouette:api_guess' game_id=game.id %}"
 >
@@ -20,18 +23,18 @@
                 data-reload-focus-key="back"
             >
                 {% icon "back" "icon-sm" %}
-                Retour au lobby
+                {% bilingual "Retour au lobby" "Back to lobby" %}
             </a>
 
             <h1 class="room-title">
-                Qui est ce Pokémon ?
+                {% bilingual "Qui est ce Pokémon ?" "Who’s That Pokémon?" %}
 
                 <span
                     class="status-badge"
                     data-status="{{ game.status|lower }}"
                     data-status-badge
                 >
-                    {{ game.get_status_display }}
+                    {% if game.status == "EN_ATTENTE" %}{% bilingual "En attente" "Waiting" %}{% elif game.status == "EN_COURS" %}{% bilingual "En cours" "In progress" %}{% else %}{% bilingual "Terminée" "Finished" %}{% endif %}
                 </span>
             </h1>
         </div>
@@ -39,7 +42,7 @@
         <ol
             class="round-dots"
             data-round-dots
-            aria-label="Progression des manches"
+            aria-label="{% bilingual 'Progression des manches' 'Round progress' %}"
         ></ol>
     </header>
 
@@ -70,18 +73,17 @@
                     aria-hidden="true"
                 ></span>
 
-                Salon ouvert
+                {% bilingual "Salon ouvert" "Open room" %}
             </p>
 
             <h2>
-                En attente des joueurs
+                {% bilingual "En attente des joueurs" "Waiting for players" %}
             </h2>
 
             <p class="room-waiting-lead">
-                Partage le lien de cette page : tout le monde joue
-                en même temps. La partie compte
-                <strong>{{ game.round_count }} manches</strong>
-                de 30 secondes.
+                {% bilingual "Partage le lien de cette page : tout le monde joue en même temps. La partie compte" "Share this page link: everyone plays at the same time. The game has" %}
+                <strong>{{ game.round_count }} {% bilingual "manches" "rounds" %}</strong>
+                {% bilingual "de 30 secondes." "of 30 seconds." %}
             </p>
 
             <div class="room-waiting-actions">
@@ -97,7 +99,7 @@
                             class="btn btn-primary btn-large"
                             data-reload-focus-key="start"
                         >
-                            Lancer la partie
+                            {% bilingual "Lancer la partie" "Start game" %}
                         </button>
                     </form>
 
@@ -105,8 +107,17 @@
                         class="btn btn-ghost"
                         href="{% url 'invite_friends_to_game' mode='silhouette' room_id=game.id %}"
                     >
-                        Inviter un ami
+                        {% bilingual "Inviter un ami" "Invite a friend" %}
                     </a>
+
+                    {% if game_state.can_add_bot %}
+                        <form method="post" action="{% url 'silhouette:add_bot' game_id=game.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-ghost" data-reload-focus-key="add-bot">
+                                <span aria-hidden="true">＋</span> {% bilingual "Ajouter une IA" "Add an AI" %}
+                            </button>
+                        </form>
+                    {% endif %}
                 {% endif %}
 
                 <button
@@ -116,14 +127,14 @@
                     data-reload-focus-key="copy"
                 >
                     <span data-copy-label>
-                        Copier le lien d’invitation
+                        {% bilingual "Copier le lien d’invitation" "Copy invitation link" %}
                     </span>
                 </button>
             </div>
 
             {% if not game_state.is_host %}
                 <p class="room-waiting-lead">
-                    L’hôte lancera la partie quand tout le monde sera là.
+                    {% bilingual "L’hôte lancera la partie quand tout le monde sera là." "The host will start when everyone is ready." %}
                 </p>
             {% endif %}
         </div>
@@ -139,13 +150,28 @@
             </div>
 
             <p class="section-kicker">
-                Joueurs présents
+                {% bilingual "Joueurs présents" "Players here" %}
             </p>
 
             <ul
                 class="room-players"
                 data-waiting-players
             ></ul>
+
+            {% if game_state.is_host %}
+                <div class="room-bot-controls">
+                    {% for player in game.players.all %}
+                        {% if player.is_bot %}
+                            <form method="post" action="{% url 'silhouette:remove_bot' game_id=game.id player_id=player.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-ghost" aria-label="{% bilingual 'Retirer' 'Remove' %} {{ player.display_name }}">
+                                    {% bilingual "Retirer" "Remove" %} {{ player.display_name }}
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
     </section>
 
@@ -206,7 +232,7 @@
 
             <img
                 data-silhouette
-                alt="Silhouette du Pokémon à deviner"
+                alt="{% bilingual 'Silhouette du Pokémon à deviner' 'Silhouette of the Pokémon to guess' %}"
                 width="320"
                 height="320"
             >
@@ -221,7 +247,7 @@
         <ul
             class="sil-hints"
             data-hints
-            aria-label="Indices débloqués"
+            aria-label="{% bilingual 'Indices débloqués' 'Unlocked hints' %}"
         >
             <li
                 class="sil-hint"
@@ -232,7 +258,10 @@
                     Type
                 </span>
 
-                <strong data-hint-value></strong>
+                <span
+                    class="sil-type-hints"
+                    data-hint-value
+                ></span>
             </li>
 
             <li
@@ -241,7 +270,7 @@
                 hidden
             >
                 <span class="sil-hint-label">
-                    Lettres
+                    {% bilingual "Lettres" "Letters" %}
                 </span>
 
                 <strong data-hint-value></strong>
@@ -252,7 +281,7 @@
                 data-hint-pending
                 hidden
             >
-                Prochain indice dans
+                {% bilingual "Prochain indice dans" "Next hint in" %}
                 <strong data-next-hint>—</strong> s
             </li>
         </ul>
@@ -265,7 +294,7 @@
                 class="visually-hidden"
                 for="sil-guess"
             >
-                Nom du Pokémon
+                {% bilingual "Nom du Pokémon" "Pokémon name" %}
             </label>
 
             <input
@@ -276,7 +305,7 @@
                 autocapitalize="none"
                 spellcheck="false"
                 maxlength="60"
-                placeholder="Son nom…"
+                placeholder="{% bilingual 'Son nom…' 'Its name…' %}"
                 data-guess-input
             >
 
@@ -285,14 +314,14 @@
                 class="btn btn-primary"
                 data-guess-submit
             >
-                Proposer
+                {% bilingual "Proposer" "Guess" %}
             </button>
         </form>
 
         <ul
             class="sil-guess-feed"
             data-my-guesses
-            aria-label="Mes propositions"
+            aria-label="{% bilingual 'Mes propositions' 'My guesses' %}"
         ></ul>
     </section>
 
@@ -305,7 +334,7 @@
                 id="sil-scores-title"
                 class="section-kicker"
             >
-                Classement
+                {% bilingual "Classement" "Leaderboard" %}
             </h2>
 
             <p
@@ -323,5 +352,5 @@
 
 {{ game_state|json_script:"silhouette-initial-state" }}
 
-<script src="{% static 'silhouette/js/game.js' %}?v=3"></script>
+<script src="{% static 'silhouette/js/game.js' %}?v=4"></script>
 {% endblock %}

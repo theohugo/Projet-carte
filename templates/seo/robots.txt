@@ -1,0 +1,31 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /accounts/
+Disallow: /api/
+Disallow: /games/
+Disallow: /qui-est-ce/api/
+Disallow: /qui-est-ce/games/
+Disallow: /qui-est-ce-pokemon/api/
+Disallow: /qui-est-ce-pokemon/games/
+Disallow: /qui-est-ce-pokemon/rounds/
+Disallow: /pictionary/api/
+Disallow: /pictionary/games/
+Disallow: /metamorph-mystere/api/
+Disallow: /metamorph-mystere/games/
+Disallow: /infiltration-rocket/api/
+Disallow: /infiltration-rocket/games/
+Disallow: /bataille-des-iles/api/
+Disallow: /bataille-des-iles/games/
+Disallow: /course-des-starters/api/
+Disallow: /course-des-starters/games/
+Disallow: /invitations/
+Disallow: /profil/
+Disallow: /amis/
+Disallow: /collection/
+Disallow: /quetes/
+Disallow: /boutique/
+Disallow: /signup/
+Disallow: /jouer-en-invite/
+
+Sitemap: {{ sitemap_url }}

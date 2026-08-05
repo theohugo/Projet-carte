@@ -11,6 +11,8 @@ booster perd tout son intérêt.
 
 from dataclasses import dataclass
 
+from game.pokemon_names import bilingual_text
+
 COMMUNE = "COMMUNE"
 PEU_COMMUNE = "PEU_COMMUNE"
 RARE = "RARE"
@@ -26,6 +28,7 @@ HYPER_RARE = "HYPER_RARE"
 class Rarity:
     key: str
     label: str
+    label_en: str
     # Sigle affiché sur la carte en collection (C, PC, R, RR, IR, UR, SIR, HR).
     code: str
     # Prestige croissant : sert à trier et à choisir la plus belle carte d'un booster.
@@ -36,15 +39,23 @@ class Rarity:
 
 
 RARITIES = (
-    Rarity(COMMUNE, "Commune", "C", 0, "#9fb0c4", "simple"),
-    Rarity(PEU_COMMUNE, "Peu commune", "PC", 1, "#7fe3b0", "sheen"),
-    Rarity(RARE, "Rare", "R", 2, "#7cd7ff", "burst"),
-    Rarity(LEGENDAIRE, "Légendaire", "L", 3, "#ffd76a", "flare"),
-    Rarity(DOUBLE_RARE, "Double rare", "RR", 4, "#ff9ad5", "loop"),
-    Rarity(ILLUSTRATION_RARE, "Illustration rare", "IR", 5, "#b58cff", "starfall"),
-    Rarity(ULTRA_RARE, "Ultra rare", "UR", 6, "#63f2e4", "explosion"),
-    Rarity(ILLUSTRATION_SPECIALE, "Illustration spéciale rare", "SIR", 7, "#ff7ae0", "prism"),
-    Rarity(HYPER_RARE, "Rare Or", "HR", 8, "#ffcf4d", "gold"),
+    Rarity(COMMUNE, "Commune", "Common", "C", 0, "#9fb0c4", "simple"),
+    Rarity(PEU_COMMUNE, "Peu commune", "Uncommon", "PC", 1, "#7fe3b0", "sheen"),
+    Rarity(RARE, "Rare", "Rare", "R", 2, "#7cd7ff", "burst"),
+    Rarity(LEGENDAIRE, "Légendaire", "Legendary", "L", 3, "#ffd76a", "flare"),
+    Rarity(DOUBLE_RARE, "Double rare", "Double Rare", "RR", 4, "#ff9ad5", "loop"),
+    Rarity(ILLUSTRATION_RARE, "Illustration rare", "Illustration Rare", "IR", 5, "#b58cff", "starfall"),
+    Rarity(ULTRA_RARE, "Ultra rare", "Ultra Rare", "UR", 6, "#63f2e4", "explosion"),
+    Rarity(
+        ILLUSTRATION_SPECIALE,
+        "Illustration spéciale rare",
+        "Special Illustration Rare",
+        "SIR",
+        7,
+        "#ff7ae0",
+        "prism",
+    ),
+    Rarity(HYPER_RARE, "Rare Or", "Hyper Rare", "HR", 8, "#ffcf4d", "gold"),
 )
 
 RARITIES_BY_KEY = {rarity.key: rarity for rarity in RARITIES}
@@ -79,7 +90,7 @@ def as_dict(key) -> dict:
     rarity = get_rarity(key)
     return {
         "rarity": rarity.key,
-        "rarity_label": rarity.label,
+        "rarity_label": bilingual_text(rarity.label, rarity.label_en),
         "rarity_code": rarity.code,
         "rarity_color": rarity.color,
         "rarity_rank": rarity.rank,

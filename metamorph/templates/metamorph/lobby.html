@@ -1,32 +1,33 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static poketable_i18n %}
 
-{% block title %}Métamorph Mystère — PokéTable{% endblock %}
+{% block title %}{% bilingual "Métamorph Mystère" "Ditto Mystery" %} — PokéTable{% endblock %}
+{% block meta_description %}{% bilingual "Joue à Métamorph Mystère en ligne : forme tes paires, pioche chez ton voisin et évite de finir avec Métamorph, de 2 à 6 joueurs." "Play Ditto Mystery online: make pairs, draw from your neighbor and avoid being left with Ditto, for 2 to 6 players." %}{% endblock %}
 {% block body_class %}metamorph-lobby-shell{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'metamorph/css/metamorph.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'metamorph/css/metamorph.css' %}?v=3">
 
 <main id="metamorph-lobby" class="mm-lobby" data-state-url="{% url 'metamorph:api_lobby_state' %}">
     <section class="mm-hero" aria-labelledby="metamorph-title">
         <div class="mm-hero-copy">
-            <a class="mm-back" href="{% url 'home' %}"><span aria-hidden="true">‹</span> Tous les jeux</a>
-            <p class="mm-kicker"><span class="mm-live-dot" aria-hidden="true"></span> PokéTable présente</p>
-            <h1 id="metamorph-title">Métamorph<br><span>Mystère.</span></h1>
-            <p class="mm-lead">Forme tes paires, pioche à l'aveugle et surtout… ne termine pas avec Métamorph.</p>
+            <a class="mm-back" href="{% url 'home' %}"><span aria-hidden="true">‹</span> {% bilingual "Tous les jeux" "All games" %}</a>
+            <p class="mm-kicker"><span class="mm-live-dot" aria-hidden="true"></span> {% bilingual "PokéTable présente" "PokéTable presents" %}</p>
+            <h1 id="metamorph-title">{% bilingual "Métamorph" "Ditto" %}<br><span>{% bilingual "Mystère." "Mystery." %}</span></h1>
+            <p class="mm-lead">{% bilingual "Forme tes paires, pioche à l'aveugle et surtout… ne termine pas avec Métamorph." "Make your pairs, draw blind and above all… do not get stuck with Ditto." %}</p>
             <div class="mm-hero-actions">
                 <form method="post" action="{% url 'metamorph:create_game' %}">
                     {% csrf_token %}
                     <button class="btn btn-primary mm-primary-action" type="submit" data-create-game>
-                        <span aria-hidden="true">+</span> Créer une table
+                        <span aria-hidden="true">+</span> {% bilingual "Créer une table" "Create a table" %}
                     </button>
                 </form>
-                <button class="btn btn-ghost" type="button" data-toggle-rules aria-controls="metamorph-rules" aria-expanded="false">Comment jouer</button>
+                <button class="btn btn-ghost" type="button" data-toggle-rules aria-controls="metamorph-rules" aria-expanded="false">{% bilingual "Comment jouer" "How to play" %}</button>
             </div>
-            <ul class="mm-features" aria-label="Caractéristiques du jeu">
-                <li><span aria-hidden="true">◇</span> 2 à 6 joueurs</li>
-                <li><span aria-hidden="true">◇</span> Paires automatiques</li>
-                <li><span aria-hidden="true">◇</span> Cartes secrètes</li>
+            <ul class="mm-features" aria-label="{% bilingual 'Caractéristiques du jeu' 'Game features' %}">
+                <li><span aria-hidden="true">◇</span> {% bilingual "2 à 6 joueurs" "2 to 6 players" %}</li>
+                <li><span aria-hidden="true">◇</span> {% bilingual "Paires automatiques" "Automatic pairs" %}</li>
+                <li><span aria-hidden="true">◇</span> {% bilingual "Cartes secrètes" "Hidden cards" %}</li>
             </ul>
         </div>
         <div class="mm-hero-art" aria-hidden="true">
@@ -43,21 +44,21 @@
 
     <section id="metamorph-rules" class="mm-rules" hidden aria-labelledby="metamorph-rules-title">
         <div class="mm-rules-heading">
-            <p class="mm-kicker">Règles express</p>
-            <h2 id="metamorph-rules-title">Pose toutes tes paires. Garde ton sang-froid.</h2>
+            <p class="mm-kicker">{% bilingual "Règles express" "Quick rules" %}</p>
+            <h2 id="metamorph-rules-title">{% bilingual "Pose toutes tes paires. Garde ton sang-froid." "Lay down every pair. Keep your cool." %}</h2>
         </div>
         <ol>
-            <li><strong>Distribue</strong><span>Les paires déjà dans ta main sont posées automatiquement.</span></li>
-            <li><strong>Pioche</strong><span>À ton tour, choisis un dos numéroté chez le joueur précédent.</span></li>
-            <li><strong>Associe</strong><span>Si la carte rejoint sa jumelle, la paire quitte aussitôt ta main.</span></li>
-            <li><strong>Évite</strong><span>Tout le monde gagne sauf le dernier détenteur de Métamorph.</span></li>
+            <li><strong>{% bilingual "Distribue" "Deal" %}</strong><span>{% bilingual "Les paires déjà dans ta main sont posées automatiquement." "Pairs already in your hand are laid down automatically." %}</span></li>
+            <li><strong>{% bilingual "Pioche" "Draw" %}</strong><span>{% bilingual "À ton tour, choisis un dos numéroté chez le joueur précédent." "On your turn, choose a numbered card back from the previous player." %}</span></li>
+            <li><strong>{% bilingual "Associe" "Match" %}</strong><span>{% bilingual "Si la carte rejoint sa jumelle, la paire quitte aussitôt ta main." "If the card meets its twin, the pair leaves your hand at once." %}</span></li>
+            <li><strong>{% bilingual "Évite" "Avoid" %}</strong><span>{% bilingual "Tout le monde gagne sauf le dernier détenteur de Métamorph." "Everyone wins except the last player holding Ditto." %}</span></li>
         </ol>
     </section>
 
     <div class="mm-lobby-grid">
         <section class="mm-panel" aria-labelledby="open-tables-title">
             <header class="mm-panel-header">
-                <div><p class="mm-kicker">Parties publiques</p><h2 id="open-tables-title">Tables ouvertes</h2></div>
+                <div><p class="mm-kicker">{% bilingual "Parties publiques" "Public games" %}</p><h2 id="open-tables-title">{% bilingual "Tables ouvertes" "Open tables" %}</h2></div>
                 <span class="mm-count">{{ open_games|length }}</span>
             </header>
             {% if open_games %}
@@ -66,24 +67,24 @@
                         <li class="mm-table-row">
                             <span class="mm-avatar" aria-hidden="true">{{ table.created_by.username|default:"?"|first|upper }}</span>
                             <span class="mm-table-copy">
-                                <strong>Table de {{ table.created_by.username|default:"Dresseur" }}</strong>
-                                <small><i aria-hidden="true"></i> {{ table.player_count }}/6 joueurs</small>
+                                <strong>{% bilingual "Table de" "Table hosted by" %} {% if table.created_by.username %}{{ table.created_by.username }}{% else %}{% bilingual "Dresseur" "Trainer" %}{% endif %}</strong>
+                                <small><i aria-hidden="true"></i> {{ table.player_count }}/6 {% bilingual "joueurs" "players" %}</small>
                             </span>
                             <form method="post" action="{% url 'metamorph:join_game' game_id=table.id %}">
                                 {% csrf_token %}
-                                <button class="btn btn-secondary" type="submit">{% if table.created_by_id == user.id %}Ouvrir{% else %}Rejoindre{% endif %}</button>
+                                <button class="btn btn-secondary" type="submit">{% if table.created_by_id == user.id %}{% bilingual "Ouvrir" "Open" %}{% else %}{% bilingual "Rejoindre" "Join" %}{% endif %}</button>
                             </form>
                         </li>
                     {% endfor %}
                 </ul>
             {% else %}
-                <div class="mm-empty"><span aria-hidden="true">?</span><div><strong>Aucune table ouverte</strong><p>Crée une partie et invite jusqu'à cinq amis.</p></div></div>
+                <div class="mm-empty"><span aria-hidden="true">?</span><div><strong>{% bilingual "Aucune table ouverte" "No open table" %}</strong><p>{% bilingual "Crée une partie et invite jusqu'à cinq amis." "Create a game and invite up to five friends." %}</p></div></div>
             {% endif %}
         </section>
 
         <section class="mm-panel" aria-labelledby="my-games-title">
             <header class="mm-panel-header">
-                <div><p class="mm-kicker">Ton espace</p><h2 id="my-games-title">Mes parties</h2></div>
+                <div><p class="mm-kicker">{% bilingual "Ton espace" "Your space" %}</p><h2 id="my-games-title">{% bilingual "Mes parties" "My games" %}</h2></div>
                 <span class="mm-count">{{ my_games|length }}</span>
             </header>
             {% if my_games %}
@@ -91,19 +92,18 @@
                     {% for table in my_games %}
                         <li class="mm-table-row">
                             <span class="mm-game-dot" data-status="{{ table.status|lower }}" aria-hidden="true"></span>
-                            <span class="mm-table-copy"><strong>Partie {{ forloop.counter }}</strong><small>{{ table.get_status_display }} · {{ table.player_count }}/6</small></span>
-                            <a class="btn btn-ghost" href="{% url 'metamorph:game_detail' game_id=table.id %}">Ouvrir</a>
+                            <span class="mm-table-copy"><strong>{% bilingual "Partie" "Game" %} {{ forloop.counter }}</strong><small>{% if table.status == "EN_ATTENTE" %}{% bilingual "En attente" "Waiting" %}{% elif table.status == "EN_COURS" %}{% bilingual "En cours" "In progress" %}{% else %}{% bilingual "Terminée" "Finished" %}{% endif %} · {{ table.player_count }}/6</small></span>
+                            <a class="btn btn-ghost" href="{% url 'metamorph:game_detail' game_id=table.id %}">{% bilingual "Ouvrir" "Open" %}</a>
                         </li>
                     {% endfor %}
                 </ul>
             {% else %}
-                <div class="mm-empty mm-empty--small"><span aria-hidden="true">◇</span><div><strong>Aucune partie</strong><p>Ton historique apparaîtra ici.</p></div></div>
+                <div class="mm-empty mm-empty--small"><span aria-hidden="true">◇</span><div><strong>{% bilingual "Aucune partie" "No game yet" %}</strong><p>{% bilingual "Ton historique apparaîtra ici." "Your game history will appear here." %}</p></div></div>
             {% endif %}
         </section>
     </div>
 </main>
 
 {{ lobby_state|json_script:"metamorph-lobby-state" }}
-<script src="{% static 'metamorph/js/lobby.js' %}?v=1"></script>
+<script src="{% static 'metamorph/js/lobby.js' %}?v=3"></script>
 {% endblock %}
-

@@ -1,35 +1,36 @@
 {% extends "base.html" %}
-{% block title %}Invitation {{ mode_name }} — PokéTable{% endblock %}
+{% load poketable_i18n %}
+{% block title %}{% bilingual "Invitation" "Invitation" %} {{ mode_name }} — PokéTable{% endblock %}
 {% block content %}
 <section class="auth-layout" aria-labelledby="invitation-title">
     <div class="auth-showcase">
         <div>
-            <p class="section-kicker">Invitation PokéTable</p>
+            <p class="section-kicker">{% bilingual "Invitation PokéTable" "PokéTable invitation" %}</p>
             <p class="auth-showcase-title">{{ mode_name }}</p>
-            <p>{{ mode_kicker }}. Rejoins la table et prépare ton meilleur jeu.</p>
+            <p>{{ mode_kicker }}. {% bilingual "Rejoins la table et prépare ton meilleur jeu." "Join the table and bring your best game." %}</p>
         </div>
         <div class="auth-card-fan" aria-hidden="true"><span></span><span></span><span></span></div>
-        <ul class="feature-list" aria-label="Informations sur la table">
-            <li><span aria-hidden="true">01</span> Hôte : {{ host_name }}</li>
-            <li><span aria-hidden="true">02</span> {{ player_count }} / {{ max_players }} joueurs</li>
-            <li><span aria-hidden="true">03</span> Synchronisation en direct</li>
+        <ul class="feature-list" aria-label="{% bilingual "Informations sur la table" "Table information" %}">
+            <li><span aria-hidden="true">01</span> {% bilingual "Hôte" "Host" %} : {{ host_name }}</li>
+            <li><span aria-hidden="true">02</span> {{ player_count }} / {{ max_players }} {% bilingual "joueurs" "players" %}</li>
+            <li><span aria-hidden="true">03</span> {% bilingual "Synchronisation en direct" "Live synchronization" %}</li>
         </ul>
     </div>
     <div class="auth-card">
         {% if can_join %}
-            <p class="section-kicker">Une place t’attend</p>
-            <h1 id="invitation-title">Rejoindre la table ?</h1>
-            <p class="auth-intro"><strong>{{ host_name }}</strong> t’invite à jouer à {{ mode_name }}.</p>
+            <p class="section-kicker">{% bilingual "Une place t’attend" "A seat is waiting" %}</p>
+            <h1 id="invitation-title">{% bilingual "Rejoindre la table ?" "Join the table?" %}</h1>
+            <p class="auth-intro"><strong>{{ host_name }}</strong> {% bilingual "t’invite à jouer à" "invites you to play" %} {{ mode_name }}.</p>
             <form method="post" action="{{ join_url }}">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-primary btn-block">Accepter l’invitation</button>
+                <button type="submit" class="btn btn-primary btn-block">{% bilingual "Accepter l’invitation" "Accept invitation" %}</button>
             </form>
         {% else %}
-            <p class="section-kicker">Invitation expirée</p>
-            <h1 id="invitation-title">La partie a déjà commencé</h1>
-            <p class="auth-intro">Cette table n’accepte plus de joueur, mais d’autres salons sont peut-être ouverts.</p>
+            <p class="section-kicker">{% bilingual "Invitation expirée" "Invitation expired" %}</p>
+            <h1 id="invitation-title">{% bilingual "La partie a déjà commencé" "The game has already started" %}</h1>
+            <p class="auth-intro">{% bilingual "Cette table n’accepte plus de joueur, mais d’autres salons sont peut-être ouverts." "This table no longer accepts players, but other rooms may be open." %}</p>
         {% endif %}
-        <p class="auth-switch"><a href="{{ lobby_url }}">Voir toutes les tables</a></p>
+        <p class="auth-switch"><a href="{{ lobby_url }}">{% bilingual "Voir toutes les tables" "View all tables" %}</a></p>
     </div>
 </section>
 {% endblock %}

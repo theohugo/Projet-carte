@@ -1,23 +1,23 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static poketable_i18n %}
 
-{% block title %}Table Métamorph Mystère — PokéTable{% endblock %}
-{% block html_class %}metamorph-document{% endblock %}
-{% block body_class %}metamorph-game-shell{% endblock %}
+{% block title %}{% bilingual "Table Métamorph Mystère" "Ditto Mystery table" %} — PokéTable{% endblock %}
+{% block html_class %}metamorph-document{% if game.status == "EN_COURS" %} metamorph-document--active{% endif %}{% endblock %}
+{% block body_class %}metamorph-game-shell{% if game.status == "EN_COURS" %} metamorph-game-shell--active{% endif %}{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'metamorph/css/metamorph.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'metamorph/css/metamorph.css' %}?v=3">
 
 <main class="mm-game-page">
     <header class="mm-game-header">
         <div class="mm-game-heading">
-            <a class="mm-back" href="{% url 'metamorph:lobby' %}"><span aria-hidden="true">‹</span> Quitter la table</a>
+            <a class="mm-back" href="{% url 'metamorph:lobby' %}"><span aria-hidden="true">‹</span> {% bilingual "Quitter la table" "Leave table" %}</a>
             <span class="mm-heading-line" aria-hidden="true"></span>
-            <div><p>Métamorph Mystère</p><h1>Table <span translate="no">#{{ game.id|stringformat:"s"|slice:":6" }}</span></h1></div>
+            <div><p>{% bilingual "Métamorph Mystère" "Ditto Mystery" %}</p><h1>{% bilingual "Table" "Table" %} <span translate="no">#{{ game.id|stringformat:"s"|slice:":6" }}</span></h1></div>
         </div>
         <div class="mm-game-meta">
-            <span class="mm-sync" data-sync><i aria-hidden="true"></i><span>Synchronisé</span></span>
-            <span class="mm-status" data-status>Connexion…</span>
+            <span class="mm-sync" data-sync><i aria-hidden="true"></i><span>{% bilingual "Synchronisé" "Synced" %}</span></span>
+            <span class="mm-status" data-status>{% bilingual "Connexion…" "Connecting…" %}</span>
         </div>
     </header>
 
@@ -26,7 +26,11 @@
         class="mm-game"
         data-state-url="{% url 'metamorph:api_state' game_id=game.id %}"
         data-start-url="{% url 'metamorph:api_start' game_id=game.id %}"
+        data-add-bot-url="{% url 'metamorph:api_add_bot' game_id=game.id %}"
+        data-remove-bot-url-template="{% url 'metamorph:api_remove_bot' game_id=game.id bot_id=0 %}"
+        data-bot-turn-url="{% url 'metamorph:api_bot_turn' game_id=game.id %}"
         data-draw-url="{% url 'metamorph:api_draw' game_id=game.id %}"
+        data-game-status="{{ game_state.status }}"
         aria-busy="false"
     >
         <form class="mm-csrf" aria-hidden="true">{% csrf_token %}</form>
@@ -39,13 +43,14 @@
                 <span class="mm-waiting-core"><strong data-waiting-count>1</strong><small>/ 6</small></span>
             </div>
             <div class="mm-waiting-copy">
-                <p class="mm-kicker"><span class="mm-live-dot" aria-hidden="true"></span> Salon ouvert</p>
-                <h2 id="waiting-title">Rassemble les dresseurs</h2>
-                <p>Deux joueurs suffisent. L'hôte peut lancer quand tout le monde est prêt.</p>
-                <div class="mm-invite"><span data-invite-url></span><button class="btn btn-ghost" type="button" data-copy-link>Copier le lien</button></div>
+                <p class="mm-kicker"><span class="mm-live-dot" aria-hidden="true"></span> {% bilingual "Salon ouvert" "Open room" %}</p>
+                <h2 id="waiting-title">{% bilingual "Rassemble les dresseurs" "Gather the trainers" %}</h2>
+                <p>{% bilingual "Deux joueurs suffisent. L'hôte peut lancer quand tout le monde est prêt." "Two players are enough. The host can start when everyone is ready." %}</p>
+                <div class="mm-invite"><span data-invite-url></span><button class="btn btn-ghost" type="button" data-copy-link>{% bilingual "Copier le lien" "Copy link" %}</button></div>
                 <div class="mm-waiting-actions">
-                    <button class="btn btn-primary" type="button" data-start-game hidden>Lancer la partie</button>
-                    {% if game.created_by_id == user.id %}<a class="btn btn-ghost" href="{% url 'invite_friends_to_game' mode='metamorph-mystere' room_id=game.id %}">Inviter un ami</a>{% endif %}
+                    <button class="btn btn-primary" type="button" data-start-game hidden>{% bilingual "Lancer la partie" "Start game" %}</button>
+                    <button class="btn btn-ghost" type="button" data-add-bot hidden>{% bilingual "Ajouter une IA" "Add an AI" %}</button>
+                    {% if game.created_by_id == user.id %}<a class="btn btn-ghost" href="{% url 'invite_friends_to_game' mode='metamorph-mystere' room_id=game.id %}">{% bilingual "Inviter un ami" "Invite a friend" %}</a>{% endif %}
                     <small data-start-hint></small>
                 </div>
                 <ul class="mm-waiting-players" data-waiting-players></ul>
@@ -55,64 +60,64 @@
         <section class="mm-board" data-view="board" hidden aria-labelledby="board-title">
             <div class="mm-table-top">
                 <div>
-                    <p class="mm-kicker" data-turn-kicker>Tour en cours</p>
-                    <h2 id="board-title" data-turn-title>Observe bien les dos…</h2>
-                    <p data-turn-help>La main cible apparaît ici.</p>
+                    <p class="mm-kicker" data-turn-kicker>{% bilingual "Tour en cours" "Current turn" %}</p>
+                    <h2 id="board-title" data-turn-title>{% bilingual "Observe bien les dos…" "Watch the card backs…" %}</h2>
+                    <p data-turn-help>{% bilingual "La main cible apparaît ici." "The target hand appears here." %}</p>
                 </div>
-                <span class="mm-direction" data-direction aria-label="Sens du jeu"><b aria-hidden="true">↻</b> Sens du jeu</span>
+                <span class="mm-direction" data-direction aria-label="{% bilingual 'Sens du jeu' 'Play direction' %}"><b aria-hidden="true">↻</b> {% bilingual "Sens du jeu" "Play direction" %}</span>
             </div>
 
-            <ul class="mm-player-track" data-players aria-label="Joueurs"></ul>
+            <ul class="mm-player-track" data-players aria-label="{% bilingual 'Joueurs' 'Players' %}"></ul>
 
             <div class="mm-play-grid">
                 <section class="mm-draw-zone" aria-labelledby="draw-zone-title">
                     <header>
-                        <div><p class="mm-kicker">Main précédente</p><h3 id="draw-zone-title" data-source-title>Cartes face cachée</h3></div>
-                        <span data-source-count>0 carte</span>
+                        <div><p class="mm-kicker">{% bilingual "Main précédente" "Previous hand" %}</p><h3 id="draw-zone-title" data-source-title>{% bilingual "Cartes face cachée" "Face-down cards" %}</h3></div>
+                        <span data-source-count>0 {% bilingual "carte" "card" %}</span>
                     </header>
                     <div class="mm-card-backs" data-draw-cards></div>
-                    <p class="mm-zone-hint" data-draw-hint>En attente du joueur actif…</p>
+                    <p class="mm-zone-hint" data-draw-hint>{% bilingual "En attente du joueur actif…" "Waiting for the active player…" %}</p>
                 </section>
 
                 <aside class="mm-side-stack">
                     <section class="mm-pairs" aria-labelledby="pairs-title">
-                        <header><div><p class="mm-kicker">Paires posées</p><h3 id="pairs-title">Collection commune</h3></div><span data-pair-count>0</span></header>
+                        <header><div><p class="mm-kicker">{% bilingual "Paires posées" "Pairs laid down" %}</p><h3 id="pairs-title">{% bilingual "Collection commune" "Shared collection" %}</h3></div><span data-pair-count>0</span></header>
                         <div class="mm-pair-list" data-pairs></div>
                     </section>
                     <section class="mm-history" aria-labelledby="history-title">
-                        <header><div><p class="mm-kicker">Derniers coups</p><h3 id="history-title">Journal</h3></div></header>
+                        <header><div><p class="mm-kicker">{% bilingual "Derniers coups" "Recent moves" %}</p><h3 id="history-title">{% bilingual "Journal" "History" %}</h3></div></header>
                         <ol data-history></ol>
-                        <p class="mm-history-empty" data-history-empty>Aucune carte piochée pour l'instant.</p>
+                        <p class="mm-history-empty" data-history-empty>{% bilingual "Aucune carte piochée pour l'instant." "No card has been drawn yet." %}</p>
                     </section>
                 </aside>
             </div>
 
             <section class="mm-my-hand" aria-labelledby="my-hand-title">
                 <header>
-                    <div><p class="mm-kicker">Zone privée</p><h3 id="my-hand-title">Ta main</h3></div>
-                    <span data-hand-count>0 carte</span>
+                    <div><p class="mm-kicker">{% bilingual "Zone privée" "Private area" %}</p><h3 id="my-hand-title">{% bilingual "Ta main" "Your hand" %}</h3></div>
+                    <span data-hand-count>0 {% bilingual "carte" "card" %}</span>
                 </header>
                 <div class="mm-hand-cards" data-my-hand></div>
-                <p class="mm-hand-empty" data-hand-empty hidden>Toutes tes paires sont posées : tu es classé·e !</p>
+                <p class="mm-hand-empty" data-hand-empty hidden>{% bilingual "Toutes tes paires sont posées : tu es classé·e !" "All your pairs are down: you have placed!" %}</p>
             </section>
         </section>
 
         <section class="mm-result" data-view="result" hidden aria-labelledby="result-title">
             <div class="mm-result-art" aria-hidden="true"><span>?</span><i></i></div>
-            <p class="mm-kicker">Partie terminée</p>
-            <h2 id="result-title" tabindex="-1" data-result-title>Le mystère est levé</h2>
+            <p class="mm-kicker">{% bilingual "Partie terminée" "Game over" %}</p>
+            <h2 id="result-title" tabindex="-1" data-result-title>{% bilingual "Le mystère est levé" "The mystery is solved" %}</h2>
             <p data-result-copy></p>
             <ol class="mm-standings" data-standings></ol>
-            <div class="mm-result-actions"><a class="btn btn-primary" href="{% url 'metamorph:lobby' %}">Rejouer</a><a class="btn btn-ghost" href="{% url 'home' %}">Tous les jeux</a></div>
+            <div class="mm-result-actions"><a class="btn btn-primary" href="{% url 'metamorph:lobby' %}">{% bilingual "Rejouer" "Play again" %}</a><a class="btn btn-ghost" href="{% url 'home' %}">{% bilingual "Tous les jeux" "All games" %}</a></div>
         </section>
 
         <details class="mm-rules-inline">
-            <summary>Rappel des règles</summary>
-            <p>Pioche chez le joueur précédent. Chaque paire disparaît aussitôt. Les mains vides sont classées et sautées. Le dernier joueur avec Métamorph perd.</p>
+            <summary>{% bilingual "Rappel des règles" "Rules reminder" %}</summary>
+            <p>{% bilingual "Pioche chez le joueur précédent. Chaque paire disparaît aussitôt. Les mains vides sont classées et sautées. Le dernier joueur avec Métamorph perd." "Draw from the previous player. Every pair disappears immediately. Empty hands place and are skipped. The last player holding Ditto loses." %}</p>
         </details>
     </div>
 </main>
 
 {{ game_state|json_script:"metamorph-initial-state" }}
-<script src="{% static 'metamorph/js/game.js' %}?v=1"></script>
+<script src="{% static 'metamorph/js/game.js' %}?v=3"></script>
 {% endblock %}

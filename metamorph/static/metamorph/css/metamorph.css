@@ -633,7 +633,10 @@
 }
 
 .mm-waiting-player .mm-avatar { width: 32px; height: 32px; border-radius: 10px; font-size: 0.75rem; }
+.mm-waiting-player > span:not(.mm-avatar) { display: grid; min-width: 0; flex: 1; }
+.mm-waiting-player > span:not(.mm-avatar) small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mm-waiting-player strong { min-width: 0; overflow: hidden; color: var(--mm-ink); text-overflow: ellipsis; white-space: nowrap; }
+.mm-waiting-player .btn-icon { flex: 0 0 auto; }
 
 .mm-board {
     padding: 28px;
@@ -765,6 +768,16 @@
 .mm-pair-token:first-child { margin-left: 0; }
 .mm-pair-token img { width: 100%; height: 100%; object-fit: contain; }
 .mm-pair-token span { position: absolute; right: 3px; bottom: 3px; padding: 2px 4px; border-radius: 5px; background: #0a1728; color: white; font-size: 0.54rem; }
+.mm-pair-token .mm-pair-type-icon {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.86);
+    object-fit: contain;
+}
 
 .mm-history ol { display: grid; gap: 8px; max-height: 190px; margin: 12px 0 0; padding: 0; overflow-y: auto; list-style: none; }
 .mm-history li { display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 10px; background: rgba(255, 255, 255, 0.025); color: var(--mm-muted); font-size: 0.71rem; line-height: 1.35; }
@@ -799,6 +812,23 @@
 .mm-hand-card-copy { position: absolute; inset: auto 7px 7px; display: block; overflow: hidden; font-size: 0.72rem; font-weight: 900; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 .mm-hand-card-number { position: absolute; top: 7px; left: 8px; color: #47556a; font-size: 0.58rem; font-weight: 850; }
 .mm-hand-card-secret { position: absolute; top: 6px; right: 7px; padding: 3px 5px; border-radius: 6px; background: #8f5cc6; color: white; font-size: 0.52rem; font-weight: 900; text-transform: uppercase; }
+.mm-card-types {
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    z-index: 2;
+    display: flex;
+    gap: 2px;
+    transform: translateX(-50%);
+}
+.mm-hand-card .mm-type-icon {
+    width: 21px;
+    height: 21px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.78);
+    filter: drop-shadow(0 2px 2px rgba(21, 32, 46, 0.2));
+    object-fit: contain;
+}
 .mm-hand-empty { margin: 22px 0 5px; color: var(--mm-mint); text-align: center; }
 
 .mm-result {
@@ -827,8 +857,325 @@
 .mm-rules-inline summary { color: var(--mm-ink); font-weight: 800; cursor: pointer; }
 .mm-rules-inline p { margin: 10px 0 0; line-height: 1.55; }
 
+.mm-board.is-entering {
+    animation: mm-board-enter 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.mm-player-track.is-turn-transition .mm-player-chip.is-current {
+    animation: mm-turn-arrive 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mm-draw-zone {
+    position: relative;
+}
+
+.mm-draw-zone.is-draw-transition::after {
+    position: absolute;
+    z-index: 8;
+    top: 48%;
+    left: 50%;
+    display: grid;
+    width: 66px;
+    aspect-ratio: 0.7;
+    place-items: center;
+    border: 3px solid #c8d6ee;
+    border-radius: 9px;
+    color: #ecf3ff;
+    background: repeating-linear-gradient(135deg, #173464 0 9px, #261957 10px 18px);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.42);
+    content: "?";
+    font-size: 1.25rem;
+    font-weight: 900;
+    pointer-events: none;
+    animation: mm-draw-flight 650ms cubic-bezier(0.18, 0.8, 0.22, 1) both;
+}
+
+.mm-pairs.is-pair-transition {
+    animation: mm-pair-glow 760ms ease-out;
+}
+
+.mm-pairs.is-pair-transition .mm-pair-token:last-child {
+    animation: mm-pair-arrive 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mm-my-hand.is-pair-transition .mm-hand-card {
+    animation: mm-hand-settle 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 @keyframes mm-spin { to { transform: rotate(360deg); } }
 @keyframes mm-pulse { to { opacity: 0.3; transform: scale(0.7); } }
+@keyframes mm-board-enter { from { opacity: 0; transform: translateY(8px) scale(0.995); } }
+@keyframes mm-turn-arrive { 40% { transform: translateY(-3px); box-shadow: 0 0 0 4px rgba(111, 216, 255, 0.1), 0 0 24px rgba(111, 216, 255, 0.16); } }
+@keyframes mm-draw-flight {
+    0% { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg) scale(0.78); }
+    35% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-18%, 115%) rotate(8deg) scale(0.9); }
+}
+@keyframes mm-pair-glow { 40% { border-color: rgba(109, 240, 189, 0.62); box-shadow: 0 0 24px rgba(109, 240, 189, 0.16); } }
+@keyframes mm-pair-arrive { from { opacity: 0; transform: translateY(12px) scale(0.76); } }
+@keyframes mm-hand-settle { 45% { transform: translateY(-4px) rotate(0); } }
+
+/* Une partie active tient dans le viewport desktop. Les cartes, le journal et
+   la main conservent leurs propres zones de débordement sans faire sauter la
+   page entière, y compris au format de référence 1280 × 720. */
+@media (min-width: 921px) and (min-height: 620px) {
+    html.metamorph-document--active {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    body.metamorph-game-shell--active {
+        display: flex;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        flex-direction: column;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    .metamorph-game-shell--active .site-header {
+        position: relative;
+        flex: 0 0 auto;
+    }
+
+    .metamorph-game-shell--active .site-header-inner {
+        min-height: 52px;
+        padding-block: 4px;
+    }
+
+    .metamorph-game-shell--active .site-title .brand-mark,
+    .metamorph-game-shell--active .site-user .user-avatar {
+        width: 33px;
+        height: 33px;
+    }
+
+    .metamorph-game-shell--active .page-content {
+        flex: 1 1 auto;
+        width: min(100%, 1500px);
+        min-height: 0;
+        overflow: hidden;
+        padding: 6px clamp(8px, 1.3vw, 18px) 8px;
+    }
+
+    .metamorph-game-shell--active .mm-game-page {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        flex-direction: column;
+        padding: 0;
+    }
+
+    .metamorph-game-shell--active .mm-game-header {
+        min-height: 42px;
+        flex: 0 0 auto;
+        margin-bottom: 6px;
+    }
+
+    .metamorph-game-shell--active .mm-back {
+        min-height: 38px;
+    }
+
+    .metamorph-game-shell--active .mm-sync,
+    .metamorph-game-shell--active .mm-status {
+        padding-block: 6px;
+    }
+
+    .metamorph-game-shell--active .mm-game {
+        min-height: 0;
+        flex: 1 1 auto;
+    }
+
+    .metamorph-game-shell--active .mm-board {
+        display: grid;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        grid-template-rows: auto auto minmax(0, 1fr) minmax(138px, 28%);
+        gap: 6px;
+        overflow: hidden;
+        padding: 9px;
+        border-radius: 20px;
+    }
+
+    .metamorph-game-shell--active .mm-table-top {
+        min-height: 46px;
+        align-items: center;
+        padding: 0 3px;
+    }
+
+    .metamorph-game-shell--active .mm-table-top .mm-kicker {
+        margin-bottom: 2px;
+    }
+
+    .metamorph-game-shell--active .mm-table-top h2 {
+        font-size: clamp(1.15rem, 1.8vw, 1.55rem);
+    }
+
+    .metamorph-game-shell--active .mm-table-top p:last-child {
+        overflow: hidden;
+        max-width: 72ch;
+        margin-top: 2px;
+        font-size: 0.72rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .metamorph-game-shell--active .mm-direction {
+        flex: 0 0 auto;
+        padding-block: 6px;
+    }
+
+    .metamorph-game-shell--active .mm-player-track {
+        min-height: 42px;
+        gap: 6px;
+        margin: 0;
+    }
+
+    .metamorph-game-shell--active .mm-player-chip {
+        min-height: 42px;
+        padding: 5px 7px;
+    }
+
+    .metamorph-game-shell--active .mm-player-chip .mm-avatar {
+        width: 29px;
+        height: 29px;
+    }
+
+    .metamorph-game-shell--active .mm-play-grid {
+        min-height: 0;
+        grid-template-columns: minmax(0, 1fr) clamp(250px, 24vw, 310px);
+        gap: 7px;
+    }
+
+    .metamorph-game-shell--active .mm-draw-zone {
+        display: grid;
+        min-height: 0;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        overflow: hidden;
+        padding: 9px 11px;
+    }
+
+    .metamorph-game-shell--active .mm-draw-zone .mm-kicker,
+    .metamorph-game-shell--active .mm-pairs .mm-kicker,
+    .metamorph-game-shell--active .mm-history .mm-kicker,
+    .metamorph-game-shell--active .mm-my-hand .mm-kicker {
+        margin-bottom: 2px;
+    }
+
+    .metamorph-game-shell--active .mm-card-backs {
+        min-height: 0;
+        justify-content: center;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 5px 24px 2px;
+        overscroll-behavior-inline: contain;
+        scrollbar-width: thin;
+    }
+
+    .metamorph-game-shell--active .mm-card-back {
+        width: clamp(66px, 7vw, 88px);
+        max-height: 94%;
+        margin-left: clamp(-32px, -2.6vw, -20px);
+    }
+
+    .metamorph-game-shell--active .mm-card-back:hover:not(:disabled),
+    .metamorph-game-shell--active .mm-card-back:focus-visible {
+        transform: translateY(-9px) rotate(0);
+    }
+
+    .metamorph-game-shell--active .mm-zone-hint {
+        overflow: hidden;
+        min-height: 18px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .metamorph-game-shell--active .mm-side-stack {
+        min-height: 0;
+        grid-template-rows: minmax(96px, 0.42fr) minmax(112px, 0.58fr);
+        gap: 7px;
+    }
+
+    .metamorph-game-shell--active .mm-pairs,
+    .metamorph-game-shell--active .mm-history {
+        min-height: 0;
+        overflow: hidden;
+        padding: 9px 10px;
+    }
+
+    .metamorph-game-shell--active .mm-pair-list {
+        height: calc(100% - 34px);
+        min-height: 0;
+        padding-top: 4px;
+    }
+
+    .metamorph-game-shell--active .mm-pair-token {
+        width: clamp(43px, 4.2vw, 56px);
+        margin-left: -20px;
+    }
+
+    .metamorph-game-shell--active .mm-history ol {
+        max-height: calc(100% - 34px);
+        margin-top: 5px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+    }
+
+    .metamorph-game-shell--active .mm-history-empty {
+        margin-top: 14px;
+    }
+
+    .metamorph-game-shell--active .mm-my-hand {
+        display: grid;
+        min-height: 0;
+        grid-template-rows: auto minmax(0, 1fr);
+        margin: 0;
+        overflow: hidden;
+        padding: 7px 10px;
+    }
+
+    .metamorph-game-shell--active .mm-hand-cards {
+        height: 100%;
+        min-height: 0;
+        justify-content: center;
+        overflow-x: auto;
+        padding: 3px 36px 1px;
+        overscroll-behavior-inline: contain;
+        scrollbar-width: thin;
+    }
+
+    .metamorph-game-shell--active .mm-hand-card {
+        width: auto;
+        height: min(100%, 122px);
+        margin-left: clamp(-45px, -3.5vw, -27px);
+    }
+
+    .metamorph-game-shell--active .mm-hand-card img {
+        height: 70%;
+    }
+
+    .metamorph-game-shell--active .mm-hand-card .mm-type-icon {
+        width: 17px;
+        height: 17px;
+    }
+
+    .metamorph-game-shell--active .mm-rules-inline {
+        position: absolute;
+        right: 12px;
+        bottom: 10px;
+        z-index: 24;
+        width: min(390px, calc(100% - 24px));
+        max-height: calc(100% - 20px);
+        margin: 0;
+        overflow: auto;
+        background: rgba(7, 19, 34, 0.96);
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.36);
+        backdrop-filter: blur(16px);
+    }
+}
 
 @media (max-width: 920px) {
     .mm-hero { grid-template-columns: 1fr; }
@@ -889,7 +1236,13 @@
 
 @media (prefers-reduced-motion: reduce) {
     .mm-waiting-ring,
-    .mm-sync.is-syncing i { animation: none; }
+    .mm-sync.is-syncing i,
+    .mm-board.is-entering,
+    .mm-player-track.is-turn-transition .mm-player-chip.is-current,
+    .mm-draw-zone.is-draw-transition::after,
+    .mm-pairs.is-pair-transition,
+    .mm-pairs.is-pair-transition .mm-pair-token:last-child,
+    .mm-my-hand.is-pair-transition .mm-hand-card { animation: none; }
     .mm-card-back,
     .mm-hand-card { transition: none; }
 }

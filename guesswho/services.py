@@ -6,6 +6,7 @@ from django.db.models import Count, Max
 from django.utils import timezone
 
 from game.models import PokemonCard
+from game.pokemon_names import active_language, bilingual_text, localized_pokemon_name
 from game.quests import EVENT_GAME_PLAYED, EVENT_GAME_WON, record_event
 from game.type_icons import type_icon_url
 
@@ -43,7 +44,10 @@ class StaleRevisionError(GuessWhoError):
     actual: int
 
     def __str__(self):
-        return "L'état de la partie a changé. Il a été actualisé."
+        return bilingual_text(
+            "L'état de la partie a changé. Il a été actualisé.",
+            "The game state changed. It has been refreshed.",
+        )
 
 
 def _lock_game(game_id) -> GuessWhoGame:
@@ -53,7 +57,12 @@ def _lock_game(game_id) -> GuessWhoGame:
 def _get_player(game: GuessWhoGame, user) -> GuessWhoPlayer:
     player = game.players.select_related("user", "target_card").filter(user=user).first()
     if player is None:
-        raise GuessWhoPermissionError("Vous ne participez pas à cette partie.")
+        raise GuessWhoPermissionError(
+            bilingual_text(
+                "Vous ne participez pas à cette partie.",
+                "You are not taking part in this game.",
+            )
+        )
     return player
 
 
@@ -95,7 +104,10 @@ def create_game(user) -> GuessWhoGame:
     pokemon_card_ids = list(PokemonCard.objects.values_list("pk", flat=True))
     if len(pokemon_card_ids) < ROSTER_SIZE:
         raise GuessWhoRosterError(
-            f"Le mode Qui est-ce ? nécessite au moins {ROSTER_SIZE} Pokémon au catalogue."
+            bilingual_text(
+                f"Le mode Qui est-ce ? nécessite au moins {ROSTER_SIZE} Pokémon au catalogue.",
+                f"Guess Who? requires at least {ROSTER_SIZE} Pokémon in the catalogue.",
+            )
         )
 
     selected_ids = random.sample(pokemon_card_ids, ROSTER_SIZE)
@@ -120,9 +132,14 @@ def join_game(game_id, user) -> tuple[GuessWhoGame, GuessWhoPlayer]:
     if existing is not None:
         return game, existing
     if game.status != GuessWhoGame.Status.EN_ATTENTE:
-        raise GuessWhoStateError("Cette partie n'accepte plus de joueur.")
+        raise GuessWhoStateError(
+            bilingual_text(
+                "Cette partie n'accepte plus de joueur.",
+                "This game is no longer accepting players.",
+            )
+        )
     if game.players.count() >= 2:
-        raise GuessWhoStateError("Cette partie est complète.")
+        raise GuessWhoStateError(bilingual_text("Cette partie est complète.", "This game is full."))
 
     player = GuessWhoPlayer.objects.create(game=game, user=user, turn_order=1)
     game.status = GuessWhoGame.Status.CHOIX
@@ -136,15 +153,35 @@ def choose_target(game_id, user, pokemon_card_id: int, expected_revision: int) -
     player = _get_player(game, user)
     _assert_revision(game, expected_revision)
     if game.status != GuessWhoGame.Status.CHOIX:
-        raise GuessWhoStateError("Le choix secret n'est pas disponible maintenant.")
+        raise GuessWhoStateError(
+            bilingual_text(
+                "Le choix secret n'est pas disponible maintenant.",
+                "Secret selection is not available right now.",
+            )
+        )
     if game.players.count() != 2:
-        raise GuessWhoStateError("Deux joueurs sont nécessaires avant de choisir.")
+        raise GuessWhoStateError(
+            bilingual_text(
+                "Deux joueurs sont nécessaires avant de choisir.",
+                "Two players are required before choosing.",
+            )
+        )
     if player.target_card_id is not None:
-        raise GuessWhoStateError("Ton Pokémon secret est déjà verrouillé.")
+        raise GuessWhoStateError(
+            bilingual_text(
+                "Ton Pokémon secret est déjà verrouillé.",
+                "Your secret Pokémon is already locked.",
+            )
+        )
 
     roster_card = game.roster_cards.filter(pokemon_card_id=pokemon_card_id).first()
     if roster_card is None:
-        raise GuessWhoRosterError("Ce Pokémon ne fait pas partie du plateau.")
+        raise GuessWhoRosterError(
+            bilingual_text(
+                "Ce Pokémon ne fait pas partie du plateau.",
+                "This Pokémon is not on the board.",
+            )
+        )
 
     player.target_card = roster_card.pokemon_card
     player.save(update_fields=["target_card"])
@@ -165,19 +202,35 @@ def ask_question(game_id, user, question: str, expected_revision: int) -> GuessW
     player = _get_player(game, user)
     _assert_revision(game, expected_revision)
     if game.status != GuessWhoGame.Status.EN_COURS:
-        raise GuessWhoStateError("La partie n'est pas en cours.")
+        raise GuessWhoStateError(
+            bilingual_text("La partie n'est pas en cours.", "The game is not in progress.")
+        )
     if game.current_turn_id != player.id:
-        raise GuessWhoStateError("Ce n'est pas votre tour.")
+        raise GuessWhoStateError(bilingual_text("Ce n'est pas votre tour.", "It is not your turn."))
     if _get_pending_question(game) is not None:
-        raise GuessWhoStateError("La question précédente attend encore une réponse.")
+        raise GuessWhoStateError(
+            bilingual_text(
+                "La question précédente attend encore une réponse.",
+                "The previous question is still waiting for an answer.",
+            )
+        )
     if not isinstance(question, str):
-        raise GuessWhoStateError("La question doit être un texte.")
+        raise GuessWhoStateError(
+            bilingual_text("La question doit être un texte.", "The question must be text.")
+        )
 
     normalized_question = " ".join(question.split())
     if not normalized_question:
-        raise GuessWhoStateError("La question ne peut pas être vide.")
+        raise GuessWhoStateError(
+            bilingual_text("La question ne peut pas être vide.", "The question cannot be empty.")
+        )
     if len(normalized_question) > MAX_QUESTION_LENGTH:
-        raise GuessWhoStateError(f"La question ne peut pas dépasser {MAX_QUESTION_LENGTH} caractères.")
+        raise GuessWhoStateError(
+            bilingual_text(
+                f"La question ne peut pas dépasser {MAX_QUESTION_LENGTH} caractères.",
+                f"The question cannot exceed {MAX_QUESTION_LENGTH} characters.",
+            )
+        )
 
     GuessWhoTurn.objects.create(
         game=game,
@@ -196,15 +249,29 @@ def answer_question(game_id, user, answer: bool, expected_revision: int) -> Gues
     player = _get_player(game, user)
     _assert_revision(game, expected_revision)
     if game.status != GuessWhoGame.Status.EN_COURS:
-        raise GuessWhoStateError("La partie n'est pas en cours.")
+        raise GuessWhoStateError(
+            bilingual_text("La partie n'est pas en cours.", "The game is not in progress.")
+        )
     if not isinstance(answer, bool):
-        raise GuessWhoStateError("La réponse doit être Oui ou Non.")
+        raise GuessWhoStateError(
+            bilingual_text("La réponse doit être Oui ou Non.", "The answer must be Yes or No.")
+        )
 
     pending = _get_pending_question(game)
     if pending is None:
-        raise GuessWhoStateError("Aucune question n'attend de réponse.")
+        raise GuessWhoStateError(
+            bilingual_text(
+                "Aucune question n'attend de réponse.",
+                "No question is waiting for an answer.",
+            )
+        )
     if pending.actor_id == player.id:
-        raise GuessWhoPermissionError("Vous ne pouvez pas répondre à votre propre question.")
+        raise GuessWhoPermissionError(
+            bilingual_text(
+                "Vous ne pouvez pas répondre à votre propre question.",
+                "You cannot answer your own question.",
+            )
+        )
 
     pending.answer = answer
     pending.responder = player
@@ -221,15 +288,27 @@ def guess_pokemon(game_id, user, pokemon_card_id: int, expected_revision: int) -
     player = _get_player(game, user)
     _assert_revision(game, expected_revision)
     if game.status != GuessWhoGame.Status.EN_COURS:
-        raise GuessWhoStateError("La partie n'est pas en cours.")
+        raise GuessWhoStateError(
+            bilingual_text("La partie n'est pas en cours.", "The game is not in progress.")
+        )
     if game.current_turn_id != player.id:
-        raise GuessWhoStateError("Ce n'est pas votre tour.")
+        raise GuessWhoStateError(bilingual_text("Ce n'est pas votre tour.", "It is not your turn."))
     if _get_pending_question(game) is not None:
-        raise GuessWhoStateError("La question en cours doit d'abord recevoir une réponse.")
+        raise GuessWhoStateError(
+            bilingual_text(
+                "La question en cours doit d'abord recevoir une réponse.",
+                "The current question must be answered first.",
+            )
+        )
 
     roster_card = game.roster_cards.filter(pokemon_card_id=pokemon_card_id).first()
     if roster_card is None:
-        raise GuessWhoRosterError("Ce Pokémon ne fait pas partie du plateau.")
+        raise GuessWhoRosterError(
+            bilingual_text(
+                "Ce Pokémon ne fait pas partie du plateau.",
+                "This Pokémon is not on the board.",
+            )
+        )
     opponent = game.players.exclude(pk=player.pk).select_related("target_card").get()
     is_correct = opponent.target_card_id == roster_card.pokemon_card_id
 
@@ -266,13 +345,18 @@ def toggle_candidate(
     player = _get_player(game, user)
     _assert_revision(game, expected_revision)
     if game.status == GuessWhoGame.Status.TERMINEE:
-        raise GuessWhoStateError("La partie est terminée.")
+        raise GuessWhoStateError(bilingual_text("La partie est terminée.", "The game is over."))
     if not isinstance(is_eliminated, bool):
-        raise GuessWhoStateError("État de carte invalide.")
+        raise GuessWhoStateError(bilingual_text("État de carte invalide.", "Invalid card state."))
 
     roster_card = game.roster_cards.filter(pokemon_card_id=pokemon_card_id).first()
     if roster_card is None:
-        raise GuessWhoRosterError("Ce Pokémon ne fait pas partie du plateau.")
+        raise GuessWhoRosterError(
+            bilingual_text(
+                "Ce Pokémon ne fait pas partie du plateau.",
+                "This Pokémon is not on the board.",
+            )
+        )
     GuessWhoCandidateState.objects.update_or_create(
         player=player,
         roster_card=roster_card,
@@ -287,7 +371,7 @@ def reset_candidates(game_id, user, expected_revision: int) -> GuessWhoGame:
     player = _get_player(game, user)
     _assert_revision(game, expected_revision)
     if game.status == GuessWhoGame.Status.TERMINEE:
-        raise GuessWhoStateError("La partie est terminée.")
+        raise GuessWhoStateError(bilingual_text("La partie est terminée.", "The game is over."))
 
     GuessWhoCandidateState.objects.filter(
         player=player,
@@ -303,6 +387,7 @@ def _serialize_card(pokemon_card: PokemonCard) -> dict:
     return {
         "id": pokemon_card.id,
         "pokedex_id": pokemon_card.pokedex_id,
+        "name": localized_pokemon_name(pokemon_card),
         "name_fr": pokemon_card.name_fr,
         "name_en": pokemon_card.name_en,
         "sprite_url": pokemon_card.sprite_url,
@@ -334,7 +419,12 @@ def serialize_game_state(game: GuessWhoGame, user) -> dict:
     )
     me = next((player for player in players if player.user_id == user.id), None)
     if me is None:
-        raise GuessWhoPermissionError("Vous ne participez pas à cette partie.")
+        raise GuessWhoPermissionError(
+            bilingual_text(
+                "Vous ne participez pas à cette partie.",
+                "You are not taking part in this game.",
+            )
+        )
 
     roster = list(
         game.roster_cards.select_related(
@@ -398,6 +488,7 @@ def serialize_game_state(game: GuessWhoGame, user) -> dict:
     )
     return {
         "game_id": str(game.id),
+        "language": active_language(),
         "status": game.status,
         "turn_revision": game.turn_revision,
         "is_creator": game.created_by_id == user.id,
@@ -438,12 +529,15 @@ def get_lobby_state(user) -> dict:
         .prefetch_related("players__user")
         .order_by("-created_at")
     )
-    my_games = list(
-        GuessWhoGame.objects.annotate(player_count=Count("players"))
-        .filter(players__user=user)
-        .order_by("-created_at")
-    )
+    my_games = []
+    if getattr(user, "is_authenticated", False):
+        my_games = list(
+            GuessWhoGame.objects.annotate(player_count=Count("players"))
+            .filter(players__user=user)
+            .order_by("-created_at")
+        )
     return {
+        "language": active_language(),
         "open_games": [
             {
                 "id": str(game.id),

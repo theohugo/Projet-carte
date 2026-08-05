@@ -16,18 +16,35 @@ Deux façons de décrire une saison, selon le set :
 
 from dataclasses import dataclass
 
+from game.pokemon_names import bilingual_text
+
 
 @dataclass(frozen=True, slots=True)
 class Season:
     number: int
     key: str
     label: str
+    label_en: str
     kicker: str
+    kicker_en: str
     tagline: str
+    tagline_en: str
     # Visuels par numéro de Pokédex, pour une saison à une carte par espèce.
     fixture: str
     # Impressions du set, pour une saison à plusieurs raretés par espèce.
     prints_fixture: str
+
+    @property
+    def display_label(self):
+        return bilingual_text(self.label, self.label_en)
+
+    @property
+    def display_kicker(self):
+        return bilingual_text(self.kicker, self.kicker_en)
+
+    @property
+    def display_tagline(self):
+        return bilingual_text(self.tagline, self.tagline_en)
 
 
 SEASON_BASE = 1
@@ -39,8 +56,11 @@ SEASONS = (
         number=SEASON_BASE,
         key="base",
         label="Set de Base",
+        label_en="Base Set",
         kicker="Saison 1",
+        kicker_en="Season 1",
         tagline="Les 151 cartes de la première édition.",
+        tagline_en="The 151 cards from the first edition.",
         fixture="tcg_card_images.json",
         prints_fixture="",
     ),
@@ -48,8 +68,11 @@ SEASONS = (
         number=SEASON_151,
         key="s151",
         label="Série 151",
+        label_en="151 Series",
         kicker="Saison 2",
+        kicker_en="Season 2",
         tagline="Les 185 cartes du set, de la commune à la Rare Or.",
+        tagline_en="All 185 cards, from Common to Hyper Rare.",
         fixture="",
         prints_fixture="set_151_prints.json",
     ),

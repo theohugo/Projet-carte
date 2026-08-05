@@ -1,26 +1,27 @@
 {% extends "base.html" %}
-{% load static icons %}
+{% load static icons poketable_i18n %}
 
-{% block title %}Course des Starters — Table {{ game.id|stringformat:"s"|slice:":6" }}{% endblock %}
+{% block title %}{% bilingual "Course des Starters — Table" "Starter Race — Table" %} {{ game.id|stringformat:"s"|slice:":6" }}{% endblock %}
+{% block meta_description %}{% bilingual "Table de Course des Starters en direct : lance le dé, déplace tes Pokémon et atteins la Ligue avant les autres dresseurs." "Live Starter Race table: roll the die, move your Pokémon, and reach the League before the other Trainers." %}{% endblock %}
 {% block html_class %}starterrace-document{% endblock %}
 {% block body_class %}starterrace-shell{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'starterrace/css/starterrace.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'starterrace/css/starterrace.css' %}?v=3">
 
 <div class="sr-game-page">
     <header class="sr-game-header">
         <div>
-            <a class="sr-back-link" href="{% url 'starterrace:lobby' %}">{% icon "back" "icon-sm" %} Quitter la course</a>
+            <a class="sr-back-link" href="{% url 'starterrace:lobby' %}">{% icon "back" "icon-sm" %} {% bilingual "Quitter la course" "Leave the race" %}</a>
             <span class="sr-heading-line" aria-hidden="true"></span>
             <div>
-                <p>Course des Starters</p>
-                <h1>Table <span translate="no">#{{ game.id|stringformat:"s"|slice:":6" }}</span></h1>
+                <p>{% bilingual "Course des Starters" "Starter Race" %}</p>
+                <h1>{% bilingual "Table" "Table" %} <span translate="no">#{{ game.id|stringformat:"s"|slice:":6" }}</span></h1>
             </div>
         </div>
         <div class="sr-game-meta">
-            <span class="sr-sync" data-sync><i aria-hidden="true"></i><span>Synchronisé</span></span>
-            <span class="sr-status-pill" data-status>Connexion…</span>
+            <span class="sr-sync" data-sync><i aria-hidden="true"></i><span>{% bilingual "Synchronisé" "Synced" %}</span></span>
+            <span class="sr-status-pill" data-status>{% bilingual "Connexion…" "Connecting…" %}</span>
         </div>
     </header>
 
@@ -30,6 +31,7 @@
         data-state-url="{% url 'starterrace:api_state' game_id=game.id %}"
         data-roll-url="{% url 'starterrace:api_roll' game_id=game.id %}"
         data-move-url="{% url 'starterrace:api_move' game_id=game.id %}"
+        data-remove-bot-url-template="{% url 'starterrace:remove_bot' game_id=game.id player_id=0 %}"
         aria-busy="false"
     >
         <form class="sr-csrf" aria-hidden="true">{% csrf_token %}</form>
@@ -43,75 +45,82 @@
                 <span class="sr-wait-pulse"></span>
             </div>
             <div class="sr-wait-copy">
-                <p class="sr-kicker"><span aria-hidden="true"></span> Ligne de départ ouverte</p>
-                <h2 id="sr-wait-title">Rassemble les dresseurs</h2>
-                <p>Deux joueurs suffisent pour partir. Tu peux accueillir jusqu’à quatre équipes.</p>
+                <p class="sr-kicker"><span aria-hidden="true"></span> {% bilingual "Ligne de départ ouverte" "Starting line open" %}</p>
+                <h2 id="sr-wait-title">{% bilingual "Rassemble les dresseurs" "Gather the Trainers" %}</h2>
+                <p>{% bilingual "Deux joueurs suffisent pour partir. Tu peux accueillir jusqu’à quatre équipes." "Two players are enough to start. You can welcome up to four teams." %}</p>
                 <div class="sr-invite-box">
                     <span data-invite-url></span>
-                    <button type="button" class="btn btn-ghost" data-copy-invite>Copier le lien</button>
-                    {% if game.created_by_id == user.id %}<a class="btn btn-ghost" href="{% url 'invite_friends_to_game' mode='course-des-starters' room_id=game.id %}">Inviter un ami</a>{% endif %}
+                    <button type="button" class="btn btn-ghost" data-copy-invite>{% bilingual "Copier le lien" "Copy link" %}</button>
+                    {% if game.created_by_id == user.id %}<a class="btn btn-ghost" href="{% url 'invite_friends_to_game' mode='course-des-starters' room_id=game.id %}">{% bilingual "Inviter un ami" "Invite a friend" %}</a>{% endif %}
                 </div>
-                <div class="sr-waiting-seats" data-waiting-seats aria-label="Dresseurs prêts"></div>
+                <div class="sr-waiting-seats" data-waiting-seats aria-label="{% bilingual 'Dresseurs prêts' 'Ready Trainers' %}"></div>
                 {% if game.created_by_id == user.id %}
+                    <div class="sr-bot-controls">
+                        <form method="post" action="{% url 'starterrace:add_bot' game_id=game.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-ghost" data-add-bot>{% bilingual "+ Ajouter un adversaire IA" "+ Add a CPU opponent" %}</button>
+                        </form>
+                        <small data-bot-hint>{% bilingual "Jusqu’à 3 bots peuvent jouer sans bloquer la course." "Up to 3 bots can play without holding up the race." %}</small>
+                    </div>
                     <form method="post" action="{% url 'starterrace:start_game' game_id=game.id %}" class="sr-start-form">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-primary btn-large" data-start-button disabled>
-                            {% icon "play" %} Lancer la course
+                            {% icon "play" %} {% bilingual "Lancer la course" "Start the race" %}
                         </button>
-                        <small data-start-hint>Il faut encore un dresseur.</small>
+                        <small data-start-hint>{% bilingual "Il faut encore un dresseur." "One more Trainer is needed." %}</small>
                     </form>
                 {% endif %}
             </div>
         </section>
 
-        <section class="sr-race-layout" data-view="race" hidden aria-label="Plateau de course">
+        <section class="sr-race-layout" data-view="race" hidden aria-label="{% bilingual 'Plateau de course' 'Race board' %}">
             <div class="sr-board-column">
                 <section class="sr-turn-banner" aria-live="polite">
                     <div class="sr-turn-avatar" data-turn-avatar aria-hidden="true"></div>
                     <div>
-                        <p class="sr-kicker">Tour en cours</p>
-                        <h2 data-turn-title>En attente du lancer…</h2>
-                        <span data-turn-hint>Le plateau se synchronise.</span>
+                        <p class="sr-kicker">{% bilingual "Tour en cours" "Current turn" %}</p>
+                        <h2 data-turn-title>{% bilingual "En attente du lancer…" "Waiting for the roll…" %}</h2>
+                        <span data-turn-hint>{% bilingual "Le plateau se synchronise." "The board is syncing." %}</span>
                     </div>
                     <span class="sr-turn-progress" data-turn-progress></span>
                 </section>
 
                 <div class="sr-board-wrap">
-                    <ol class="sr-track" data-track aria-label="Piste commune de 40 cases"></ol>
+                    <ol class="sr-track" data-track aria-label="{% bilingual 'Piste commune de 40 cases' 'Shared track with 40 spaces' %}"></ol>
                     <section class="sr-board-center" aria-labelledby="sr-action-title">
-                        <p class="sr-kicker">Action</p>
-                        <h2 id="sr-action-title" data-action-title>Prêt à courir ?</h2>
-                        <button type="button" class="sr-die" data-roll aria-label="Lancer le dé">
+                        <p class="sr-kicker">{% bilingual "Action" "Action" %}</p>
+                        <h2 id="sr-action-title" data-action-title>{% bilingual "Prêt à courir ?" "Ready to race?" %}</h2>
+                        <button type="button" class="sr-die" data-roll aria-label="{% bilingual 'Lancer le dé' 'Roll the die' %}">
                             <span data-die-face aria-hidden="true">?</span>
-                            <small>Lancer</small>
+                            <small>{% bilingual "Lancer" "Roll" %}</small>
                         </button>
-                        <p data-action-help>Attends ton tour.</p>
+                        <p data-action-help>{% bilingual "Attends ton tour." "Wait for your turn." %}</p>
                     </section>
                 </div>
 
-                <section class="sr-player-grid" data-players aria-label="Équipes et couloirs finaux"></section>
+                <section class="sr-player-grid" data-players aria-label="{% bilingual 'Équipes et couloirs finaux' 'Teams and final lanes' %}"></section>
             </div>
 
-            <aside class="sr-race-aside" aria-label="Suivi de la course">
+            <aside class="sr-race-aside" aria-label="{% bilingual 'Suivi de la course' 'Race tracking' %}">
                 <section class="sr-legend" aria-labelledby="sr-legend-title">
-                    <p class="sr-kicker">Légende du plateau</p>
-                    <h2 id="sr-legend-title">Cases spéciales</h2>
+                    <p class="sr-kicker">{% bilingual "Légende du plateau" "Board legend" %}</p>
+                    <h2 id="sr-legend-title">{% bilingual "Cases spéciales" "Special spaces" %}</h2>
                     <ul>
-                        <li><span class="sr-legend-cell sr-legend-cell--safe">◇</span><span><strong>Refuge</strong><small>Aucune capture</small></span></li>
-                        <li><span class="sr-legend-cell sr-legend-cell--shortcut">⇱</span><span><strong>Raccourci</strong><small>Avance de 4 cases</small></span></li>
-                        <li><span class="sr-legend-cell sr-legend-cell--start">●</span><span><strong>Départ</strong><small>Sors avec un 6</small></span></li>
+                        <li><span class="sr-legend-cell sr-legend-cell--safe">◇</span><span><strong>{% bilingual "Refuge" "Safe space" %}</strong><small>{% bilingual "Aucune capture" "No capture" %}</small></span></li>
+                        <li><span class="sr-legend-cell sr-legend-cell--shortcut">↱</span><span><strong>{% bilingual "Raccourci" "Shortcut" %}</strong><small>{% bilingual "Avance de 4 cases" "Move ahead 4 spaces" %}</small></span></li>
+                        <li><span class="sr-legend-cell sr-legend-cell--start">●</span><span><strong>{% bilingual "Départ" "Start" %}</strong><small>{% bilingual "Sors avec un 6" "Roll a 6 to leave" %}</small></span></li>
                     </ul>
                 </section>
 
                 <section class="sr-history-panel" aria-labelledby="sr-history-title">
                     <header>
-                        <div><p class="sr-kicker">Direct</p><h2 id="sr-history-title">Journal de course</h2></div>
+                        <div><p class="sr-kicker">{% bilingual "Direct" "Live" %}</p><h2 id="sr-history-title">{% bilingual "Journal de course" "Race log" %}</h2></div>
                         <span data-move-count>0</span>
                     </header>
                     <ol data-history aria-live="polite" aria-relevant="additions text"></ol>
                     <div class="sr-history-empty" data-history-empty>
                         <span aria-hidden="true">⚄</span>
-                        <p>Le premier lancer apparaîtra ici.</p>
+                        <p>{% bilingual "Le premier lancer apparaîtra ici." "The first roll will appear here." %}</p>
                     </div>
                 </section>
             </aside>
@@ -119,21 +128,22 @@
 
         <section class="sr-result" data-view="result" hidden aria-labelledby="sr-result-title">
             <span class="sr-result-burst" aria-hidden="true"></span>
-            <p class="sr-kicker">Course terminée</p>
+            <p class="sr-kicker">{% bilingual "Course terminée" "Race finished" %}</p>
             <div class="sr-result-art" data-result-art></div>
-            <h2 id="sr-result-title" data-result-title tabindex="-1">La Ligue a ses champions !</h2>
+            <h2 id="sr-result-title" data-result-title tabindex="-1">{% bilingual "La Ligue a ses champions !" "The League has its champions!" %}</h2>
             <p data-result-copy></p>
             <div class="sr-result-actions">
                 <form method="post" action="{% url 'starterrace:create_game' %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary">{% icon "play" %} Rejouer</button>
+                    <button type="submit" class="btn btn-primary">{% icon "play" %} {% bilingual "Rejouer" "Play again" %}</button>
                 </form>
-                <a class="btn btn-ghost" href="{% url 'starterrace:lobby' %}">Retour au salon</a>
+                <a class="btn btn-ghost" href="{% url 'starterrace:lobby' %}">{% bilingual "Retour au salon" "Back to lobby" %}</a>
             </div>
         </section>
     </main>
 </div>
 
 {{ game_state|json_script:"starterrace-initial-state" }}
-<script src="{% static 'starterrace/js/game.js' %}?v=1"></script>
+{{ ui_i18n|json_script:"starterrace-i18n" }}
+<script src="{% static 'starterrace/js/game.js' %}?v=4"></script>
 {% endblock %}

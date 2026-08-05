@@ -10,6 +10,12 @@ urlpatterns = [
     path("games/create/", views.create_game_view, name="create_game"),
     path("games/<uuid:game_id>/join/", views.join_game_view, name="join_game"),
     path("games/<uuid:game_id>/start/", views.start_game_view, name="start_game"),
+    path("games/<uuid:game_id>/bots/add/", views.add_bot_view, name="add_bot"),
+    path(
+        "games/<uuid:game_id>/bots/<int:player_id>/remove/",
+        views.remove_bot_view,
+        name="remove_bot",
+    ),
     path("games/<uuid:game_id>/", views.game_detail, name="game_detail"),
     path("api/games/<uuid:game_id>/state/", views.api_state, name="api_state"),
     path("api/games/<uuid:game_id>/guess/", views.api_guess, name="api_guess"),

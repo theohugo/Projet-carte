@@ -197,7 +197,9 @@ class GamePlayer(models.Model):
     @property
     def display_name(self):
         if self.is_bot:
-            return self.bot_name
+            from game.pokemon_names import localized_bot_name
+
+            return localized_bot_name(self.bot_name)
 
         return self.user.get_username()
 

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static icons %}
+{% load static icons poketable_i18n %}
 
 {% block title %}Collection — PokéTable{% endblock %}
 
@@ -9,21 +9,21 @@
 <section class="collection-page" aria-labelledby="collection-page-title">
     <header class="collection-header">
         <div>
-            <p class="section-kicker">{{ season.kicker }} · {{ season.label }}</p>
+            <p class="section-kicker">{{ season.display_kicker }} · {{ season.display_label }}</p>
             <h1 id="collection-page-title">Collection</h1>
-            <p>{{ season.tagline }} Ouvre des boosters pour les débloquer une à une.</p>
+            <p>{{ season.display_tagline }} {% bilingual "Ouvre des boosters pour les débloquer une à une." "Open booster packs to unlock them one by one." %}</p>
         </div>
 
         <div class="collection-status">
             <p class="collection-progress-value"><strong>{{ owned_count }}</strong> / {{ total_count }}</p>
-            <div class="collection-progress" role="progressbar" aria-valuenow="{{ owned_count }}" aria-valuemin="0" aria-valuemax="{{ total_count }}" aria-label="Cartes débloquées">
+            <div class="collection-progress" role="progressbar" aria-valuenow="{{ owned_count }}" aria-valuemin="0" aria-valuemax="{{ total_count }}" aria-label="{% bilingual "Cartes débloquées" "Unlocked cards" %}">
                 <span style="width: {{ completion }}%"></span>
             </div>
-            <a class="btn btn-primary" href="{% url 'shop' %}">{% icon "pack" %}Ouvrir un booster · {% icon "coin" "icon-sm" %}{{ points }}</a>
+            <a class="btn btn-primary" href="{% url 'shop' %}">{% icon "pack" %}{% bilingual "Ouvrir un booster" "Open a booster" %} · {% icon "coin" "icon-sm" %}{{ points }}</a>
         </div>
     </header>
 
-    <nav class="season-tabs" aria-label="Saison de cartes">
+    <nav class="season-tabs" aria-label="{% bilingual "Saison de cartes" "Card season" %}">
         {% for tab in seasons %}
         <a class="season-tab {% if tab.is_current %}is-current{% endif %}"
            href="{% url 'collection' %}?saison={{ tab.number }}"
@@ -40,12 +40,12 @@
         <figure class="collection-card {% if card.owned %}is-owned is-{{ card.rarity|lower }}{% else %}is-locked{% endif %}"
                 style="--rarity-color: {{ card.rarity_color }}" role="listitem">
             {% if card.owned %}
-                <img class="collection-card-image" src="{{ card.image_url|default:card.sprite_url }}" alt="{{ card.name_fr }}" loading="lazy">
+                <img class="collection-card-image" src="{{ card.image_url|default:card.sprite_url }}" alt="{{ card.name }}" loading="lazy">
                 <span class="collection-card-foil" aria-hidden="true"></span>
                 {% if card.copies > 1 %}<span class="collection-copies">×{{ card.copies }}</span>{% endif %}
                 <span class="rarity-code" title="{{ card.rarity_label }}">{{ card.rarity_code }}</span>
                 <figcaption>
-                    <strong>{{ card.name_fr }}</strong>
+                    <strong>{{ card.name }}</strong>
                     <small>n° {{ card.number }}</small>
                 </figcaption>
             {% else %}

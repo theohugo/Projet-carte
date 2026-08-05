@@ -1,31 +1,32 @@
 {% extends "base.html" %}
-{% block title %}Connexion — PokéTable{% endblock %}
+{% load poketable_i18n %}
+{% block title %}{% bilingual "Connexion" "Sign in" %} — PokéTable{% endblock %}
 {% block content %}
 <section class="auth-layout" aria-labelledby="auth-title">
     <div class="auth-showcase">
         <div>
-            <p class="section-kicker">Salon multijoueur Pokémon</p>
-            <p class="auth-showcase-title">Plusieurs jeux.<br>Une seule table.</p>
-            <p>Retrouve tes amis autour de Poké-Uno et de Qui est-ce ? Pokémon, synchronisés en direct.</p>
+            <p class="section-kicker">{% bilingual "Salon multijoueur Pokémon" "Pokémon multiplayer room" %}</p>
+            <p class="auth-showcase-title">{% bilingual "Plusieurs jeux." "Many games." %}<br>{% bilingual "Une seule table." "One table." %}</p>
+            <p>{% bilingual "Retrouve tes amis autour de huit jeux Pokémon synchronisés en direct." "Meet your friends across eight live-synced Pokémon games." %}</p>
         </div>
         <div class="auth-card-fan" aria-hidden="true"><span></span><span></span><span></span></div>
-        <ul class="feature-list" aria-label="Fonctionnalités">
-            <li><span aria-hidden="true">01</span> Parties synchronisées</li>
-            <li><span aria-hidden="true">02</span> Les 18 types Pokémon</li>
-            <li><span aria-hidden="true">03</span> Cartes interactives en 3D</li>
+        <ul class="feature-list" aria-label="{% bilingual "Fonctionnalités" "Features" %}">
+            <li><span aria-hidden="true">01</span> {% bilingual "Parties synchronisées" "Live-synced games" %}</li>
+            <li><span aria-hidden="true">02</span> {% bilingual "Les 18 types Pokémon" "All 18 Pokémon types" %}</li>
+            <li><span aria-hidden="true">03</span> {% bilingual "Cartes interactives en 3D" "Interactive 3D cards" %}</li>
         </ul>
     </div>
     <div class="auth-card">
-        <p class="section-kicker">Bon retour</p>
-        <h1 id="auth-title">Connexion</h1>
-        <p class="auth-intro">Entre dans l’arène et reprends tes parties.</p>
+        <p class="section-kicker">{% bilingual "Bon retour" "Welcome back" %}</p>
+        <h1 id="auth-title">{% bilingual "Connexion" "Sign in" %}</h1>
+        <p class="auth-intro">{% bilingual "Entre dans l’arène et reprends tes parties." "Enter the arena and pick up your games." %}</p>
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
             {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-            <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
+            <button type="submit" class="btn btn-primary btn-block">{% bilingual "Se connecter" "Sign in" %}</button>
         </form>
-        <p class="auth-switch">Pas encore de compte ? <a href="{% url 'signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Créer un compte</a></p>
+        <p class="auth-switch">{% bilingual "Pas encore de compte ?" "No account yet?" %} <a href="{% url 'signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}">{% bilingual "Créer un compte" "Create an account" %}</a></p>
     </div>
 </section>
 {% endblock %}

@@ -19,6 +19,8 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
+from game.pokemon_names import bilingual_text
+
 GUEST_USERNAME_PREFIX = "Invité-"
 # Assez large pour ne pas tomber deux fois sur le même nom, assez court pour
 # rester lisible dans un salon.
@@ -108,6 +110,41 @@ def guest_allowed(view):
     return wrapper
 
 
+def guest_action(view):
+    """Start a guest session only after an explicit gameplay POST.
+
+    Public lobbies can safely expose create/join buttons: clicking one creates
+    the temporary account and immediately resumes the requested action. A GET
+    never creates an account and is still handled by the wrapped HTTP guard.
+    """
+
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated and request.method == "POST":
+            start_guest_session(request)
+        return view(request, *args, **kwargs)
+
+    return wrapper
+
+
+def public_lobby(view):
+    """Expose a lobby on safe requests without silently creating a guest.
+
+    Search engines and curious visitors can discover the rules and open rooms.
+    Mutating requests still pass through the explicit guest gate.
+    """
+
+    protected_view = guest_allowed(view)
+
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        if request.method in {"GET", "HEAD"}:
+            return view(request, *args, **kwargs)
+        return protected_view(request, *args, **kwargs)
+
+    return wrapper
+
+
 def members_only(view):
     """Réservé aux comptes complets : l'invité est renvoyé vers l'inscription."""
 
@@ -120,7 +157,7 @@ def members_only(view):
             "members_only.html",
             {
                 "next": request.get_full_path(),
-                "feature": getattr(view, "member_feature", None),
+                "feature": _localized_member_feature(getattr(view, "member_feature", None)),
             },
             status=200,
         )
@@ -128,11 +165,25 @@ def members_only(view):
     return wrapper
 
 
-def member_feature(label, promise):
+def _localized_member_feature(feature):
+    if not feature:
+        return None
+    return {
+        "label": bilingual_text(feature["label"], feature.get("label_en", feature["label"])),
+        "promise": bilingual_text(feature["promise"], feature.get("promise_en", feature["promise"])),
+    }
+
+
+def member_feature(label, promise, *, label_en=None, promise_en=None):
     """Décrit ce que débloque une page réservée, pour la page d'invitation."""
 
     def decorate(view):
-        view.member_feature = {"label": label, "promise": promise}
+        view.member_feature = {
+            "label": label,
+            "promise": promise,
+            "label_en": label_en or label,
+            "promise_en": promise_en or promise,
+        }
         return view
 
     return decorate

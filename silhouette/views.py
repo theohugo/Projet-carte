@@ -9,16 +9,19 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
-from game.guests import guest_allowed
+from game.guests import guest_action, guest_allowed, public_lobby
+from game.pokemon_names import bilingual_text
 from silhouette.models import SilhouetteGame, SilhouetteRound
 from silhouette.services import (
     SilhouetteError,
     SilhouettePermissionError,
     StaleRevisionError,
+    add_bot,
     advance_if_needed,
     create_game,
     get_lobby_state,
     join_game,
+    remove_bot,
     serialize_game_state,
     start_game,
     submit_guess,
@@ -31,9 +34,20 @@ def _read_json_object(request):
     try:
         payload = json.loads(request.body or "{}")
     except (json.JSONDecodeError, UnicodeDecodeError):
-        return None, JsonResponse({"error": "Requête JSON invalide."}, status=400)
+        return None, JsonResponse(
+            {"error": bilingual_text("Requête JSON invalide.", "Invalid JSON request.")},
+            status=400,
+        )
     if not isinstance(payload, dict):
-        return None, JsonResponse({"error": "La requête doit contenir un objet JSON."}, status=400)
+        return None, JsonResponse(
+            {
+                "error": bilingual_text(
+                    "La requête doit contenir un objet JSON.",
+                    "The request must contain a JSON object.",
+                )
+            },
+            status=400,
+        )
     return payload, None
 
 
@@ -47,14 +61,16 @@ def _error_response(exc, game, user):
     return JsonResponse({"error": str(exc)}, status=status)
 
 
-@guest_allowed
+@public_lobby
 def lobby(request):
-    my_games = (
-        SilhouetteGame.objects.filter(players__user=request.user)
-        .exclude(status=SilhouetteGame.Status.EN_ATTENTE)
-        .select_related("created_by")
-        .distinct()
-    )
+    my_games = SilhouetteGame.objects.none()
+    if request.user.is_authenticated:
+        my_games = (
+            SilhouetteGame.objects.filter(players__user=request.user)
+            .exclude(status=SilhouetteGame.Status.EN_ATTENTE)
+            .select_related("created_by")
+            .distinct()
+        )
     return render(
         request,
         "silhouette/lobby.html",
@@ -66,13 +82,12 @@ def lobby(request):
     )
 
 
-@login_required
 @require_GET
 def api_lobby_state(request):
     return JsonResponse(get_lobby_state(request.user))
 
 
-@login_required
+@guest_action
 @require_POST
 def create_game_view(request):
     try:
@@ -87,13 +102,16 @@ def create_game_view(request):
     return redirect("silhouette:game_detail", game_id=game.id)
 
 
-@login_required
+@guest_action
 @require_POST
 def join_game_view(request, game_id):
     try:
         join_game(game_id, request.user)
     except SilhouetteGame.DoesNotExist:
-        messages.error(request, "Cette partie n'existe plus.")
+        messages.error(
+            request,
+            bilingual_text("Cette partie n'existe plus.", "This game no longer exists."),
+        )
         return redirect("silhouette:lobby")
     except SilhouetteError as exc:
         messages.error(request, str(exc))
@@ -110,6 +128,26 @@ def start_game_view(request, game_id):
     return redirect("silhouette:game_detail", game_id=game_id)
 
 
+@login_required
+@require_POST
+def add_bot_view(request, game_id):
+    try:
+        add_bot(game_id, request.user)
+    except SilhouetteError as exc:
+        messages.error(request, str(exc))
+    return redirect("silhouette:game_detail", game_id=game_id)
+
+
+@login_required
+@require_POST
+def remove_bot_view(request, game_id, player_id):
+    try:
+        remove_bot(game_id, request.user, player_id)
+    except SilhouetteError as exc:
+        messages.error(request, str(exc))
+    return redirect("silhouette:game_detail", game_id=game_id)
+
+
 @guest_allowed
 def game_detail(request, game_id):
     game = get_object_or_404(SilhouetteGame, pk=game_id)
@@ -119,8 +157,11 @@ def game_detail(request, game_id):
             request,
             "join_invitation.html",
             {
-                "mode_name": "Qui est ce Pokémon ?",
-                "mode_kicker": "Silhouette · indices · rapidité",
+                "mode_name": bilingual_text("Qui est ce Pokémon ?", "Who’s That Pokémon?"),
+                "mode_kicker": bilingual_text(
+                    "Silhouette · indices · rapidité",
+                    "Silhouette · hints · speed",
+                ),
                 "host_name": game.created_by.get_username(),
                 "player_count": game.players.count(),
                 "max_players": "∞",
@@ -145,7 +186,10 @@ def game_detail(request, game_id):
 def api_state(request, game_id):
     game = get_object_or_404(SilhouetteGame, pk=game_id)
     if not game.players.filter(user=request.user).exists():
-        return JsonResponse({"error": "Vous ne participez pas à cette partie."}, status=403)
+        return JsonResponse(
+            {"error": bilingual_text("Vous ne participez pas à cette partie.", "You are not in this game.")},
+            status=403,
+        )
     advance_if_needed(game.id)
     game.refresh_from_db()
     return JsonResponse(serialize_game_state(game, request.user))
@@ -163,7 +207,10 @@ def api_guess(request, game_id):
     if expected_revision is not None and (
         isinstance(expected_revision, bool) or not isinstance(expected_revision, int)
     ):
-        return JsonResponse({"error": "Révision de tour invalide."}, status=400)
+        return JsonResponse(
+            {"error": bilingual_text("Révision de tour invalide.", "Invalid turn revision.")},
+            status=400,
+        )
 
     try:
         result = submit_guess(game.id, request.user, payload.get("text"), expected_revision)
@@ -187,12 +234,18 @@ def round_image(request, round_id):
 
     round_obj = get_object_or_404(SilhouetteRound.objects.select_related("pokemon_card", "game"), pk=round_id)
     if not round_obj.game.players.filter(user=request.user).exists():
-        return JsonResponse({"error": "Vous ne participez pas à cette partie."}, status=403)
+        return JsonResponse(
+            {"error": bilingual_text("Vous ne participez pas à cette partie.", "You are not in this game.")},
+            status=403,
+        )
 
     revealed = round_obj.revealed_at is not None
     content = _artwork_bytes(round_obj.pokemon_card, silhouette=not revealed)
     if content is None:
-        return JsonResponse({"error": "Illustration indisponible."}, status=502)
+        return JsonResponse(
+            {"error": bilingual_text("Illustration indisponible.", "Artwork unavailable.")},
+            status=502,
+        )
 
     response = HttpResponse(content, content_type="image/png")
     # Jamais de cache navigateur : la même URL renvoie la silhouette puis la

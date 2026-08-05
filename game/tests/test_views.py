@@ -1,24 +1,28 @@
 import json
 from unittest import mock
 
+from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from game.game_engine import GameEngine
 from game.models import Game, GameCard
 from game.tests.factories import make_cards, make_draft_catalogue, make_game, make_types, make_users
+from game.tests.i18n import LanguageIsolationMixin
 
 
 class AnonymousAccessTests(TestCase):
-    """Les jeux sont ouverts sans compte : l'anonyme voit la porte invité,
-    qui propose de jouer tout de suite ou de se connecter."""
+    """Les lobbies restent découvrables sans créer de compte en silence."""
 
-    def test_lobby_offers_the_guest_entrance(self):
+    def test_lobby_is_public_and_offers_the_guest_entrance(self):
         response = self.client.get(reverse("lobby"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "guest_gate.html")
+        self.assertTemplateUsed(response, "game/lobby.html")
+        self.assertTemplateNotUsed(response, "guest_gate.html")
         self.assertContains(response, reverse("play_as_guest"))
+        self.assertContains(response, "Créer une partie")
+        self.assertEqual(User.objects.count(), 0)
 
     def test_game_detail_offers_the_guest_entrance(self):
         (user,) = make_users(1)
@@ -101,7 +105,7 @@ class SignupRedirectTests(TestCase):
         self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
 
 
-class LobbyTests(TestCase):
+class LobbyTests(LanguageIsolationMixin, TestCase):
     def setUp(self):
         self.user = make_users(1)[0]
         self.client.force_login(self.user)
@@ -112,6 +116,13 @@ class LobbyTests(TestCase):
         game = Game.objects.first()
         self.assertTrue(game.players.filter(user=self.user).exists())
         self.assertRedirects(response, reverse("game_detail", args=[game.id]))
+
+    def test_accept_language_renders_the_lobby_in_english(self):
+        response = self.client.get(reverse("lobby"), HTTP_ACCEPT_LANGUAGE="en-US")
+
+        self.assertContains(response, "Create a game")
+        self.assertContains(response, "Open rooms")
+        self.assertNotContains(response, "Créer une partie")
 
     def test_lobby_state_lists_waiting_games_for_live_refresh(self):
         game = make_game(self.user)
@@ -409,7 +420,7 @@ class BotLobbyViewTests(TestCase):
         self.assertEqual(bot_state["hand_count"], 0)
 
 
-class GameStateApiSecurityTests(TestCase):
+class GameStateApiSecurityTests(LanguageIsolationMixin, TestCase):
     """La règle anti-fuite vit dans le moteur (get_game_state), mais on la
     vérifie ici bout en bout via l'endpoint HTTP réellement exposé."""
 
@@ -478,6 +489,22 @@ class GameStateApiSecurityTests(TestCase):
         self.assertIn("hand", mine)
         self.assertEqual(len(mine["hand"]), 1)
 
+    def test_accept_language_localizes_card_and_type_names_without_removing_legacy_fields(self):
+        self.client.force_login(self.p1_user)
+        url = reverse("api_game_state", args=[self.game.id])
+
+        french = self.client.get(url, HTTP_ACCEPT_LANGUAGE="fr-FR").json()
+        english = self.client.get(url, HTTP_ACCEPT_LANGUAGE="en-US").json()
+        french_card = next(player for player in french["players"] if "hand" in player)["hand"][0]
+        english_card = next(player for player in english["players"] if "hand" in player)["hand"][0]
+
+        self.assertEqual(french["language"], "fr")
+        self.assertEqual(french_card["name"], "Électhor")
+        self.assertEqual(english["language"], "en")
+        self.assertEqual(english_card["name"], "Zapdos")
+        self.assertEqual(english_card["name_fr"], "Électhor")
+        self.assertEqual(english_card["types"][0]["name"], "Flying")
+
     def test_state_uses_the_real_type_contract_and_marks_wild_cards(self):
         self.game.selected_types.set([self.types["fire"], self.types["water"]])
         self.game.active_type = self.types["water"]
@@ -498,6 +525,7 @@ class GameStateApiSecurityTests(TestCase):
             {
                 "id",
                 "pokedex_id",
+                "name",
                 "name_fr",
                 "name_en",
                 "sprite_url",

@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% load static icons %}
+{% load static icons poketable_i18n %}
 
-{% block title %}Course des Starters — PokéTable{% endblock %}
+{% block title %}{% bilingual "Course des Starters — PokéTable" "Starter Race — PokéTable" %}{% endblock %}
+{% block meta_description %}{% bilingual "Joue à Course des Starters en ligne sur PokéTable : 2 à 4 dresseurs, quatre Pokémon par équipe, raccourcis, captures et course jusqu’à la Ligue." "Play Starter Race online on PokéTable: 2 to 4 Trainers, four Pokémon per team, shortcuts, captures, and a race to the League." %}{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'starterrace/css/starterrace.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'starterrace/css/starterrace.css' %}?v=3">
 
 <div
     id="starterrace-lobby"
@@ -13,41 +14,40 @@
 >
     <section class="sr-lobby-hero" aria-labelledby="starterrace-title">
         <div class="sr-lobby-copy">
-            <a class="back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} Tous les jeux</a>
-            <p class="sr-kicker"><span aria-hidden="true"></span> Course de plateau · 2 à 4 joueurs</p>
-            <h1 id="starterrace-title">Mène tes Starters<br><em>jusqu’à la Ligue.</em></h1>
+            <a class="back-link" href="{% url 'home' %}">{% icon "back" "icon-sm" %} {% bilingual "Tous les jeux" "All games" %}</a>
+            <p class="sr-kicker"><span aria-hidden="true"></span> {% bilingual "Course de plateau · 2 à 4 joueurs" "Board race · 2 to 4 players" %}</p>
+            <h1 id="starterrace-title">{% bilingual "Mène tes Starters" "Lead your Starter Pokémon" %}<br><em>{% bilingual "jusqu’à la Ligue." "to the League." %}</em></h1>
             <p class="sr-lobby-lead">
-                Fais sortir tes quatre Pokémon, emprunte les raccourcis et renvoie tes rivaux au camp.
-                Le premier dresseur qui rassemble toute son équipe à l’arrivée remporte la course.
+                {% bilingual "Fais sortir tes quatre Pokémon, emprunte les raccourcis et renvoie tes rivaux au camp. Le premier dresseur qui rassemble toute son équipe à l’arrivée remporte la course." "Bring out your four Pokémon, take shortcuts, and send rivals back to camp. The first Trainer to bring the whole team to the finish wins the race." %}
             </p>
 
             <form method="post" action="{% url 'starterrace:create_game' %}" class="sr-create-form">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-primary btn-large">{% icon "play" %} Créer une course</button>
-                <span>Une partie dure environ 15 minutes</span>
+                <button type="submit" class="btn btn-primary btn-large">{% icon "play" %} {% bilingual "Créer une course" "Create a race" %}</button>
+                <span>{% bilingual "Une partie dure environ 15 minutes" "A game takes about 15 minutes" %}</span>
             </form>
 
-            <ol class="sr-rules-preview" aria-label="Règles essentielles">
-                <li><strong>6</strong><span>Sors un pion<br>et rejoue</span></li>
-                <li><strong>⇱</strong><span>Prends les<br>raccourcis</span></li>
-                <li><strong>◇</strong><span>Les refuges<br>te protègent</span></li>
-                <li><strong>4</strong><span>Starters à<br>faire arriver</span></li>
+            <ol class="sr-rules-preview" aria-label="{% bilingual 'Règles essentielles' 'Essential rules' %}">
+                <li><strong>6</strong><span>{% bilingual "Sors un pion" "Release a pawn" %}<br>{% bilingual "et rejoue" "and roll again" %}</span></li>
+                <li><strong>↱</strong><span>{% bilingual "Prends les" "Take the" %}<br>{% bilingual "raccourcis" "shortcuts" %}</span></li>
+                <li><strong>◇</strong><span>{% bilingual "Les refuges" "Safe spaces" %}<br>{% bilingual "te protègent" "protect you" %}</span></li>
+                <li><strong>4</strong><span>{% bilingual "Starters à" "Starters to" %}<br>{% bilingual "faire arriver" "bring home" %}</span></li>
             </ol>
         </div>
 
-        <div class="sr-starter-art" aria-label="Les quatre équipes : Bulbizarre, Salamèche, Carapuce et Pikachu">
+        <div class="sr-starter-art" aria-label="{% bilingual 'Les quatre équipes de Starters' 'The four Starter teams' %}">
             <span class="sr-art-orbit" aria-hidden="true"></span>
             {% for card in starter_cards %}
                 <figure class="sr-art-card sr-art-card--{{ forloop.counter }}">
                     <span class="sr-art-number">0{{ forloop.counter }}</span>
                     <img
                         src="{{ card.sprite_url }}"
-                        alt="{{ card.name_fr }}"
+                        alt="{{ card.name }}"
                         width="220"
                         height="220"
                         loading="eager"
                     >
-                    <figcaption>{{ card.name_fr }}</figcaption>
+                    <figcaption>{{ card.name }}</figcaption>
                 </figure>
             {% endfor %}
         </div>
@@ -57,8 +57,8 @@
         <section class="sr-lobby-panel" aria-labelledby="sr-open-title">
             <header class="sr-panel-heading">
                 <div>
-                    <p class="sr-kicker">Courses publiques</p>
-                    <h2 id="sr-open-title">Salons ouverts</h2>
+                    <p class="sr-kicker">{% bilingual "Courses publiques" "Public races" %}</p>
+                    <h2 id="sr-open-title">{% bilingual "Salons ouverts" "Open rooms" %}</h2>
                 </div>
                 <span class="sr-count">{{ lobby_state.open_games|length }}</span>
             </header>
@@ -67,20 +67,20 @@
                     <li>
                         <span class="sr-room-avatar" aria-hidden="true">{{ game.host|first|upper }}</span>
                         <span class="sr-room-copy">
-                            <strong>Course de {{ game.host }}</strong>
-                            <small>{{ game.player_count }}/{{ game.max_players }} dresseurs · En préparation</small>
+                            <strong>{% bilingual "Course de" "Race hosted by" %} {{ game.host }}</strong>
+                            <small>{{ game.player_count }}/{{ game.max_players }} {% bilingual "dresseurs" "Trainers" %} · {% bilingual "En préparation" "Preparing" %}</small>
                         </span>
                         <form method="post" action="{% url 'starterrace:join_game' game_id=game.id %}">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-secondary">
-                                {% if game.is_mine %}Ouvrir{% else %}Rejoindre{% endif %}
+                                {% if game.is_mine %}{% bilingual "Ouvrir" "Open" %}{% else %}{% bilingual "Rejoindre" "Join" %}{% endif %}
                             </button>
                         </form>
                     </li>
                 {% empty %}
                     <li class="sr-empty-room">
                         <span aria-hidden="true">⚑</span>
-                        <p><strong>Aucune course n’attend.</strong><br>Crée la première ligne de départ !</p>
+                        <p><strong>{% bilingual "Aucune course n’attend." "No race is waiting." %}</strong><br>{% bilingual "Crée la première ligne de départ !" "Create the first starting line!" %}</p>
                     </li>
                 {% endfor %}
             </ul>
@@ -89,8 +89,8 @@
         <section class="sr-lobby-panel" aria-labelledby="sr-mine-title">
             <header class="sr-panel-heading">
                 <div>
-                    <p class="sr-kicker">Ton espace</p>
-                    <h2 id="sr-mine-title">Mes courses</h2>
+                    <p class="sr-kicker">{% bilingual "Ton espace" "Your space" %}</p>
+                    <h2 id="sr-mine-title">{% bilingual "Mes courses" "My races" %}</h2>
                 </div>
                 <span class="sr-count">{{ lobby_state.my_games|length }}</span>
             </header>
@@ -99,21 +99,21 @@
                     <li>
                         <span class="sr-status-dot sr-status-dot--{{ game.status|lower }}" aria-hidden="true"></span>
                         <span class="sr-room-copy">
-                            <strong>Course de {{ game.host }}</strong>
+                            <strong>{% bilingual "Course de" "Race hosted by" %} {{ game.host }}</strong>
                             <small>
-                                {% if game.status == "EN_ATTENTE" %}En attente
-                                {% elif game.status == "EN_COURS" %}En piste
-                                {% elif game.winner %}Victoire de {{ game.winner }}
-                                {% else %}Terminée{% endif %}
-                                · {{ game.player_count }} dresseur{{ game.player_count|pluralize }}
+                                {% if game.status == "EN_ATTENTE" %}{% bilingual "En attente" "Waiting" %}
+                                {% elif game.status == "EN_COURS" %}{% bilingual "En piste" "Racing" %}
+                                {% elif game.winner %}{% bilingual "Victoire de" "Winner:" %} {{ game.winner }}
+                                {% else %}{% bilingual "Terminée" "Finished" %}{% endif %}
+                                · {{ game.player_count }} {% if game.player_count == 1 %}{% bilingual "dresseur" "Trainer" %}{% else %}{% bilingual "dresseurs" "Trainers" %}{% endif %}
                             </small>
                         </span>
-                        <a class="btn btn-ghost" href="{% url 'starterrace:game_detail' game_id=game.id %}">Ouvrir</a>
+                        <a class="btn btn-ghost" href="{% url 'starterrace:game_detail' game_id=game.id %}">{% bilingual "Ouvrir" "Open" %}</a>
                     </li>
                 {% empty %}
                     <li class="sr-empty-room">
                         <span aria-hidden="true">◎</span>
-                        <p><strong>Pas encore de course.</strong><br>Ton historique apparaîtra ici.</p>
+                        <p><strong>{% bilingual "Pas encore de course." "No races yet." %}</strong><br>{% bilingual "Ton historique apparaîtra ici." "Your history will appear here." %}</p>
                     </li>
                 {% endfor %}
             </ul>
@@ -122,6 +122,5 @@
 </div>
 
 {{ lobby_state|json_script:"starterrace-lobby-state" }}
-<script src="{% static 'starterrace/js/lobby.js' %}?v=1"></script>
+<script src="{% static 'starterrace/js/lobby.js' %}?v=2"></script>
 {% endblock %}
-

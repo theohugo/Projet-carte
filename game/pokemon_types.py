@@ -9,6 +9,8 @@ lignes :class:`~game.models.PokemonType` alimentées par le seed.
 
 from dataclasses import dataclass
 
+from game.pokemon_names import active_language
+
 # Nombre de types tirés au sort au démarrage d'une partie.
 GAME_TYPE_COUNT = 4
 # Espèces retenues pour chacun de ces types.
@@ -23,8 +25,40 @@ class PokemonTypeInfo:
     name_fr: str
     color: str
 
+    @property
+    def name_en(self) -> str:
+        return TYPE_NAMES_EN.get(self.slug, self.name_fr)
+
     def as_dict(self) -> dict[str, str]:
-        return {"slug": self.slug, "name_fr": self.name_fr, "color": self.color}
+        return {
+            "slug": self.slug,
+            "name": self.name_en if active_language() == "en" else self.name_fr,
+            "name_fr": self.name_fr,
+            "name_en": self.name_en,
+            "color": self.color,
+        }
+
+
+TYPE_NAMES_EN = {
+    "normal": "Normal",
+    "fire": "Fire",
+    "water": "Water",
+    "electric": "Electric",
+    "grass": "Grass",
+    "ice": "Ice",
+    "fighting": "Fighting",
+    "poison": "Poison",
+    "ground": "Ground",
+    "flying": "Flying",
+    "psychic": "Psychic",
+    "bug": "Bug",
+    "rock": "Rock",
+    "ghost": "Ghost",
+    "dragon": "Dragon",
+    "dark": "Dark",
+    "steel": "Steel",
+    "fairy": "Fairy",
+}
 
 
 # Couleurs officieuses mais universelles des types, retenues telles quelles pour

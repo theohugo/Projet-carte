@@ -17,6 +17,7 @@ from game.models import (
     GameInvitation,
     Profile,
 )
+from game.pokemon_names import bilingual_text
 from guesswho.models import GuessWhoGame
 from guesswho.services import (
     GuessWhoError,
@@ -181,6 +182,21 @@ MODE_CONFIG = {
 
 MODE_BY_SLUG = {config["slug"]: mode for mode, config in MODE_CONFIG.items()}
 
+MODE_LABELS_EN = {
+    GameInvitation.Mode.POKE_UNO: "Poké-Uno",
+    GameInvitation.Mode.GUESSWHO: "Guess Who?",
+    GameInvitation.Mode.SILHOUETTE: "Who’s That Pokémon?",
+    GameInvitation.Mode.PICTIONARY: "Pictionary",
+    GameInvitation.Mode.METAMORPH: "Ditto Mystery",
+    GameInvitation.Mode.ROCKET: "Team Rocket Infiltration",
+    GameInvitation.Mode.ISLANDS: "Island Battle",
+    GameInvitation.Mode.STARTER_RACE: "Starter Race",
+}
+
+
+def _mode_label(mode):
+    return bilingual_text(dict(GameInvitation.Mode.choices)[mode], MODE_LABELS_EN[mode])
+
 
 INVITATION_SELECT_RELATED = (
     "game",
@@ -331,7 +347,7 @@ def _decorate_invitation(invitation):
     room = invitation.room
 
     invitation.mode_slug_value = config["slug"]
-    invitation.mode_label_value = invitation.get_mode_display()
+    invitation.mode_label_value = _mode_label(invitation.mode)
 
     if room is None:
         invitation.detail_url = ""
@@ -401,6 +417,8 @@ def _active_pending_invitations(queryset):
 @member_feature(
     "Tes invitations",
     "Invite tes amis en un clic et retrouve toutes les parties où l'on t'attend.",
+    label_en="Your invitations",
+    promise_en="Invite friends in one click and find every game waiting for you.",
 )
 def game_invitations(request):
     """Affiche les invitations reçues et envoyées."""
@@ -453,7 +471,12 @@ def invite_friends_to_game(
     )
 
     if room.created_by_id != request.user.id:
-        return HttpResponseForbidden("Seul le créateur du salon peut inviter des amis.")
+        return HttpResponseForbidden(
+            bilingual_text(
+                "Seul le créateur du salon peut inviter des amis.",
+                "Only the room host can invite friends.",
+            )
+        )
 
     if not _room_is_waiting(
         config,
@@ -461,7 +484,10 @@ def invite_friends_to_game(
     ):
         messages.error(
             request,
-            ("Cette partie n’accepte plus " "de nouvelles invitations."),
+            bilingual_text(
+                "Cette partie n’accepte plus de nouvelles invitations.",
+                "This game no longer accepts new invitations.",
+            ),
         )
 
         return redirect(
@@ -550,7 +576,7 @@ def invite_friends_to_game(
         {
             "room": room,
             "mode_slug": config["slug"],
-            "mode_label": dict(GameInvitation.Mode.choices)[mode_value],
+            "mode_label": _mode_label(mode_value),
             "room_detail_url": _room_detail_url(
                 config,
                 room,
@@ -583,7 +609,12 @@ def send_game_invitation(
     )
 
     if room.created_by_id != request.user.id:
-        return HttpResponseForbidden("Seul le créateur du salon peut inviter des amis.")
+        return HttpResponseForbidden(
+            bilingual_text(
+                "Seul le créateur du salon peut inviter des amis.",
+                "Only the room host can invite friends.",
+            )
+        )
 
     if not _room_is_waiting(
         config,
@@ -591,7 +622,10 @@ def send_game_invitation(
     ):
         messages.error(
             request,
-            ("Cette partie a déjà commencé " "ou est terminée."),
+            bilingual_text(
+                "Cette partie a déjà commencé ou est terminée.",
+                "This game has already started or ended.",
+            ),
         )
 
         return redirect(
@@ -604,7 +638,7 @@ def send_game_invitation(
     if _room_is_full(room):
         messages.error(
             request,
-            "Le salon est déjà complet.",
+            bilingual_text("Le salon est déjà complet.", "The room is already full."),
         )
 
         return redirect(
@@ -621,7 +655,7 @@ def send_game_invitation(
     if recipient.pk == request.user.pk:
         messages.error(
             request,
-            "Tu ne peux pas t’inviter toi-même.",
+            bilingual_text("Tu ne peux pas t’inviter toi-même.", "You cannot invite yourself."),
         )
 
         return redirect(
@@ -634,7 +668,12 @@ def send_game_invitation(
         request.user,
         recipient,
     ):
-        return HttpResponseForbidden("Tu ne peux inviter que les joueurs " "présents dans ta liste d’amis.")
+        return HttpResponseForbidden(
+            bilingual_text(
+                "Tu ne peux inviter que les joueurs présents dans ta liste d’amis.",
+                "You can only invite players on your friends list.",
+            )
+        )
 
     if _room_has_player(
         room,
@@ -642,7 +681,10 @@ def send_game_invitation(
     ):
         messages.info(
             request,
-            (f"{recipient.username} est déjà " "dans le salon."),
+            bilingual_text(
+                f"{recipient.username} est déjà dans le salon.",
+                f"{recipient.username} is already in the room.",
+            ),
         )
 
         return redirect(
@@ -670,7 +712,10 @@ def send_game_invitation(
     if existing_invitation:
         messages.info(
             request,
-            ("Une invitation est déjà en attente " f"pour {recipient.username}."),
+            bilingual_text(
+                f"Une invitation est déjà en attente pour {recipient.username}.",
+                f"An invitation for {recipient.username} is already pending.",
+            ),
         )
 
         return redirect(
@@ -688,11 +733,14 @@ def send_game_invitation(
 
     GameInvitation.objects.create(**invitation_values)
 
-    mode_label = dict(GameInvitation.Mode.choices)[mode_value]
+    mode_label = _mode_label(mode_value)
 
     messages.success(
         request,
-        (f"Invitation {mode_label} envoyée " f"à {recipient.username}."),
+        bilingual_text(
+            f"Invitation {mode_label} envoyée à {recipient.username}.",
+            f"{mode_label} invitation sent to {recipient.username}.",
+        ),
     )
 
     return redirect(
@@ -735,7 +783,10 @@ def accept_game_invitation(
 
         messages.error(
             request,
-            "Cette invitation n’est plus disponible.",
+            bilingual_text(
+                "Cette invitation n’est plus disponible.",
+                "This invitation is no longer available.",
+            ),
         )
 
         return redirect("game_invitations")
@@ -755,7 +806,10 @@ def accept_game_invitation(
 
         messages.error(
             request,
-            ("Cette invitation a expiré : " "la partie a déjà commencé."),
+            bilingual_text(
+                "Cette invitation a expiré : la partie a déjà commencé.",
+                "This invitation expired because the game already started.",
+            ),
         )
 
         return redirect("game_invitations")
@@ -777,7 +831,7 @@ def accept_game_invitation(
 
         messages.info(
             request,
-            "Tu participes déjà à cette partie.",
+            bilingual_text("Tu participes déjà à cette partie.", "You are already in this game."),
         )
 
         return redirect(
@@ -792,7 +846,10 @@ def accept_game_invitation(
 
         messages.error(
             request,
-            ("Cette invitation a expiré : " "le salon est complet."),
+            bilingual_text(
+                "Cette invitation a expiré : le salon est complet.",
+                "This invitation expired because the room is full.",
+            ),
         )
 
         return redirect("game_invitations")
@@ -824,10 +881,11 @@ def accept_game_invitation(
 
     messages.success(
         request,
-        (
-            f"Invitation {invitation.get_mode_display()} "
-            f"acceptée. Tu as rejoint le salon de "
-            f"{invitation.sender.username}."
+        bilingual_text(
+            f"Invitation {_mode_label(invitation.mode)} acceptée. "
+            f"Tu as rejoint le salon de {invitation.sender.username}.",
+            f"{_mode_label(invitation.mode)} invitation accepted. "
+            f"You joined {invitation.sender.username}'s room.",
         ),
     )
 
@@ -868,7 +926,7 @@ def decline_game_invitation(
 
     messages.info(
         request,
-        "L’invitation a été refusée.",
+        bilingual_text("L’invitation a été refusée.", "The invitation was declined."),
     )
 
     return redirect("game_invitations")
@@ -911,7 +969,7 @@ def cancel_game_invitation(
 
     messages.info(
         request,
-        "L’invitation a été annulée.",
+        bilingual_text("L’invitation a été annulée.", "The invitation was cancelled."),
     )
 
     if room is not None and _room_is_waiting(

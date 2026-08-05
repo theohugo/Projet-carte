@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load poketable_i18n %}
 
-{% block title %}Profil de {{ profile_user.username }} — PokéTable{% endblock %}
+{% block title %}{% bilingual "Profil de" "Profile for" %} {{ profile_user.username }} — PokéTable{% endblock %}
 
 {% block content %}
 <section
@@ -14,7 +15,7 @@
                     <img
                         class="profile-avatar"
                         src="{{ profile.avatar.url }}"
-                        alt="Photo de profil de {{ profile_user.username }}"
+                        alt="{% bilingual "Photo de profil de" "Profile picture for" %} {{ profile_user.username }}"
                     >
                 {% else %}
                     <div
@@ -27,7 +28,7 @@
 
                 <div class="profile-hero-copy">
                     <p class="section-kicker">
-                        Profil joueur
+                        {% bilingual "Profil joueur" "Player profile" %}
                     </p>
 
                     <h1 id="profile-title">
@@ -41,7 +42,7 @@
                     {% endif %}
 
                     <span class="profile-meta">
-                        Membre depuis
+                        {% bilingual "Membre depuis" "Member since" %}
                         {{ profile_user.date_joined|date:"F Y" }}
                     </span>
                 </div>
@@ -49,7 +50,7 @@
 
             <div class="profile-bio-card">
                 <p class="profile-card-kicker">
-                    À propos
+                    {% bilingual "À propos" "About" %}
                 </p>
 
                 {% if profile.description %}
@@ -58,7 +59,7 @@
                     </p>
                 {% else %}
                     <p class="profile-empty">
-                        Ce joueur n’a pas encore ajouté de description.
+                        {% bilingual "Ce joueur n’a pas encore ajouté de description." "This player has not added a bio yet." %}
                     </p>
                 {% endif %}
             </div>
@@ -66,7 +67,7 @@
             <div class="profile-stats-grid">
                 <div class="profile-stat-card">
                     <p class="profile-stat-label">
-                        Parties jouées
+                        {% bilingual "Parties jouées" "Games played" %}
                     </p>
 
                     <strong class="profile-stat-value">
@@ -76,7 +77,7 @@
 
                 <div class="profile-stat-card">
                     <p class="profile-stat-label">
-                        Victoires
+                        {% bilingual "Victoires" "Wins" %}
                     </p>
 
                     <strong class="profile-stat-value">
@@ -86,7 +87,7 @@
 
                 <div class="profile-stat-card">
                     <p class="profile-stat-label">
-                        Ratio de victoire
+                        {% bilingual "Ratio de victoire" "Win rate" %}
                     </p>
 
                     <strong class="profile-stat-value">
@@ -102,17 +103,17 @@
 
         <aside class="profile-panel">
             <p class="section-kicker">
-                Informations
+                {% bilingual "Informations" "Information" %}
             </p>
 
             <h2>
-                Compte joueur
+                {% bilingual "Compte joueur" "Player account" %}
             </h2>
 
             <div class="profile-info-list">
                 <div class="profile-info-item">
                     <span class="profile-info-label">
-                        Nom d’utilisateur
+                        {% bilingual "Nom d’utilisateur" "Username" %}
                     </span>
 
                     <strong>
@@ -122,14 +123,14 @@
 
                 <div class="profile-info-item">
                     <span class="profile-info-label">
-                        Nom complet
+                        {% bilingual "Nom complet" "Full name" %}
                     </span>
 
                     <strong>
                         {% if profile_user.get_full_name %}
                             {{ profile_user.get_full_name }}
                         {% else %}
-                            Non renseigné
+                            {% bilingual "Non renseigné" "Not provided" %}
                         {% endif %}
                     </strong>
                 </div>
@@ -137,14 +138,14 @@
                 {% if is_owner %}
                     <div class="profile-info-item">
                         <span class="profile-info-label">
-                            Adresse e-mail
+                            {% bilingual "Adresse e-mail" "Email address" %}
                         </span>
 
                         <strong>
                             {% if profile_user.email %}
                                 {{ profile_user.email }}
                             {% else %}
-                                Non renseignée
+                                {% bilingual "Non renseignée" "Not provided" %}
                             {% endif %}
                         </strong>
                     </div>
@@ -157,19 +158,19 @@
                         class="btn btn-primary btn-block"
                         href="{% url 'edit_profile' %}"
                     >
-                        Modifier mon profil
+                        {% bilingual "Modifier mon profil" "Edit my profile" %}
                     </a>
 
                     <a
                         class="btn btn-ghost btn-block"
                         href="{% url 'friends' %}"
                     >
-                        Voir mes amis
+                        {% bilingual "Voir mes amis" "View my friends" %}
                     </a>
 
                 {% elif friendship_status == "friends" %}
                     <span class="friend-status">
-                        Vous êtes amis
+                        {% bilingual "Vous êtes amis" "You are friends" %}
                     </span>
 
                     {% if friendship %}
@@ -183,14 +184,14 @@
                                 class="btn btn-ghost btn-block"
                                 type="submit"
                             >
-                                Retirer de mes amis
+                                {% bilingual "Retirer de mes amis" "Remove friend" %}
                             </button>
                         </form>
                     {% endif %}
 
                 {% elif friendship_status == "sent" %}
                     <span class="friend-status">
-                        Demande envoyée
+                        {% bilingual "Demande envoyée" "Request sent" %}
                     </span>
 
                     {% if friendship %}
@@ -204,14 +205,14 @@
                                 class="btn btn-ghost btn-block"
                                 type="submit"
                             >
-                                Annuler la demande
+                                {% bilingual "Annuler la demande" "Cancel request" %}
                             </button>
                         </form>
                     {% endif %}
 
                 {% elif friendship_status == "received" %}
                     <span class="friend-status">
-                        Ce joueur souhaite devenir ton ami
+                        {% bilingual "Ce joueur souhaite devenir ton ami" "This player wants to be your friend" %}
                     </span>
 
                     {% if friendship %}
@@ -225,7 +226,7 @@
                                 class="btn btn-primary btn-block"
                                 type="submit"
                             >
-                                Accepter la demande
+                                {% bilingual "Accepter la demande" "Accept request" %}
                             </button>
                         </form>
 
@@ -239,7 +240,7 @@
                                 class="btn btn-ghost btn-block"
                                 type="submit"
                             >
-                                Refuser la demande
+                                {% bilingual "Refuser la demande" "Decline request" %}
                             </button>
                         </form>
                     {% endif %}
@@ -255,7 +256,7 @@
                             class="btn btn-primary btn-block"
                             type="submit"
                         >
-                            Ajouter en ami
+                            {% bilingual "Ajouter en ami" "Add friend" %}
                         </button>
                     </form>
                 {% endif %}

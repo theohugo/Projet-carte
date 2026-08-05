@@ -65,7 +65,10 @@ class IslandPlayer(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="island_participations",
+        null=True,
+        blank=True,
     )
+    bot_name = models.CharField(max_length=40, blank=True, default="")
     turn_order = models.PositiveSmallIntegerField()
     is_ready = models.BooleanField(default=False)
     joined_at = models.DateTimeField(auto_now_add=True)
@@ -75,7 +78,13 @@ class IslandPlayer(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["game", "user"],
+                condition=Q(user__isnull=False),
                 name="unique_island_user_per_game",
+            ),
+            models.UniqueConstraint(
+                fields=["game", "bot_name"],
+                condition=~Q(bot_name=""),
+                name="unique_island_bot_name_per_game",
             ),
             models.UniqueConstraint(
                 fields=["game", "turn_order"],
@@ -85,10 +94,27 @@ class IslandPlayer(models.Model):
                 condition=Q(turn_order__in=(0, 1)),
                 name="island_turn_order_zero_or_one",
             ),
+            models.CheckConstraint(
+                condition=(Q(user__isnull=True) & ~Q(bot_name="")) | (Q(user__isnull=False) & Q(bot_name="")),
+                name="island_valid_player_controller",
+            ),
         ]
 
     def __str__(self):
-        return f"{self.user.get_username()} @ {self.game_id}"
+        return f"{self.display_name} @ {self.game_id}"
+
+    @property
+    def is_bot(self):
+        return self.user_id is None
+
+    @property
+    def display_name(self):
+        if self.is_bot:
+            from game.pokemon_names import localized_bot_name
+
+            return localized_bot_name(self.bot_name)
+
+        return self.user.get_username()
 
 
 class Formation(models.Model):

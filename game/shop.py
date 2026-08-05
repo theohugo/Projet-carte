@@ -23,7 +23,7 @@ from django.utils import timezone
 
 from game.card_prints import get_print, prints_of
 from game.models import BoosterOpening, BoosterTicket, CollectionCard, PokemonCard, Profile
-from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID
+from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID, bilingual_text, localized_pokemon_name
 from game.rarities import (
     COMMUNE,
     DOUBLE_RARE,
@@ -55,7 +55,9 @@ RARE_POKEDEX_IDS = frozenset((
 class Booster:
     key: str
     label: str
+    label_en: str
     description: str
+    description_en: str
     price: int
     card_count: int
     # Probabilité de chaque rareté pour une carte ordinaire du booster.
@@ -63,12 +65,22 @@ class Booster:
     season: int = SEASON_BASE
     guaranteed: str | None = None
 
+    @property
+    def display_label(self):
+        return bilingual_text(self.label, self.label_en)
+
+    @property
+    def display_description(self):
+        return bilingual_text(self.description, self.description_en)
+
 
 BOOSTERS = (
     Booster(
         key="base",
         label="Booster Set de Base",
+        label_en="Base Set Booster",
         description="Cinq cartes de la première édition. Une rare de temps en temps.",
+        description_en="Five first-edition cards, with an occasional Rare.",
         price=150,
         card_count=5,
         odds=((COMMUNE, 0.82), (RARE, 0.15), (LEGENDAIRE, 0.03)),
@@ -77,7 +89,9 @@ BOOSTERS = (
     Booster(
         key="premium",
         label="Booster Premium",
+        label_en="Premium Booster",
         description="Cinq cartes, dont une rare garantie et de vraies chances de légendaire.",
+        description_en="Five cards, including a guaranteed Rare and a real chance of a Legendary.",
         price=400,
         card_count=5,
         odds=((COMMUNE, 0.62), (RARE, 0.28), (LEGENDAIRE, 0.10)),
@@ -87,7 +101,9 @@ BOOSTERS = (
     Booster(
         key="s151",
         label="Booster 151",
+        label_en="151 Booster",
         description="Cinq cartes du set 151, avec ses huit raretés — jusqu'à la Rare Or.",
+        description_en="Five cards from the 151 set across all eight rarities, up to Hyper Rare.",
         price=220,
         card_count=5,
         odds=(
@@ -105,7 +121,9 @@ BOOSTERS = (
     Booster(
         key="s151_ultra",
         label="Booster 151 Ultra",
+        label_en="151 Ultra Booster",
         description="Cinq cartes du set 151, une rare garantie et les meilleures chances d'illustration.",
+        description_en="Five 151 cards, a guaranteed Rare and the best Illustration Rare odds.",
         price=520,
         card_count=5,
         odds=(
@@ -196,7 +214,12 @@ def draw_cards(booster: Booster, rng=None) -> list:
     rng = rng or random
     pools = _print_pools(booster.season) if has_prints(booster.season) else _species_pools()
     if not any(pools.values()):
-        raise ShopError("Le catalogue ne contient aucune carte pour cette saison.")
+        raise ShopError(
+            bilingual_text(
+                "Le catalogue ne contient aucune carte pour cette saison.",
+                "The catalogue has no cards for this season.",
+            )
+        )
 
     rarities = [_draw_rarity(booster, rng) for _ in range(booster.card_count)]
     if booster.guaranteed and pools.get(booster.guaranteed):
@@ -215,17 +238,18 @@ def _describe(drawn, season: int) -> dict:
     """Ce que le navigateur reçoit pour une carte tirée."""
 
     if has_prints(season):
+        species = PokemonCard.objects.filter(pokedex_id=drawn.dex_id).first()
         return {
             "variant": drawn.variant,
             "pokedex_id": drawn.dex_id,
-            "name": drawn.name_fr,
+            "name": localized_pokemon_name(species) if species else drawn.name_fr,
             "image_url": drawn.image,
         } | rarity_payload(drawn.rarity)
 
     return {
         "variant": "",
         "pokedex_id": drawn.pokedex_id,
-        "name": drawn.name_fr,
+        "name": localized_pokemon_name(drawn),
         "image_url": get_tcg_image_url(drawn.pokedex_id, season),
         "sprite_url": drawn.sprite_url,
     } | rarity_payload(rarity_of(drawn, season))
@@ -281,7 +305,7 @@ def _grant(user, booster: Booster, price: int, rng=None) -> dict:
 
     opening.cards.set(species_ids)
 
-    return {"booster": booster.label, "season": season, "cards": payload}
+    return {"booster": booster.display_label, "season": season, "cards": payload}
 
 
 # Lots proposés en boutique. Ouvrir dix boosters d'un coup évite dix
@@ -309,7 +333,7 @@ def open_booster(user, booster_key: str, rng=None, quantity: int = 1) -> dict:
 
     booster = BOOSTERS_BY_KEY.get(booster_key)
     if booster is None:
-        raise ShopError("Ce booster n'existe pas.")
+        raise ShopError(bilingual_text("Ce booster n'existe pas.", "This booster does not exist."))
 
     quantity = clean_quantity(quantity)
     total = booster.price * quantity
@@ -318,15 +342,25 @@ def open_booster(user, booster_key: str, rng=None, quantity: int = 1) -> dict:
     if profile.points < total:
         missing = total - profile.points
         if quantity > 1:
-            raise ShopError(f"Il te manque {missing} points pour ces {quantity} boosters.")
-        raise ShopError(f"Il te manque {missing} points pour ce booster.")
+            raise ShopError(
+                bilingual_text(
+                    f"Il te manque {missing} points pour ces {quantity} boosters.",
+                    f"You need {missing} more points for these {quantity} boosters.",
+                )
+            )
+        raise ShopError(
+            bilingual_text(
+                f"Il te manque {missing} points pour ce booster.",
+                f"You need {missing} more points for this booster.",
+            )
+        )
 
     results = [_grant(user, booster, booster.price, rng) for _ in range(quantity)]
     Profile.objects.filter(pk=profile.pk).update(points=F("points") - total)
 
     profile.refresh_from_db(fields=["points"])
     return {
-        "booster": booster.label,
+        "booster": booster.display_label,
         "season": booster.season,
         "quantity": quantity,
         "cards": [card for result in results for card in result["cards"]],
@@ -345,11 +379,16 @@ def open_ticket(user, ticket_id: int, rng=None) -> dict:
         .first()
     )
     if ticket is None:
-        raise ShopError("Ce booster de quête n'est plus disponible.")
+        raise ShopError(
+            bilingual_text(
+                "Ce booster de quête n'est plus disponible.",
+                "This quest booster is no longer available.",
+            )
+        )
 
     booster = BOOSTERS_BY_KEY.get(ticket.booster_key)
     if booster is None:
-        raise ShopError("Ce booster n'existe pas.")
+        raise ShopError(bilingual_text("Ce booster n'existe pas.", "This booster does not exist."))
 
     result = _grant(user, booster, 0, rng)
     ticket.opened_at = timezone.now()

@@ -660,7 +660,7 @@
         height: 154px;
     }
 
-    .player-hand .card-unit img {
+    .player-hand .card-unit > img {
         width: 70px;
         height: 70px;
     }

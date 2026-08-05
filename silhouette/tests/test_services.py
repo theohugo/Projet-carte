@@ -2,11 +2,13 @@ from datetime import timedelta
 
 from django.test import TestCase
 from django.utils import timezone
+from django.utils.translation import override
 
 from game.pokemon_names import letter_hint, name_matches, normalize_name
 from silhouette.models import SilhouetteGame, SilhouetteGuess
 from silhouette.services import (
     LETTER_HINT_AFTER,
+    MAX_BOTS,
     MAX_POINTS,
     MIN_POINTS,
     REVEAL_SECONDS,
@@ -14,11 +16,13 @@ from silhouette.services import (
     TYPE_HINT_AFTER,
     SilhouetteError,
     SilhouettePermissionError,
+    add_bot,
     advance_if_needed,
     create_game,
     current_round,
     join_game,
     points_for,
+    remove_bot,
     serialize_game_state,
     start_game,
     submit_guess,
@@ -61,6 +65,65 @@ class SilhouetteFlowTests(TestCase):
 
         with self.assertRaises(SilhouettePermissionError):
             start_game(game.id, self.guest)
+
+    def test_only_the_host_can_manage_bots_while_waiting(self):
+        game = create_game(self.host, 5)
+
+        with self.assertRaises(SilhouettePermissionError):
+            add_bot(game.id, self.guest)
+
+        bot = add_bot(game.id, self.host)
+        self.assertTrue(bot.is_bot)
+        self.assertTrue(bot.display_name.startswith("IA "))
+
+        with self.assertRaises(SilhouettePermissionError):
+            remove_bot(game.id, self.guest, bot.id)
+
+        remove_bot(game.id, self.host, bot.id)
+        self.assertFalse(game.players.filter(pk=bot.pk).exists())
+
+    def test_bot_display_name_and_payload_follow_active_language(self):
+        game = create_game(self.host, 5)
+        bot = add_bot(game.id, self.host)
+
+        with override("fr"):
+            self.assertEqual(bot.display_name, "IA Zorua")
+            self.assertEqual(
+                next(
+                    player for player in serialize_game_state(game, self.host)["players"] if player["is_bot"]
+                )["username"],
+                "IA Zorua",
+            )
+        with override("en"):
+            self.assertEqual(bot.display_name, "Zorua AI")
+            self.assertEqual(
+                next(
+                    player for player in serialize_game_state(game, self.host)["players"] if player["is_bot"]
+                )["username"],
+                "Zorua AI",
+            )
+
+    def test_a_room_enforces_the_bot_limit(self):
+        game = create_game(self.host, 5)
+        for _ in range(MAX_BOTS):
+            add_bot(game.id, self.host)
+
+        with self.assertRaises(SilhouetteError):
+            add_bot(game.id, self.host)
+
+        state = serialize_game_state(game, self.host)
+        self.assertEqual(state["bot_count"], MAX_BOTS)
+        self.assertFalse(state["can_add_bot"])
+
+    def test_bots_cannot_be_changed_after_start(self):
+        game = create_game(self.host, 5)
+        bot = add_bot(game.id, self.host)
+        start_game(game.id, self.host)
+
+        with self.assertRaises(SilhouetteError):
+            add_bot(game.id, self.host)
+        with self.assertRaises(SilhouetteError):
+            remove_bot(game.id, self.host, bot.id)
 
     def test_start_opens_a_first_round_on_a_gen_one_species(self):
         game = self.make_started_game()
@@ -143,6 +206,32 @@ class SilhouetteFlowTests(TestCase):
 
         self.assertIsNotNone(current_round(game).revealed_at)
 
+    def test_a_bot_answers_after_a_delay_without_leaking_the_species(self):
+        game = create_game(self.host, 5)
+        bot = add_bot(game.id, self.host)
+        start_game(game.id, self.host)
+        round_obj = self.rewind(game, 21)
+
+        advance_if_needed(game.id)
+
+        guess = round_obj.guesses.get(player=bot, is_correct=True)
+        self.assertGreater(guess.points, 0)
+        state = serialize_game_state(game, self.host)
+        self.assertIsNone(state["round"]["answer"])
+        self.assertNotIn(round_obj.pokemon_card.name_fr, str(state))
+        self.assertIn(bot.display_name, [entry["username"] for entry in state["round"]["found"]])
+
+    def test_due_bot_answers_allow_the_round_to_finish(self):
+        game = create_game(self.host, 5)
+        add_bot(game.id, self.host)
+        start_game(game.id, self.host)
+        round_obj = self.rewind(game, 21)
+        submit_guess(game.id, self.host, round_obj.pokemon_card.name_fr)
+
+        advance_if_needed(game.id)
+
+        self.assertIsNotNone(current_round(game).revealed_at)
+
     def test_the_next_round_opens_after_the_reveal_pause(self):
         game = self.make_started_game()
         self.rewind(game, ROUND_SECONDS + 1)
@@ -212,8 +301,27 @@ class SilhouetteStateTests(TestCase):
 
         state = serialize_game_state(self.game, self.host)
 
-        self.assertTrue(state["round"]["hints"]["type"])
+        type_hints = state["round"]["hints"]["type"]
+        self.assertTrue(type_hints)
+        self.assertEqual(type_hints[0]["name"], type_hints[0]["name_fr"])
+        self.assertIn(
+            f"game/img/types/{type_hints[0]['slug']}.png",
+            type_hints[0]["icon_url"],
+        )
         self.assertIsNone(state["round"]["hints"]["letters"])
+
+    def test_the_type_hint_uses_english_names_without_changing_its_png(self):
+        self.rewind(TYPE_HINT_AFTER + 1)
+
+        with override("en"):
+            state = serialize_game_state(self.game, self.host)
+
+        type_hint = state["round"]["hints"]["type"][0]
+        self.assertEqual(type_hint["name"], type_hint["name_en"])
+        self.assertIn(
+            f"game/img/types/{type_hint['slug']}.png",
+            type_hint["icon_url"],
+        )
 
     def test_the_letter_hint_appears_after_ten_seconds(self):
         round_obj = self.rewind(LETTER_HINT_AFTER + 1)

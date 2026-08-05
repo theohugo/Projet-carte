@@ -6,7 +6,14 @@ from django.db.models import Count, Max, Q
 from django.utils import timezone
 
 from game.models import PokemonCard
+from game.pokemon_names import (
+    active_language,
+    bilingual_text,
+    localized_pokemon_name,
+    localized_type_name,
+)
 from game.results import record_completed_game
+from game.type_icons import type_icon_url
 
 from .models import MetamorphCard, MetamorphGame, MetamorphMove, MetamorphPlayer
 
@@ -14,6 +21,7 @@ MIN_PLAYERS = 2
 MAX_PLAYERS = 6
 PAIR_COUNT = 12
 DITTO_POKEDEX_ID = 132
+BOT_NAMES = ("IA Ondine", "IA Pierre", "IA Cynthia", "IA N", "IA Pepper")
 
 
 class MetamorphError(Exception):
@@ -38,7 +46,10 @@ class StaleRevisionError(MetamorphError):
     actual: int
 
     def __str__(self):
-        return "La partie a changé entre-temps. Son état a été actualisé."
+        return bilingual_text(
+            "La partie a changé entre-temps. Son état a été actualisé.",
+            "The game changed in the meantime. Its state has been refreshed.",
+        )
 
 
 def _lock_game(game_id) -> MetamorphGame:
@@ -52,7 +63,9 @@ def _players_locked(game: MetamorphGame) -> list[MetamorphPlayer]:
 def _player_for_user(players: list[MetamorphPlayer], user) -> MetamorphPlayer:
     player = next((entry for entry in players if entry.user_id == user.id), None)
     if player is None:
-        raise MetamorphPermissionError("Vous ne participez pas à cette partie.")
+        raise MetamorphPermissionError(
+            bilingual_text("Vous ne participez pas à cette partie.", "You are not in this game.")
+        )
     return player
 
 
@@ -82,10 +95,20 @@ def _ditto_card() -> PokemonCard | None:
 def _catalog_deck() -> tuple[PokemonCard, list[PokemonCard]]:
     ditto = _ditto_card()
     if ditto is None:
-        raise MetamorphCatalogError("Le catalogue doit contenir Métamorph (#132) pour lancer une partie.")
+        raise MetamorphCatalogError(
+            bilingual_text(
+                "Le catalogue doit contenir Métamorph (#132) pour lancer une partie.",
+                "The catalog must contain Ditto (#132) before a game can start.",
+            )
+        )
     pool = list(PokemonCard.objects.exclude(pk=ditto.pk))
     if len(pool) < PAIR_COUNT:
-        raise MetamorphCatalogError(f"Le mode nécessite Métamorph et au moins {PAIR_COUNT} autres Pokémon.")
+        raise MetamorphCatalogError(
+            bilingual_text(
+                f"Le mode nécessite Métamorph et au moins {PAIR_COUNT} autres Pokémon.",
+                f"This mode requires Ditto and at least {PAIR_COUNT} other Pokémon.",
+            )
+        )
     return ditto, random.sample(pool, PAIR_COUNT)
 
 
@@ -104,9 +127,11 @@ def join_game(game_id, user) -> tuple[MetamorphGame, MetamorphPlayer]:
     if existing is not None:
         return game, existing
     if game.status != MetamorphGame.Status.EN_ATTENTE:
-        raise MetamorphStateError("Cette partie a déjà commencé.")
+        raise MetamorphStateError(
+            bilingual_text("Cette partie a déjà commencé.", "This game has already started.")
+        )
     if len(players) >= MAX_PLAYERS:
-        raise MetamorphStateError("Cette table est complète.")
+        raise MetamorphStateError(bilingual_text("Cette table est complète.", "This table is full."))
 
     player = MetamorphPlayer.objects.create(
         game=game,
@@ -115,6 +140,74 @@ def join_game(game_id, user) -> tuple[MetamorphGame, MetamorphPlayer]:
     )
     _bump_revision(game)
     return game, player
+
+
+def _next_bot_name(players: list[MetamorphPlayer]) -> str:
+    used_names = {player.bot_name for player in players if player.is_bot}
+    available = next((name for name in BOT_NAMES if name not in used_names), None)
+    if available:
+        return available
+    suffix = 1
+    while f"IA {suffix}" in used_names:
+        suffix += 1
+    return f"IA {suffix}"
+
+
+@transaction.atomic
+def add_bot(game_id, user, expected_revision: int) -> MetamorphGame:
+    game = _lock_game(game_id)
+    players = _players_locked(game)
+    _player_for_user(players, user)
+    _assert_revision(game, expected_revision)
+    if game.created_by_id != user.id:
+        raise MetamorphPermissionError(
+            bilingual_text("Seul l'hôte peut ajouter une IA.", "Only the host can add an AI player.")
+        )
+    if game.status != MetamorphGame.Status.EN_ATTENTE:
+        raise MetamorphStateError(
+            bilingual_text("La partie a déjà commencé.", "The game has already started.")
+        )
+    if len(players) >= MAX_PLAYERS:
+        raise MetamorphStateError(bilingual_text("Cette table est complète.", "This table is full."))
+
+    MetamorphPlayer.objects.create(
+        game=game,
+        user=None,
+        bot_name=_next_bot_name(players),
+        turn_order=len(players),
+    )
+    _bump_revision(game)
+    return game
+
+
+@transaction.atomic
+def remove_bot(game_id, user, bot_id: int, expected_revision: int) -> MetamorphGame:
+    game = _lock_game(game_id)
+    players = _players_locked(game)
+    _player_for_user(players, user)
+    _assert_revision(game, expected_revision)
+    if game.created_by_id != user.id:
+        raise MetamorphPermissionError(
+            bilingual_text("Seul l'hôte peut retirer une IA.", "Only the host can remove an AI player.")
+        )
+    if game.status != MetamorphGame.Status.EN_ATTENTE:
+        raise MetamorphStateError(
+            bilingual_text("La partie a déjà commencé.", "The game has already started.")
+        )
+
+    bot = next((player for player in players if player.id == bot_id and player.is_bot), None)
+    if bot is None:
+        raise MetamorphStateError(
+            bilingual_text("Cette IA n'existe pas dans ce salon.", "This AI player is not in the room.")
+        )
+    removed_order = bot.turn_order
+    bot.delete()
+    players_to_shift = [player for player in players if player.turn_order > removed_order]
+    for player in players_to_shift:
+        player.turn_order -= 1
+        player.save(update_fields=["turn_order"])
+    _bump_revision(game)
+    return game
 
 
 def _rank_empty_player(game: MetamorphGame, player: MetamorphPlayer, moment) -> bool:
@@ -136,12 +229,22 @@ def _finish_if_one_holder(
     if len(owner_ids) > 1:
         return None
     if not owner_ids:
-        raise MetamorphStateError("La carte Métamorph est introuvable dans les mains.")
+        raise MetamorphStateError(
+            bilingual_text(
+                "La carte Métamorph est introuvable dans les mains.",
+                "The Ditto card cannot be found in any hand.",
+            )
+        )
 
     loser = next(entry for entry in players if entry.id in owner_ids)
     remaining = list(game.cards.filter(owner=loser))
     if len(remaining) != 1 or not remaining[0].is_ditto:
-        raise MetamorphStateError("La fin de partie ne peut pas encore être déterminée.")
+        raise MetamorphStateError(
+            bilingual_text(
+                "La fin de partie ne peut pas encore être déterminée.",
+                "The end of the game cannot be determined yet.",
+            )
+        )
 
     for player in players:
         if player.id != loser.id:
@@ -158,9 +261,10 @@ def _finish_if_one_holder(
 
 
 def _record_finished_game(players: list[MetamorphPlayer], loser: MetamorphPlayer):
+    human_players = [player for player in players if not player.is_bot]
     record_completed_game(
-        (player.user for player in players),
-        (player.user_id for player in players if player.id != loser.id),
+        (player.user for player in human_players),
+        (player.user_id for player in human_players if player.id != loser.id),
     )
 
 
@@ -171,11 +275,20 @@ def start_game(game_id, user, expected_revision: int) -> MetamorphGame:
     _player_for_user(players, user)
     _assert_revision(game, expected_revision)
     if game.created_by_id != user.id:
-        raise MetamorphPermissionError("Seul l'hôte peut lancer la partie.")
+        raise MetamorphPermissionError(
+            bilingual_text("Seul l'hôte peut lancer la partie.", "Only the host can start the game.")
+        )
     if game.status != MetamorphGame.Status.EN_ATTENTE:
-        raise MetamorphStateError("Cette partie a déjà commencé.")
+        raise MetamorphStateError(
+            bilingual_text("Cette partie a déjà commencé.", "This game has already started.")
+        )
     if not MIN_PLAYERS <= len(players) <= MAX_PLAYERS:
-        raise MetamorphStateError("Il faut entre 2 et 6 joueurs pour commencer.")
+        raise MetamorphStateError(
+            bilingual_text(
+                "Il faut entre 2 et 6 joueurs pour commencer.",
+                "You need between 2 and 6 players to start.",
+            )
+        )
 
     ditto, pair_species = _catalog_deck()
     deck = [(pokemon, copy_index, False) for pokemon in pair_species for copy_index in (0, 1)]
@@ -269,12 +382,25 @@ def draw_card(
     players = _players_locked(game)
     actor = _player_for_user(players, user)
     _assert_revision(game, expected_revision)
+    return _draw_card_for_actor(game, players, actor, card_position)
+
+
+def _draw_card_for_actor(
+    game: MetamorphGame,
+    players: list[MetamorphPlayer],
+    actor: MetamorphPlayer,
+    card_position: int,
+) -> MetamorphGame:
     if game.status != MetamorphGame.Status.EN_COURS:
-        raise MetamorphStateError("La partie n'est pas en cours.")
+        raise MetamorphStateError(
+            bilingual_text("La partie n'est pas en cours.", "The game is not in progress.")
+        )
     if game.current_turn_id != actor.id:
-        raise MetamorphStateError("Ce n'est pas votre tour.")
+        raise MetamorphStateError(bilingual_text("Ce n'est pas votre tour.", "It is not your turn."))
     if isinstance(card_position, bool) or not isinstance(card_position, int) or card_position <= 0:
-        raise MetamorphStateError("Choisissez une carte face cachée valide.")
+        raise MetamorphStateError(
+            bilingual_text("Choisissez une carte face cachée valide.", "Choose a valid face-down card.")
+        )
 
     locked_cards = list(
         game.cards.select_for_update()
@@ -291,7 +417,11 @@ def draw_card(
         source=True,
     )
     if source is None:
-        raise MetamorphStateError("Aucune main adverse ne peut être piochée.")
+        raise MetamorphStateError(
+            bilingual_text(
+                "Aucune main adverse ne peut être piochée.", "There is no opponent hand to draw from."
+            )
+        )
 
     source_hand = [card for card in locked_cards if card.owner_id == source.id]
     drawn = next(
@@ -299,7 +429,9 @@ def draw_card(
         None,
     )
     if drawn is None:
-        raise MetamorphStateError("Cette carte n'est plus disponible.")
+        raise MetamorphStateError(
+            bilingual_text("Cette carte n'est plus disponible.", "This card is no longer available.")
+        )
 
     actor_hand = [card for card in locked_cards if card.owner_id == actor.id]
     drawn.owner = actor
@@ -328,6 +460,8 @@ def draw_card(
             [drawn, matching_card],
             ["owner", "hand_position", "paired_at"],
         )
+        actor_hand.remove(matching_card)
+        _compact_hand(actor_hand)
     else:
         moment = timezone.now()
 
@@ -358,13 +492,58 @@ def draw_card(
             source=False,
         )
         if next_player is None:
-            raise MetamorphStateError("Le prochain joueur n'a pas pu être déterminé.")
+            raise MetamorphStateError(
+                bilingual_text(
+                    "Le prochain joueur n'a pas pu être déterminé.",
+                    "The next player could not be determined.",
+                )
+            )
         game.current_turn = next_player
         _bump_revision(game, "current_turn")
     else:
         _bump_revision(game, "status", "current_turn", "finished_at")
         _record_finished_game(players, loser)
     return game
+
+
+@transaction.atomic
+def play_bot_turn(game_id, user, expected_revision: int, rng=None) -> MetamorphGame:
+    """Play one blind draw for the active bot, driven by any human participant."""
+
+    game = _lock_game(game_id)
+    players = _players_locked(game)
+    _player_for_user(players, user)
+    _assert_revision(game, expected_revision)
+    if game.status != MetamorphGame.Status.EN_COURS:
+        raise MetamorphStateError(
+            bilingual_text("La partie n'est pas en cours.", "The game is not in progress.")
+        )
+    actor = next((player for player in players if player.id == game.current_turn_id), None)
+    if actor is None or not actor.is_bot:
+        raise MetamorphStateError(
+            bilingual_text("Ce n'est pas le tour d'une IA.", "It is not an AI player's turn.")
+        )
+
+    hand_counts = {
+        row["owner_id"]: row["count"]
+        for row in game.cards.filter(owner__isnull=False).values("owner_id").annotate(count=Count("id"))
+    }
+    source = _relative_player_with_cards(
+        players,
+        actor,
+        game.direction,
+        {player_id for player_id, count in hand_counts.items() if count > 0},
+        source=True,
+    )
+    if source is None or hand_counts.get(source.id, 0) < 1:
+        raise MetamorphStateError(
+            bilingual_text(
+                "Aucune main adverse ne peut être piochée.", "There is no opponent hand to draw from."
+            )
+        )
+    generator = rng or random
+    position = generator.randint(1, hand_counts[source.id])
+    return _draw_card_for_actor(game, players, actor, position)
 
 
 def _serialize_pokemon(card: PokemonCard) -> dict:
@@ -374,15 +553,22 @@ def _serialize_pokemon(card: PokemonCard) -> dict:
         "slug": card.slug,
         "name_fr": card.name_fr,
         "name_en": card.name_en,
+        "name": localized_pokemon_name(card),
         "sprite_url": card.sprite_url,
         "primary_type": {
             "slug": card.primary_type.slug,
             "name_fr": card.primary_type.name_fr,
+            "name_en": card.primary_type.name_en,
+            "name": localized_type_name(card.primary_type),
+            "icon_url": type_icon_url(card.primary_type.slug),
         },
         "secondary_type": (
             {
                 "slug": card.secondary_type.slug,
                 "name_fr": card.secondary_type.name_fr,
+                "name_en": card.secondary_type.name_en,
+                "name": localized_type_name(card.secondary_type),
+                "icon_url": type_icon_url(card.secondary_type.slug),
             }
             if card.secondary_type
             else None
@@ -393,7 +579,8 @@ def _serialize_pokemon(card: PokemonCard) -> dict:
 def _serialize_player(player: MetamorphPlayer, hand_count: int, me_id: int) -> dict:
     return {
         "id": player.id,
-        "username": player.user.get_username(),
+        "username": player.display_name,
+        "is_bot": player.is_bot,
         "turn_order": player.turn_order,
         "hand_count": hand_count,
         "rank": player.rank,
@@ -425,7 +612,9 @@ def serialize_game_state(game: MetamorphGame, user) -> dict:
     players = list(game.players.select_related("user").order_by("turn_order"))
     me = next((entry for entry in players if entry.user_id == user.id), None)
     if me is None:
-        raise MetamorphPermissionError("Vous ne participez pas à cette partie.")
+        raise MetamorphPermissionError(
+            bilingual_text("Vous ne participez pas à cette partie.", "You are not in this game.")
+        )
 
     hand_counts = {
         row["owner_id"]: row["count"]
@@ -467,11 +656,13 @@ def serialize_game_state(game: MetamorphGame, user) -> dict:
                 "sequence": move.sequence,
                 "actor": {
                     "id": move.actor_id,
-                    "username": move.actor.user.get_username(),
+                    "username": move.actor.display_name,
+                    "is_bot": move.actor.is_bot,
                 },
                 "source": {
                     "id": move.source_id,
-                    "username": move.source.user.get_username(),
+                    "username": move.source.display_name,
+                    "is_bot": move.source.is_bot,
                 },
                 "formed_pair": move.formed_pair,
                 # Une carte non appariée rejoint une main et reste donc secrète.
@@ -490,7 +681,8 @@ def serialize_game_state(game: MetamorphGame, user) -> dict:
         draw_source = {
             "player": {
                 "id": source.id,
-                "username": source.user.get_username(),
+                "username": source.display_name,
+                "is_bot": source.is_bot,
             },
             "card_count": source_count,
             # Les positions suffisent à choisir. Aucun identifiant de carte ou
@@ -508,12 +700,18 @@ def serialize_game_state(game: MetamorphGame, user) -> dict:
     loser = next((entry for entry in serialized_players if entry["is_loser"]), None)
     return {
         "game_id": str(game.id),
+        "language": active_language(),
         "status": game.status,
         "turn_revision": game.turn_revision,
         "direction": game.direction,
         "min_players": MIN_PLAYERS,
         "max_players": MAX_PLAYERS,
         "is_host": game.created_by_id == user.id,
+        "can_add_bot": (
+            game.status == MetamorphGame.Status.EN_ATTENTE
+            and game.created_by_id == user.id
+            and len(players) < MAX_PLAYERS
+        ),
         "can_start": (
             game.status == MetamorphGame.Status.EN_ATTENTE
             and game.created_by_id == user.id
@@ -550,14 +748,17 @@ def get_lobby_state(user) -> dict:
         .filter(player_count__lt=MAX_PLAYERS)
         .order_by("-created_at")
     )
-    my_games = list(
-        MetamorphGame.objects.annotate(player_count=Count("players", distinct=True))
-        .filter(players__user=user)
-        .select_related("created_by")
-        .distinct()
-        .order_by("-created_at")
-    )
+    my_games = []
+    if getattr(user, "is_authenticated", False):
+        my_games = list(
+            MetamorphGame.objects.annotate(player_count=Count("players", distinct=True))
+            .filter(players__user=user)
+            .select_related("created_by")
+            .distinct()
+            .order_by("-created_at")
+        )
     return {
+        "language": active_language(),
         "open_games": [
             {
                 "id": str(game.id),

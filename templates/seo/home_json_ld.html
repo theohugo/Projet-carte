@@ -1,0 +1,34 @@
+{% load i18n poketable_i18n %}{% get_current_language as CURRENT_LANGUAGE %}
+<script id="poketable-structured-data" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "{{ request.scheme }}://{{ request.get_host }}{% url 'home' %}#website",
+      "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'home' %}",
+      "name": "PokéTable",
+      "description": "{% bilingual 'Huit jeux de société multijoueurs dans l’univers Pokémon, jouables en ligne avec ses amis.' 'Eight multiplayer Pokémon party games to play online with friends.' %}",
+      "inLanguage": "{% if CURRENT_LANGUAGE|slice:':2' == 'en' %}en-US{% else %}fr-FR{% endif %}"
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "{{ request.scheme }}://{{ request.get_host }}{% url 'home' %}#application",
+      "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'home' %}",
+      "name": "PokéTable",
+      "description": "{% bilingual 'Créez une table et jouez en ligne à huit jeux de société inspirés de l’univers Pokémon.' 'Create a table and play eight online party games inspired by the Pokémon universe.' %}",
+      "applicationCategory": "GameApplication",
+      "applicationSubCategory": "MultiplayerGame",
+      "operatingSystem": "{% bilingual 'Tout système avec un navigateur web moderne' 'Any system with a modern web browser' %}",
+      "browserRequirements": "{% bilingual 'JavaScript activé' 'JavaScript enabled' %}",
+      "isAccessibleForFree": true,
+      "inLanguage": "{% if CURRENT_LANGUAGE|slice:':2' == 'en' %}en-US{% else %}fr-FR{% endif %}",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      }
+    }
+  ]
+}
+</script>

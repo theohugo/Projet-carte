@@ -15,15 +15,21 @@ from game.card_prints import prints_of
 from game.forms import AccountForm, ProfileForm, SignUpForm
 from game.game_engine import GameEngine, GameEngineError, close_stale_games
 from game.guests import (
+    guest_action,
     guest_allowed,
     is_guest,
     member_feature,
     members_only,
+    public_lobby,
     safe_next_url,
     start_guest_session,
 )
 from game.models import CollectionCard, Friendship, Game, GameCard, PokemonCard, Profile
-from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID
+from game.pokemon_names import (
+    GEN_ONE_MAX_POKEDEX_ID,
+    bilingual_text,
+    localized_pokemon_name,
+)
 from game.pokemon_types import POKEMON_TYPES
 from game.quests import QuestError, claim_reward, quest_board
 from game.rarities import as_dict as rarity_payload
@@ -157,8 +163,8 @@ def _season_tabs(user, current):
     return [
         {
             "number": season.number,
-            "label": season.label,
-            "kicker": season.kicker,
+            "label": season.display_label,
+            "kicker": season.display_kicker,
             "owned_count": counts.get(season.number, 0),
             "total_count": _season_size(season),
             "is_current": season.number == current.number,
@@ -175,12 +181,18 @@ def _print_slots(user, season):
     }
 
     slots = []
+    pokemon_names = {
+        card.pokedex_id: localized_pokemon_name(card)
+        for card in PokemonCard.objects.filter(
+            pokedex_id__in=[entry.dex_id for entry in prints_of(season.number)]
+        )
+    }
     for card in prints_of(season.number):
         copies = owned.get(card.variant, 0)
         slots.append(
             {
                 "pokedex_id": card.dex_id,
-                "name_fr": card.name_fr,
+                "name": pokemon_names.get(card.dex_id, card.name_fr),
                 "number": card.local_id,
                 "image_url": card.image,
                 # Le gabarit retombe sur le sprite quand le visuel manque ; une
@@ -210,7 +222,7 @@ def _species_slots(user, season):
         slots.append(
             {
                 "pokedex_id": card.pokedex_id,
-                "name_fr": card.name_fr,
+                "name": localized_pokemon_name(card),
                 "number": card.pokedex_id,
                 "sprite_url": card.sprite_url,
                 "image_url": get_tcg_image_url(card.pokedex_id, season.number),
@@ -226,6 +238,8 @@ def _species_slots(user, season):
 @member_feature(
     "Ta collection",
     "Les 151 cartes de la première génération, débloquées au fil de tes quêtes.",
+    label_en="Your collection",
+    promise_en="Unlock all 151 first-generation cards as you complete quests.",
 )
 def collection(request):
     """Les cartes d'une saison, débloquées par les boosters."""
@@ -257,6 +271,8 @@ def collection(request):
 @member_feature(
     "Tes quêtes",
     "Des objectifs quotidiens et hebdomadaires qui font grandir ta collection.",
+    label_en="Your quests",
+    promise_en="Daily and weekly objectives that grow your collection.",
 )
 def quests(request):
     """Quêtes du jour et de la semaine, avec récupération des points."""
@@ -287,8 +303,11 @@ def claim_quest(request, quest_key):
     else:
         gain = f"+{claim.points} points"
         if claim.booster_label:
-            gain += f" et un {claim.booster_label} à ouvrir en boutique"
-        messages.success(request, f"Quête accomplie : {gain}.")
+            gain += bilingual_text(
+                f" et un {claim.booster_label} à ouvrir en boutique",
+                f" and one {claim.booster_label} to open in the shop",
+            )
+        messages.success(request, bilingual_text(f"Quête accomplie : {gain}.", f"Quest completed: {gain}."))
 
     return redirect("quests")
 
@@ -297,6 +316,8 @@ def claim_quest(request, quest_key):
 @member_feature(
     "La boutique",
     "Dépense tes points en boosters et complète ta collection de première édition.",
+    label_en="The shop",
+    promise_en="Spend points on booster packs and complete your first-edition collection.",
 )
 def shop(request):
     """Boutique de boosters, payés avec les points gagnés en quêtes."""
@@ -314,8 +335,8 @@ def shop(request):
     def describe(booster, *, affordable):
         return {
             "key": booster.key,
-            "label": booster.label,
-            "description": booster.description,
+            "label": booster.display_label,
+            "description": booster.display_description,
             "price": booster.price,
             "card_count": booster.card_count,
             "season": booster.season,
@@ -397,7 +418,8 @@ def api_open_ticket(request, ticket_id):
     return JsonResponse(result)
 
 
-@guest_allowed
+@guest_action
+@public_lobby
 def lobby(request):
     if request.method == "POST":
         game = Game.objects.create(
@@ -415,10 +437,12 @@ def lobby(request):
         status=Game.Status.EN_ATTENTE,
     ).select_related("created_by")
 
-    my_games = Game.objects.filter(
-        players__user=request.user,
-    ).exclude(
-        status=Game.Status.EN_ATTENTE,
+    my_games = (
+        Game.objects.filter(players__user=request.user).exclude(
+            status=Game.Status.EN_ATTENTE,
+        )
+        if request.user.is_authenticated
+        else Game.objects.none()
     )
 
     return render(
@@ -432,7 +456,7 @@ def lobby(request):
     )
 
 
-@login_required
+@guest_action
 @require_POST
 @transaction.atomic
 def join_game(request, game_id):
@@ -468,7 +492,12 @@ def start_game_view(request, game_id):
     )
 
     if game.created_by_id != request.user.id:
-        return HttpResponseForbidden("Seul le créateur de la partie peut la démarrer.")
+        return HttpResponseForbidden(
+            bilingual_text(
+                "Seul le créateur de la partie peut la démarrer.",
+                "Only the room host can start the game.",
+            )
+        )
 
     try:
         GameEngine(game).start_game()
@@ -496,7 +525,12 @@ def add_bot_view(request, game_id):
     )
 
     if game.created_by_id != request.user.id:
-        return HttpResponseForbidden("Seul le créateur peut ajouter une IA.")
+        return HttpResponseForbidden(
+            bilingual_text(
+                "Seul le créateur peut ajouter une IA.",
+                "Only the room host can add an AI player.",
+            )
+        )
 
     try:
         GameEngine(game).add_bot()
@@ -524,7 +558,12 @@ def remove_bot_view(request, game_id, player_id):
     )
 
     if game.created_by_id != request.user.id:
-        return HttpResponseForbidden("Seul le créateur peut retirer une IA.")
+        return HttpResponseForbidden(
+            bilingual_text(
+                "Seul le créateur peut retirer une IA.",
+                "Only the room host can remove an AI player.",
+            )
+        )
 
     try:
         GameEngine(game).remove_bot(player_id)
@@ -565,7 +604,10 @@ def game_detail(request, game_id):
             "join_invitation.html",
             {
                 "mode_name": "Poké-Uno",
-                "mode_kicker": ("Défausse · pouvoirs · types Pokémon"),
+                "mode_kicker": bilingual_text(
+                    "Défausse · pouvoirs · types Pokémon",
+                    "Discard · powers · Pokémon types",
+                ),
                 "host_name": game.created_by.get_username(),
                 "player_count": player_count,
                 "max_players": game.max_players,
@@ -663,6 +705,8 @@ def game_detail(request, game_id):
 @member_feature(
     "Ton profil",
     "Un avatar, une description et tes statistiques conservées de partie en partie.",
+    label_en="Your profile",
+    promise_en="Keep your avatar, bio and statistics from one game to the next.",
 )
 def my_profile(request):
     """Affiche le profil de l'utilisateur connecté."""
@@ -742,7 +786,10 @@ def edit_profile(request):
 
             messages.success(
                 request,
-                "Ton profil a bien été mis à jour.",
+                bilingual_text(
+                    "Ton profil a bien été mis à jour.",
+                    "Your profile has been updated.",
+                ),
             )
 
             return redirect("my_profile")
@@ -770,6 +817,8 @@ def edit_profile(request):
 @member_feature(
     "Tes amis",
     "Retrouve tes amis, suis leurs parties et invite-les d'un clic.",
+    label_en="Your friends",
+    promise_en="Find your friends, follow their games and invite them in one click.",
 )
 def friends(request):
     """Affiche les amis et les demandes de l'utilisateur."""
@@ -911,7 +960,10 @@ def send_friend_request(request, username):
     if target_user.pk == request.user.pk:
         messages.error(
             request,
-            "Tu ne peux pas t’ajouter toi-même.",
+            bilingual_text(
+                "Tu ne peux pas t’ajouter toi-même.",
+                "You cannot add yourself as a friend.",
+            ),
         )
 
         return redirect("my_profile")
@@ -931,20 +983,29 @@ def send_friend_request(request, username):
 
         messages.success(
             request,
-            ("Demande d’ami envoyée à " f"{target_user.username}."),
+            bilingual_text(
+                f"Demande d’ami envoyée à {target_user.username}.",
+                f"Friend request sent to {target_user.username}.",
+            ),
         )
 
     elif friendship.status == Friendship.Status.ACCEPTED:
         messages.info(
             request,
-            ("Tu es déjà ami avec " f"{target_user.username}."),
+            bilingual_text(
+                f"Tu es déjà ami avec {target_user.username}.",
+                f"You are already friends with {target_user.username}.",
+            ),
         )
 
     elif friendship.status == Friendship.Status.PENDING:
         if friendship.requester_id == request.user.pk:
             messages.info(
                 request,
-                "Cette demande d’ami est déjà en attente.",
+                bilingual_text(
+                    "Cette demande d’ami est déjà en attente.",
+                    "This friend request is already pending.",
+                ),
             )
         else:
             friendship.status = Friendship.Status.ACCEPTED
@@ -958,7 +1019,10 @@ def send_friend_request(request, username):
 
             messages.success(
                 request,
-                ("Tu es maintenant ami avec " f"{target_user.username}."),
+                bilingual_text(
+                    f"Tu es maintenant ami avec {target_user.username}.",
+                    f"You are now friends with {target_user.username}.",
+                ),
             )
 
     else:
@@ -969,7 +1033,10 @@ def send_friend_request(request, username):
 
         messages.success(
             request,
-            ("Nouvelle demande envoyée à " f"{target_user.username}."),
+            bilingual_text(
+                f"Nouvelle demande envoyée à {target_user.username}.",
+                f"New friend request sent to {target_user.username}.",
+            ),
         )
 
     return redirect(
@@ -1002,7 +1069,10 @@ def accept_friend_request(request, friendship_id):
 
     messages.success(
         request,
-        ("Tu es maintenant ami avec " f"{friendship.requester.username}."),
+        bilingual_text(
+            f"Tu es maintenant ami avec {friendship.requester.username}.",
+            f"You are now friends with {friendship.requester.username}.",
+        ),
     )
 
     return redirect("friends")
@@ -1032,7 +1102,7 @@ def reject_friend_request(request, friendship_id):
 
     messages.info(
         request,
-        "La demande d’ami a été refusée.",
+        bilingual_text("La demande d’ami a été refusée.", "The friend request was declined."),
     )
 
     return redirect("friends")
@@ -1055,7 +1125,7 @@ def cancel_friend_request(request, friendship_id):
 
     messages.info(
         request,
-        "La demande d’ami a été annulée.",
+        bilingual_text("La demande d’ami a été annulée.", "The friend request was cancelled."),
     )
 
     return redirect("friends")
@@ -1083,7 +1153,10 @@ def remove_friend(request, friendship_id):
 
     messages.info(
         request,
-        (f"{other_user.username} a été retiré " "de ta liste d’amis."),
+        bilingual_text(
+            f"{other_user.username} a été retiré de ta liste d’amis.",
+            f"{other_user.username} was removed from your friends list.",
+        ),
     )
 
     return redirect("friends")

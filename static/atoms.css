@@ -381,7 +381,7 @@ a:focus-visible {
     cursor: default;
 }
 
-.card-unit img {
+.card-unit > img {
     width: 82px;
     height: 82px;
     margin-top: var(--space-3);
@@ -568,7 +568,7 @@ a:focus-visible {
     clip-path: polygon(50% 0, 92% 16%, 84% 68%, 50% 100%, 16% 68%, 8% 16%);
 }
 
-.card-unit.has-action img {
+.card-unit.has-action > img {
     margin-top: 34px;
     transform: scale(0.9);
 }

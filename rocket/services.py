@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from game.results import record_completed_game
 
+from .i18n import role_presentation, status_label, text, winner_label
 from .models import RocketGame, RocketMessage, RocketNightAction, RocketPlayer, RocketVote
 
 MIN_PLAYERS = 6
@@ -25,31 +26,11 @@ NIGHT_SECONDS = 120
 DISCUSSION_SECONDS = 180
 VOTE_SECONDS = 90
 
-ROLE_PRESENTATION = {
-    RocketPlayer.Role.ROCKET: {
-        "name": "Agent Rocket",
-        "side": "Team Rocket",
-        "mission": "Sabote un Dresseur chaque nuit et reste indétectable pendant les votes.",
-        "artwork": "img/games/artwork/meowth.png",
-    },
-    RocketPlayer.Role.DETECTIVE: {
-        "name": "Détective Looker",
-        "side": "Alliance des Dresseurs",
-        "mission": "Enquête chaque nuit sur un joueur pour savoir s'il appartient à la Team Rocket.",
-        "artwork": "img/games/artwork/lucario.png",
-    },
-    RocketPlayer.Role.GUARDIAN: {
-        "name": "Leuphorie gardienne",
-        "side": "Alliance des Dresseurs",
-        "mission": "Protège un joueur chaque nuit contre le sabotage de la Team Rocket.",
-        "artwork": "img/games/artwork/chansey.png",
-    },
-    RocketPlayer.Role.TRAINER: {
-        "name": "Dresseur",
-        "side": "Alliance des Dresseurs",
-        "mission": "Observe les débats, repère les incohérences et vote pour démasquer les agents.",
-        "artwork": "img/games/artwork/pikachu.png",
-    },
+ROLE_ARTWORK = {
+    RocketPlayer.Role.ROCKET: "img/games/artwork/meowth.png",
+    RocketPlayer.Role.DETECTIVE: "img/games/artwork/lucario.png",
+    RocketPlayer.Role.GUARDIAN: "img/games/artwork/chansey.png",
+    RocketPlayer.Role.TRAINER: "img/games/artwork/pikachu.png",
 }
 
 
@@ -81,15 +62,22 @@ def _bump(game: RocketGame, *fields: str) -> None:
 def _player_for(game: RocketGame, user) -> RocketPlayer:
     player = game.players.select_related("user").filter(user=user).first()
     if player is None:
-        raise RocketPermissionError("Vous ne participez pas à cette infiltration.")
+        raise RocketPermissionError(
+            text("Vous ne participez pas à cette infiltration.", "You are not part of this infiltration.")
+        )
     return player
 
 
 def _assert_revision(game: RocketGame, expected_revision) -> None:
     if isinstance(expected_revision, bool) or not isinstance(expected_revision, int):
-        raise RocketError("La révision de partie est obligatoire.")
+        raise RocketError(text("La révision de partie est obligatoire.", "The game revision is required."))
     if expected_revision != game.turn_revision:
-        raise StaleRevisionError("La partie a changé entre-temps. Elle a été actualisée.")
+        raise StaleRevisionError(
+            text(
+                "La partie a changé entre-temps. Elle a été actualisée.",
+                "The game changed in the meantime and was refreshed.",
+            )
+        )
 
 
 @transaction.atomic
@@ -103,11 +91,13 @@ def create_game(user) -> RocketGame:
 def join_game(game_id, user) -> RocketGame:
     game = RocketGame.objects.select_for_update().get(pk=game_id)
     if game.status != RocketGame.Status.EN_ATTENTE:
-        raise RocketError("Cette infiltration a déjà commencé.")
+        raise RocketError(
+            text("Cette infiltration a déjà commencé.", "This infiltration has already started.")
+        )
     if game.players.filter(user=user).exists():
         return game
     if game.players.count() >= game.max_players:
-        raise RocketError("Cette infiltration est complète.")
+        raise RocketError(text("Cette infiltration est complète.", "This infiltration is full."))
     next_order = (game.players.aggregate(top=Max("turn_order"))["top"] or 0) + 1
     RocketPlayer.objects.create(game=game, user=user, turn_order=next_order)
     _bump(game)
@@ -118,15 +108,31 @@ def join_game(game_id, user) -> RocketGame:
 def start_game(game_id, user) -> RocketGame:
     game = RocketGame.objects.select_for_update().get(pk=game_id)
     if game.created_by_id != user.id:
-        raise RocketPermissionError("Seul l'hôte peut distribuer les rôles.")
+        raise RocketPermissionError(
+            text("Seul l'hôte peut distribuer les rôles.", "Only the host can deal the roles.")
+        )
     if game.status != RocketGame.Status.EN_ATTENTE:
-        raise RocketError("Cette infiltration a déjà commencé.")
+        raise RocketError(
+            text("Cette infiltration a déjà commencé.", "This infiltration has already started.")
+        )
 
     players = list(game.players.select_related("user").order_by("turn_order"))
     if len(players) < MIN_PLAYERS:
-        raise RocketError(f"Il faut au moins {MIN_PLAYERS} joueurs pour cacher les rôles.")
+        raise RocketError(
+            text(
+                "Il faut au moins %(count)s joueurs pour cacher les rôles.",
+                "At least %(count)s players are needed for hidden roles.",
+            )
+            % {"count": MIN_PLAYERS}
+        )
     if len(players) > MAX_PLAYERS:
-        raise RocketError(f"Une infiltration accepte au maximum {MAX_PLAYERS} joueurs.")
+        raise RocketError(
+            text(
+                "Une infiltration accepte au maximum %(count)s joueurs.",
+                "An infiltration accepts at most %(count)s players.",
+            )
+            % {"count": MAX_PLAYERS}
+        )
 
     roles = [RocketPlayer.Role.ROCKET] * rocket_count_for(len(players))
     roles += [RocketPlayer.Role.DETECTIVE, RocketPlayer.Role.GUARDIAN]
@@ -156,11 +162,16 @@ def _action_kind(role: str) -> str | None:
 
 def _check_target(actor: RocketPlayer, target: RocketPlayer, kind: str) -> None:
     if target.game_id != actor.game_id or not target.is_alive:
-        raise RocketError("Cette cible n'est pas disponible.")
+        raise RocketError(text("Cette cible n'est pas disponible.", "This target is unavailable."))
     if kind in {RocketNightAction.Kind.KILL, RocketNightAction.Kind.INSPECT} and target.pk == actor.pk:
-        raise RocketError("Choisis un autre joueur.")
+        raise RocketError(text("Choisis un autre joueur.", "Choose another player."))
     if kind == RocketNightAction.Kind.KILL and target.role == RocketPlayer.Role.ROCKET:
-        raise RocketError("Les agents Rocket ne peuvent pas se saboter entre eux.")
+        raise RocketError(
+            text(
+                "Les agents Rocket ne peuvent pas se saboter entre eux.",
+                "Team Rocket agents cannot sabotage one another.",
+            )
+        )
 
 
 @transaction.atomic
@@ -169,17 +180,21 @@ def submit_night_action(game_id, user, target_id, expected_revision) -> RocketGa
     actor = _player_for(game, user)
     _assert_revision(game, expected_revision)
     if game.status != RocketGame.Status.NUIT:
-        raise RocketError("La nuit est déjà terminée.")
+        raise RocketError(text("La nuit est déjà terminée.", "The night is already over."))
     if not actor.is_alive:
-        raise RocketPermissionError("Un joueur éliminé ne peut plus agir.")
+        raise RocketPermissionError(
+            text("Un joueur éliminé ne peut plus agir.", "An eliminated player can no longer act.")
+        )
 
     kind = _action_kind(actor.role)
     if kind is None:
-        raise RocketPermissionError("Ton rôle n'a pas d'action nocturne.")
+        raise RocketPermissionError(
+            text("Ton rôle n'a pas d'action nocturne.", "Your role has no night action.")
+        )
     try:
         target = game.players.get(pk=target_id)
     except (RocketPlayer.DoesNotExist, TypeError, ValueError):
-        raise RocketError("Cible inconnue.") from None
+        raise RocketError(text("Cible inconnue.", "Unknown target.")) from None
     _check_target(actor, target, kind)
 
     action, _ = RocketNightAction.objects.update_or_create(
@@ -253,9 +268,13 @@ def start_vote(game_id, user, expected_revision) -> RocketGame:
     _assert_revision(game, expected_revision)
     player = _player_for(game, user)
     if not player.is_alive:
-        raise RocketPermissionError("Seul un survivant peut ouvrir le conseil.")
+        raise RocketPermissionError(
+            text("Seul un survivant peut ouvrir le conseil.", "Only a survivor can open the council.")
+        )
     if game.status != RocketGame.Status.DISCUSSION:
-        raise RocketError("Le conseil ne peut pas commencer maintenant.")
+        raise RocketError(
+            text("Le conseil ne peut pas commencer maintenant.", "The council cannot begin now.")
+        )
     game.status = RocketGame.Status.VOTE
     game.phase_deadline = timezone.now() + timedelta(seconds=VOTE_SECONDS)
     _bump(game, "status", "phase_deadline")
@@ -268,15 +287,17 @@ def submit_vote(game_id, user, target_id, expected_revision) -> RocketGame:
     voter = _player_for(game, user)
     _assert_revision(game, expected_revision)
     if game.status != RocketGame.Status.VOTE:
-        raise RocketError("Le vote n'est pas ouvert.")
+        raise RocketError(text("Le vote n'est pas ouvert.", "Voting is not open."))
     if not voter.is_alive:
-        raise RocketPermissionError("Un joueur éliminé ne vote plus.")
+        raise RocketPermissionError(
+            text("Un joueur éliminé ne vote plus.", "An eliminated player can no longer vote.")
+        )
     try:
         target = game.players.get(pk=target_id, is_alive=True)
     except (RocketPlayer.DoesNotExist, TypeError, ValueError):
-        raise RocketError("Cible de vote inconnue.") from None
+        raise RocketError(text("Cible de vote inconnue.", "Unknown voting target.")) from None
     if target.pk == voter.pk:
-        raise RocketError("Tu ne peux pas voter contre toi-même.")
+        raise RocketError(text("Tu ne peux pas voter contre toi-même.", "You cannot vote for yourself."))
 
     RocketVote.objects.update_or_create(
         game=game,
@@ -349,16 +370,32 @@ def send_message(game_id, user, body, expected_revision) -> RocketMessage:
     player = _player_for(game, user)
     _assert_revision(game, expected_revision)
     if game.status != RocketGame.Status.DISCUSSION:
-        raise RocketError("Le canal s'ouvre uniquement pendant la discussion.")
+        raise RocketError(
+            text(
+                "Le canal s'ouvre uniquement pendant la discussion.",
+                "The channel opens only during discussion.",
+            )
+        )
     if not player.is_alive:
-        raise RocketPermissionError("Les joueurs éliminés observent le débat en silence.")
+        raise RocketPermissionError(
+            text(
+                "Les joueurs éliminés observent le débat en silence.",
+                "Eliminated players must watch the debate in silence.",
+            )
+        )
     if not isinstance(body, str):
-        raise RocketError("Message invalide.")
+        raise RocketError(text("Message invalide.", "Invalid message."))
     body = " ".join(body.split()).strip()
     if not body:
-        raise RocketError("Écris un message avant de l'envoyer.")
+        raise RocketError(text("Écris un message avant de l'envoyer.", "Write a message before sending it."))
     if len(body) > MAX_MESSAGE_LENGTH:
-        raise RocketError(f"Le message ne peut pas dépasser {MAX_MESSAGE_LENGTH} caractères.")
+        raise RocketError(
+            text(
+                "Le message ne peut pas dépasser %(count)s caractères.",
+                "The message cannot exceed %(count)s characters.",
+            )
+            % {"count": MAX_MESSAGE_LENGTH}
+        )
     sequence = (game.messages.aggregate(top=Max("sequence"))["top"] or 0) + 1
     message = RocketMessage.objects.create(
         game=game,
@@ -431,13 +468,13 @@ def advance_if_expired(game_id) -> RocketGame:
 
 
 def _role_payload(role: str) -> dict:
-    presentation = ROLE_PRESENTATION[role]
+    presentation = role_presentation(role)
     return {
         "key": role,
         "name": presentation["name"],
         "side": presentation["side"],
         "mission": presentation["mission"],
-        "artwork_url": static(presentation["artwork"]),
+        "artwork_url": static(ROLE_ARTWORK[role]),
     }
 
 
@@ -454,7 +491,9 @@ def serialize_game_state(game: RocketGame, user) -> dict:
     players_by_id = {player.pk: player for player in players}
     me = next((player for player in players if player.user_id == user.id), None)
     if me is None:
-        raise RocketPermissionError("Vous ne participez pas à cette infiltration.")
+        raise RocketPermissionError(
+            text("Vous ne participez pas à cette infiltration.", "You are not part of this infiltration.")
+        )
 
     reveal_all = game.status == RocketGame.Status.TERMINEE
     rocket_knows_team = me.role == RocketPlayer.Role.ROCKET and game.status != RocketGame.Status.EN_ATTENTE
@@ -518,14 +557,14 @@ def serialize_game_state(game: RocketGame, user) -> dict:
         "game": {
             "id": str(game.id),
             "status": game.status,
-            "status_label": game.get_status_display(),
+            "status_label": status_label(game.status),
             "round": game.round_number,
             "turn_revision": game.turn_revision,
             "min_players": MIN_PLAYERS,
             "max_players": game.max_players,
             "host_id": game.created_by_id,
             "winner_side": game.winner_side,
-            "winner_label": game.get_winner_side_display() if game.winner_side else "",
+            "winner_label": winner_label(game.winner_side) if game.winner_side else "",
             "phase_deadline": game.phase_deadline.isoformat() if game.phase_deadline else None,
             "last_event": _last_event_payload(game, players_by_id),
         },
@@ -561,6 +600,7 @@ def serialize_game_state(game: RocketGame, user) -> dict:
 
 
 def get_lobby_state(user) -> dict:
+    is_authenticated = bool(getattr(user, "is_authenticated", False))
     open_games = RocketGame.objects.filter(status=RocketGame.Status.EN_ATTENTE).select_related("created_by")
     open_rows = []
     for game in open_games:
@@ -571,16 +611,21 @@ def get_lobby_state(user) -> dict:
                 "host": game.created_by.get_username(),
                 "player_count": count,
                 "max_players": game.max_players,
-                "can_join": count < game.max_players and not game.players.filter(user=user).exists(),
+                "can_join": count < game.max_players
+                and (not is_authenticated or not game.players.filter(user=user).exists()),
             }
         )
     my_games = [
         {
             "id": str(game.id),
             "status": game.status,
-            "status_label": game.get_status_display(),
+            "status_label": status_label(game.status),
             "round": game.round_number,
         }
-        for game in RocketGame.objects.filter(players__user=user).exclude(status=RocketGame.Status.EN_ATTENTE)
+        for game in (
+            RocketGame.objects.filter(players__user=user).exclude(status=RocketGame.Status.EN_ATTENTE)
+            if is_authenticated
+            else RocketGame.objects.none()
+        )
     ]
     return {"open_games": open_rows, "my_games": my_games}
