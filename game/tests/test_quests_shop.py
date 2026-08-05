@@ -3,6 +3,7 @@ import random
 from django.test import TestCase
 from django.urls import reverse
 
+from game.card_prints import prints_of
 from game.game_engine import GameEngine
 from game.models import (
     BoosterOpening,
@@ -25,13 +26,20 @@ from game.quests import (
     quest_board,
     record_event,
 )
-from game.seasons import SEASON_151, SEASON_BASE, is_ex
-from game.shop import (
-    BOOSTERS_BY_KEY,
+from game.rarities import (
     COMMUNE,
-    EX,
+    DOUBLE_RARE,
+    HYPER_RARE,
+    ILLUSTRATION_SPECIALE,
     LEGENDAIRE,
     RARE,
+    RARITIES_BY_KEY,
+    ULTRA_RARE,
+)
+from game.seasons import SEASON_151, SEASON_BASE
+from game.shop import (
+    BOOSTERS,
+    BOOSTERS_BY_KEY,
     ShopError,
     draw_cards,
     open_booster,
@@ -227,27 +235,65 @@ class ShopTests(TestCase):
     def give_points(self, amount):
         Profile.objects.filter(user=self.user).update(points=amount)
 
+    def fill_gen_one_catalogue(self):
+        """Complète le catalogue jusqu'à 151 espèces.
+
+        Une saison à impressions tire dans tout le set : sans les 151 espèces,
+        la moitié des cartes tirées n'aurait pas d'entrée au catalogue.
+        """
+
+        known = set(PokemonCard.objects.values_list("pokedex_id", flat=True))
+        PokemonCard.objects.bulk_create(
+            PokemonCard(
+                pokedex_id=pokedex_id,
+                slug=f"espece-{pokedex_id}",
+                name_fr=f"Espèce {pokedex_id}",
+                name_en=f"Species {pokedex_id}",
+                primary_type=self.types["fire"],
+                sprite_url=f"https://example.com/{pokedex_id}.png",
+            )
+            for pokedex_id in range(1, 152)
+            if pokedex_id not in known
+        )
+
     def test_rarity_follows_the_catalogue(self):
         self.assertEqual(rarity_of(self.legendary), LEGENDAIRE)
         self.assertEqual(rarity_of(PokemonCard.objects.get(pokedex_id=6)), RARE)
         self.assertEqual(rarity_of(PokemonCard.objects.get(pokedex_id=19)), COMMUNE)
 
-    def test_the_second_season_promotes_its_ex_cards(self):
-        charizard = PokemonCard.objects.get(pokedex_id=6)
-
-        self.assertEqual(rarity_of(charizard, SEASON_BASE), RARE)
-        self.assertEqual(rarity_of(charizard, SEASON_151), EX)
-        # Un Pokémon sans carte ex garde son rang d'une saison à l'autre.
-        self.assertEqual(rarity_of(self.legendary, SEASON_151), LEGENDAIRE)
-
     def test_a_second_season_booster_fills_its_own_collection(self):
+        self.fill_gen_one_catalogue()
         self.give_points(1000)
 
         open_booster(self.user, "s151", random.Random(4))
 
         self.assertEqual(CollectionCard.objects.filter(user=self.user, season=SEASON_BASE).count(), 0)
-        self.assertGreaterEqual(CollectionCard.objects.filter(user=self.user, season=SEASON_151).count(), 1)
+        self.assertEqual(CollectionCard.objects.filter(user=self.user, season=SEASON_151).count(), 5)
         self.assertEqual(BoosterOpening.objects.get().season, SEASON_151)
+
+    def test_a_print_without_a_species_is_shown_but_not_collected(self):
+        # Catalogue volontairement incomplet : l'ouverture doit rester possible.
+        self.give_points(1000)
+
+        result = open_booster(self.user, "s151", random.Random(4))
+
+        self.assertEqual(len(result["cards"]), 5)
+        collected = CollectionCard.objects.filter(user=self.user, season=SEASON_151).count()
+        self.assertLessEqual(collected, 5)
+
+    def test_a_second_season_draw_carries_the_rarity_of_the_real_card(self):
+        self.fill_gen_one_catalogue()
+        self.give_points(5000)
+
+        result = open_booster(self.user, "s151", random.Random(4))
+
+        for card in result["cards"]:
+            with self.subTest(card=card["name"]):
+                self.assertIn(card["rarity"], RARITIES_BY_KEY)
+                self.assertTrue(card["variant"])
+                self.assertTrue(card["reveal"])
+        stored = CollectionCard.objects.filter(user=self.user, season=SEASON_151)
+        self.assertTrue(all(row.rarity and row.variant for row in stored))
 
     def test_the_same_pokemon_is_collected_once_per_season(self):
         card = PokemonCard.objects.get(pokedex_id=19)
@@ -256,6 +302,17 @@ class ShopTests(TestCase):
         CollectionCard.objects.create(user=self.user, pokemon_card=card, season=SEASON_151)
 
         self.assertEqual(CollectionCard.objects.filter(user=self.user, pokemon_card=card).count(), 2)
+
+    def test_two_prints_of_the_same_pokemon_are_two_cards_to_collect(self):
+        card = PokemonCard.objects.get(pokedex_id=6)
+
+        CollectionCard.objects.create(user=self.user, pokemon_card=card, season=SEASON_151, variant="6")
+        CollectionCard.objects.create(user=self.user, pokemon_card=card, season=SEASON_151, variant="183")
+
+        self.assertEqual(
+            CollectionCard.objects.filter(user=self.user, season=SEASON_151, pokemon_card=card).count(),
+            2,
+        )
 
     def test_a_booster_holds_the_expected_number_of_cards(self):
         booster = BOOSTERS_BY_KEY["base"]
@@ -384,8 +441,16 @@ class ShopViewTests(TestCase):
         self.assertContains(response, "×2")
 
     def test_the_collection_shows_one_season_at_a_time(self):
-        card = PokemonCard.objects.filter(pokedex_id__lte=151).first()
-        CollectionCard.objects.create(user=self.user, pokemon_card=card, season=SEASON_151)
+        # En saison 2, une carte se possède par impression : c'est le numéro de
+        # la carte dans le set qui la désigne, pas l'espèce.
+        card = PokemonCard.objects.get(pokedex_id=1)
+        CollectionCard.objects.create(
+            user=self.user,
+            pokemon_card=card,
+            season=SEASON_151,
+            variant="1",
+            rarity=COMMUNE,
+        )
 
         first = self.client.get(reverse("collection"))
         second = self.client.get(reverse("collection"), {"saison": SEASON_151})
@@ -447,23 +512,60 @@ class ShopViewTests(TestCase):
         self.assertEqual(BoosterTicket.objects.filter(user=self.user).count(), 1)
 
 
-class SeasonImageTests(TestCase):
-    """Les visuels committés : une saison complète, ex compris."""
+class SeasonCatalogueTests(TestCase):
+    """Les catalogues committés : visuels de la saison 1, impressions de la 2."""
 
-    def test_each_season_has_its_own_visual_for_every_pokemon(self):
-        for season in (SEASON_BASE, SEASON_151):
-            with self.subTest(season=season):
-                urls = {get_tcg_image_url(pokedex_id, season) for pokedex_id in range(1, 152)}
+    def test_the_base_set_has_a_visual_for_every_pokemon(self):
+        urls = {get_tcg_image_url(pokedex_id, SEASON_BASE) for pokedex_id in range(1, 152)}
 
-                self.assertNotIn(None, urls)
-                self.assertEqual(len(urls), 151)
+        self.assertNotIn(None, urls)
+        self.assertEqual(len(urls), 151)
 
-    def test_the_two_seasons_show_different_cards(self):
-        self.assertNotEqual(get_tcg_image_url(6, SEASON_BASE), get_tcg_image_url(6, SEASON_151))
+    def test_the_151_set_covers_every_pokemon_and_every_rarity(self):
+        cards = prints_of(SEASON_151)
 
-    def test_an_ex_pokemon_gets_the_full_art_of_the_151_set(self):
-        # Les pleines pages sont numérotées au-delà des 165 cartes officielles.
-        self.assertIn("/18", get_tcg_image_url(6, SEASON_151))
-        self.assertTrue(is_ex(6, SEASON_151))
-        self.assertFalse(is_ex(6, SEASON_BASE))
-        self.assertFalse(is_ex(25, SEASON_151))
+        self.assertEqual({card.dex_id for card in cards}, set(range(1, 152)))
+        # Les huit raretés du set sont représentées, et aucune autre.
+        self.assertEqual(
+            {card.rarity for card in cards},
+            {
+                COMMUNE,
+                "PEU_COMMUNE",
+                RARE,
+                DOUBLE_RARE,
+                "ILLUSTRATION_RARE",
+                ULTRA_RARE,
+                ILLUSTRATION_SPECIALE,
+                HYPER_RARE,
+            },
+        )
+
+    def test_every_print_has_a_distinct_number_and_visual(self):
+        cards = prints_of(SEASON_151)
+
+        self.assertEqual(len({card.local_id for card in cards}), len(cards))
+        self.assertEqual(len({card.image for card in cards}), len(cards))
+
+    def test_a_pokemon_can_exist_in_several_rarities(self):
+        charizard = [card for card in prints_of(SEASON_151) if card.dex_id == 6]
+
+        rarities = {card.rarity for card in charizard}
+        self.assertIn(DOUBLE_RARE, rarities)
+        self.assertIn(ULTRA_RARE, rarities)
+        self.assertGreater(len(charizard), 1)
+
+    def test_each_rarity_has_its_own_reveal(self):
+        reveals = [rarity.reveal for rarity in RARITIES_BY_KEY.values()]
+
+        # Aucune rareté ne partage sa mise en scène avec une autre : c'est ce
+        # qui permet de reconnaître ce qu'on vient de tirer.
+        self.assertEqual(len(reveals), len(set(reveals)))
+
+    def test_every_odds_table_adds_up_and_names_known_rarities(self):
+        for booster in BOOSTERS:
+            with self.subTest(booster=booster.key):
+                total = sum(odds for _, odds in booster.odds)
+
+                self.assertAlmostEqual(total, 1.0, places=6)
+                for rarity, _ in booster.odds:
+                    self.assertIn(rarity, RARITIES_BY_KEY)

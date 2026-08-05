@@ -5,9 +5,13 @@ une édition de cartes — ses visuels, ses raretés et ses boosters. La collect
 est donc doublée, pas remplacée : posséder Dracaufeu en saison 1 ne le donne
 pas en saison 2.
 
-Saison 1, le Set de Base : les impressions historiques, trois raretés.
-Saison 2, la série 151 : la réédition moderne, qui ajoute les cartes *ex* —
-douze Pokémon dont on affiche l'illustration pleine page.
+Deux façons de décrire une saison, selon le set :
+
+* **une carte par espèce** (``fixture``) — le Set de Base, où le numéro de
+  Pokédex suffit à désigner la carte ;
+* **une entrée par impression** (``prints_fixture``) — la série 151, où
+  Dracaufeu existe en Double rare, en Ultra Rare pleine page et en
+  Illustration spéciale, soit trois cartes distinctes à collectionner.
 """
 
 from dataclasses import dataclass
@@ -20,10 +24,10 @@ class Season:
     label: str
     kicker: str
     tagline: str
-    # Fichier de visuels dans ``game/fixtures``.
+    # Visuels par numéro de Pokédex, pour une saison à une carte par espèce.
     fixture: str
-    # Les cartes ex n'existent qu'à partir de la série 151.
-    has_ex: bool
+    # Impressions du set, pour une saison à plusieurs raretés par espèce.
+    prints_fixture: str
 
 
 SEASON_BASE = 1
@@ -38,24 +42,20 @@ SEASONS = (
         kicker="Saison 1",
         tagline="Les 151 cartes de la première édition.",
         fixture="tcg_card_images.json",
-        has_ex=False,
+        prints_fixture="",
     ),
     Season(
         number=SEASON_151,
         key="s151",
         label="Série 151",
         kicker="Saison 2",
-        tagline="La réédition moderne, et ses douze cartes ex pleine illustration.",
-        fixture="tcg_card_images_151.json",
-        has_ex=True,
+        tagline="Les 185 cartes du set, de la commune à la Rare Or.",
+        fixture="",
+        prints_fixture="set_151_prints.json",
     ),
 )
 
 SEASONS_BY_NUMBER = {season.number: season for season in SEASONS}
-
-# Les douze Pokémon qui ont une carte ex dans la série 151. Leur visuel est
-# l'illustration spéciale du set, pas l'impression ordinaire.
-EX_POKEDEX_IDS = frozenset((3, 6, 9, 24, 38, 40, 65, 76, 115, 124, 145, 151))
 
 
 def get_season(number) -> Season:
@@ -70,7 +70,7 @@ def get_season(number) -> Season:
         return SEASONS_BY_NUMBER[DEFAULT_SEASON]
 
 
-def is_ex(pokedex_id: int, season: int = DEFAULT_SEASON) -> bool:
-    """Ce Pokémon a-t-il une carte ex dans cette saison ?"""
+def has_prints(number) -> bool:
+    """La saison se collectionne-t-elle par impression plutôt que par espèce ?"""
 
-    return get_season(season).has_ex and pokedex_id in EX_POKEDEX_IDS
+    return bool(get_season(number).prints_fixture)

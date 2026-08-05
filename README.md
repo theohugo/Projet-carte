@@ -65,18 +65,28 @@ L'illustration passe par un proxy (`/qui-est-ce-pokemon/rounds/<id>/image/`) qui
 - Une quête terminée se récupère à la main sur `/quetes/` et crédite des **points**. La remise à zéro est implicite : chaque progression est stockée avec sa période (jour ou semaine ISO), aucune tâche planifiée n'est nécessaire.
 - Les trois quêtes **hebdomadaires** ajoutent un booster aux points : l'encaissement crée un `BoosterTicket`, qui apparaît en tête de boutique et s'ouvre gratuitement. Le ticket est marqué ouvert plutôt que supprimé, ce qui garde la trace de ce qu'une quête a rapporté.
 - Les points s'échangent contre des **boosters** sur `/boutique/`. Le tirage, le débit et l'ajout à la collection se font côté serveur (`game/shop.py`) : le navigateur ne reçoit les cartes qu'une fois l'achat enregistré.
-- L'ouverture est mise en scène : le sachet se déchire en 3D, les cartes se retournent une à une, et la rareté se voit avant l'étiquette — liseré bleu et reflet holographique pour une rare, halo doré et éclair de scène pour un légendaire, prisme qui balaie l'illustration en boucle et salle entière au prisme pour une carte ex.
-- Les cartes se collectionnent par **saison** (`game/seasons.py`) : un même Pokémon se possède une fois par édition, la saison fait partie de la clé unique de `CollectionCard`. La collection affiche une saison à la fois, avec ses onglets d'avancement.
-  - **Saison 1 — Set de Base** : les visuels de première édition, trois raretés (fixture `game/fixtures/tcg_card_images.json`).
-  - **Saison 2 — Série 151** : la réédition moderne (set TCGdex `sv03.5`, fixture `game/fixtures/tcg_card_images_151.json`), qui ajoute une rareté au-dessus des légendaires — la **carte ex**. Douze Pokémon (3, 6, 9, 24, 38, 40, 65, 76, 115, 124, 145, 151) y prennent leur illustration pleine page. Une même espèce peut changer de rang d'une saison à l'autre : Dracaufeu est rare en saison 1 et ex en saison 2.
-- Les deux fixtures se régénèrent avec `manage.py fetch_tcg_card_images --saison 1|2` (`task tcg:refresh` et `task tcg:refresh:151`).
+- L'ouverture est mise en scène, et **chaque rareté a la sienne** (`reveal`, dans `game/rarities.py`) : deux raretés voisines ne doivent jamais se ressembler, sinon tirer une Ultra Rare ne se distingue pas d'une rare. Le sachet se dilate et se dissipe en lumière, puis les cartes se retournent une à une — reflet seul pour une peu commune, anneau et étincelles pour une rare, **looping complet** de la carte pour une Double rare, **pluie d'étoiles** pour une Illustration rare, **explosion** avec ondes de choc et secousse pour une Ultra Rare, **tempête de prisme** pour une Illustration spéciale, et pour la Rare Or l'écran vire à l'or avec confettis.
+- Les cartes se collectionnent par **saison** (`game/seasons.py`). Deux façons de décrire un set :
+  - **une carte par espèce** — **Saison 1, Set de Base** : les visuels de première édition, trois raretés (fixture `game/fixtures/tcg_card_images.json`, `task tcg:refresh`).
+  - **une entrée par impression** (`game/card_prints.py`) — **Saison 2, Série 151** : les 185 cartes Pokémon du set TCGdex `sv03.5` avec leurs **huit raretés réelles**, de la commune à la Rare Or (fixture `game/fixtures/set_151_prints.json`, `task tcg:refresh:151`). Dracaufeu y existe en Double rare, en Ultra Rare pleine page **et** en Illustration spéciale : ce sont trois cartes distinctes à collectionner, d'où `variant` dans la clé unique de `CollectionCard`.
+
+| Sigle | Rareté | Cartes du set | Révélation |
+| --- | --- | ---: | --- |
+| C | Commune | 63 | retournement seul |
+| PC | Peu commune | 51 | reflet |
+| R | Rare | 25 | anneau + étincelles |
+| RR | Double rare | 12 | looping de la carte |
+| IR | Illustration rare | 16 | pluie d'étoiles |
+| UR | Ultra rare | 12 | explosion + secousse |
+| SIR | Illustration spéciale rare | 5 | tempête de prisme |
+| HR | Rare Or | 1 | écran doré + confettis |
 
 | Booster | Saison | Prix | Contenu |
 | --- | --- | ---: | --- |
 | Set de Base | 1 | 150 pts | 5 cartes · 82 % commune, 15 % rare, 3 % légendaire |
 | Premium | 1 | 400 pts | 5 cartes · une rare garantie, 10 % de légendaire |
-| 151 | 2 | 220 pts | 5 cartes · 74 % commune, 20 % rare, 4 % légendaire, 2 % ex |
-| 151 Ultra | 2 | 520 pts | 5 cartes · une rare garantie, 10 % de légendaire, 6 % d'ex |
+| 151 | 2 | 220 pts | 5 cartes · les huit raretés, jusqu'à 0,1 % de Rare Or |
+| 151 Ultra | 2 | 520 pts | 5 cartes · une rare garantie, 8 % de Double rare, 5 % d'Illustration rare |
 
 ### Jouer sans compte
 

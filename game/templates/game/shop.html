@@ -4,7 +4,7 @@
 {% block title %}Boutique — PokéTable{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=4">
 
 <section class="shop-page" id="shop" data-shop
          data-open-url-template="{% url 'api_open_booster' booster_key='KEY' %}"
@@ -82,11 +82,13 @@
 
                     <ul class="booster-odds" aria-label="Chances par rareté">
                         {% for entry in booster.odds %}
-                        <li data-rarity="{{ entry.rarity }}">{{ entry.percent }} %</li>
+                        <li style="--rarity-color: {{ entry.rarity_color }}" title="{{ entry.rarity_label }}">
+                            <b>{{ entry.rarity_code }}</b>{{ entry.percent }} %
+                        </li>
                         {% endfor %}
                     </ul>
                     {% if booster.guaranteed %}
-                    <span class="booster-guaranteed">{% icon "star" %}Une carte rare garantie</span>
+                    <span class="booster-guaranteed">{% icon "star" %}Une carte {{ booster.guaranteed|lower }} garantie</span>
                     {% endif %}
                 </div>
 
@@ -121,15 +123,16 @@
 
         <div class="opening-dots" data-dots hidden aria-hidden="true"></div>
 
-        <button type="button" class="opening-pack" data-pack aria-label="Déchirer le booster">
+        <button type="button" class="opening-pack" data-pack aria-label="Ouvrir le booster">
             <span class="opening-pack-body">
                 <span class="opening-pack-logo">Poké<b>Table</b></span>
                 <span class="opening-pack-set" data-pack-set>1<sup>re</sup> édition</span>
             </span>
-            <span class="opening-pack-strip" aria-hidden="true"></span>
         </button>
 
         <div class="opening-deck" data-deck hidden></div>
+        {# Couche des effets plein écran : pluie d'étoiles, confettis, ondes. #}
+        <div class="opening-fx" data-fx aria-hidden="true"></div>
 
         <p class="opening-caption" data-caption aria-live="polite"></p>
         <p class="opening-hint" data-hint></p>
@@ -145,5 +148,5 @@
     </div>
 </div>
 
-<script src="{% static 'game/js/shop.js' %}?v=3"></script>
+<script src="{% static 'game/js/shop.js' %}?v=4"></script>
 {% endblock %}

@@ -11,6 +11,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from game.api import get_lobby_state, invalidate_game_state_cache
+from game.card_prints import prints_of
 from game.forms import AccountForm, ProfileForm, SignUpForm
 from game.game_engine import GameEngine, GameEngineError, close_stale_games
 from game.guests import (
@@ -25,7 +26,8 @@ from game.models import CollectionCard, Friendship, Game, GameCard, PokemonCard,
 from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID
 from game.pokemon_types import POKEMON_TYPES
 from game.quests import QuestError, claim_reward, quest_board
-from game.seasons import SEASONS, get_season
+from game.rarities import as_dict as rarity_payload
+from game.seasons import SEASONS, get_season, has_prints
 from game.shop import (
     BOOSTERS,
     BOOSTERS_BY_KEY,
@@ -137,6 +139,12 @@ def hub(request):
     return render(request, "hub.html")
 
 
+def _season_size(season) -> int:
+    """Nombre de cartes à réunir dans une saison."""
+
+    return len(prints_of(season.number)) if has_prints(season.number) else GEN_ONE_MAX_POKEDEX_ID
+
+
 def _season_tabs(user, current):
     """Les onglets de saison, avec l'avancement de chacune."""
 
@@ -150,10 +158,66 @@ def _season_tabs(user, current):
             "label": season.label,
             "kicker": season.kicker,
             "owned_count": counts.get(season.number, 0),
+            "total_count": _season_size(season),
             "is_current": season.number == current.number,
         }
         for season in SEASONS
     ]
+
+
+def _print_slots(user, season):
+    """Une case par impression du set : c'est la carte qu'on collectionne."""
+
+    owned = {
+        row.variant: row.copies for row in CollectionCard.objects.filter(user=user, season=season.number)
+    }
+
+    slots = []
+    for card in prints_of(season.number):
+        copies = owned.get(card.variant, 0)
+        slots.append(
+            {
+                "pokedex_id": card.dex_id,
+                "name_fr": card.name_fr,
+                "number": card.local_id,
+                "image_url": card.image,
+                # Le gabarit retombe sur le sprite quand le visuel manque ; une
+                # impression en a toujours un, mais la clé doit exister.
+                "sprite_url": "",
+                "copies": copies,
+                "owned": copies > 0,
+            }
+            | rarity_payload(card.rarity)
+        )
+    return slots
+
+
+def _species_slots(user, season):
+    """Une case par espèce : le Set de Base n'a qu'une carte par Pokémon."""
+
+    owned = {
+        row.pokemon_card_id: row.copies
+        for row in CollectionCard.objects.filter(user=user, season=season.number)
+    }
+
+    slots = []
+    for card in PokemonCard.objects.filter(
+        pokedex_id__lte=GEN_ONE_MAX_POKEDEX_ID,
+    ).order_by("pokedex_id"):
+        copies = owned.get(card.pk, 0)
+        slots.append(
+            {
+                "pokedex_id": card.pokedex_id,
+                "name_fr": card.name_fr,
+                "number": card.pokedex_id,
+                "sprite_url": card.sprite_url,
+                "image_url": get_tcg_image_url(card.pokedex_id, season.number),
+                "copies": copies,
+                "owned": copies > 0,
+            }
+            | rarity_payload(rarity_of(card, season.number))
+        )
+    return slots
 
 
 @members_only
@@ -162,30 +226,13 @@ def _season_tabs(user, current):
     "Les 151 cartes de la première génération, débloquées au fil de tes quêtes.",
 )
 def collection(request):
-    """Les 151 cartes d'une saison, débloquées par les boosters."""
+    """Les cartes d'une saison, débloquées par les boosters."""
 
     season = get_season(request.GET.get("saison"))
-    owned = {
-        row.pokemon_card_id: row.copies
-        for row in CollectionCard.objects.filter(user=request.user, season=season.number)
-    }
-
-    cards = []
-    for card in PokemonCard.objects.filter(
-        pokedex_id__lte=GEN_ONE_MAX_POKEDEX_ID,
-    ).order_by("pokedex_id"):
-        copies = owned.get(card.pk, 0)
-        cards.append(
-            {
-                "pokedex_id": card.pokedex_id,
-                "name_fr": card.name_fr,
-                "sprite_url": card.sprite_url,
-                "image_url": get_tcg_image_url(card.pokedex_id, season.number),
-                "rarity": rarity_of(card, season.number),
-                "copies": copies,
-                "owned": copies > 0,
-            }
-        )
+    if has_prints(season.number):
+        cards = _print_slots(request.user, season)
+    else:
+        cards = _species_slots(request.user, season)
 
     owned_count = sum(1 for card in cards if card["owned"])
 
@@ -254,6 +301,14 @@ def shop(request):
 
     points = request.user.profile.points
 
+    def odds_entry(rarity_key, odds):
+        # Les raretés les plus hautes valent quelques millièmes : les arrondir
+        # à l'entier afficherait « 0 % » là où il reste une vraie chance.
+        percent = 100 * odds
+        return rarity_payload(rarity_key) | {
+            "percent": f"{percent:.0f}" if percent >= 1 else f"{percent:.1f}".rstrip("0").rstrip("."),
+        }
+
     def describe(booster, *, affordable):
         return {
             "key": booster.key,
@@ -264,8 +319,8 @@ def shop(request):
             "season": booster.season,
             "affordable": affordable,
             "missing": max(0, booster.price - points),
-            "odds": [{"rarity": rarity, "percent": round(100 * odds)} for rarity, odds in booster.odds],
-            "guaranteed": booster.guaranteed,
+            "odds": [odds_entry(rarity, odds) for rarity, odds in booster.odds],
+            "guaranteed": rarity_payload(booster.guaranteed)["rarity_label"] if booster.guaranteed else "",
         }
 
     shelves = [
@@ -300,14 +355,6 @@ def shop(request):
     )
 
 
-def _opening_payload(result):
-    """Complète le tirage avec le visuel de la saison ouverte."""
-
-    for card in result["cards"]:
-        card["image_url"] = get_tcg_image_url(card["pokedex_id"], result["season"])
-    return result
-
-
 @members_only
 @require_POST
 def api_open_booster(request, booster_key):
@@ -318,7 +365,7 @@ def api_open_booster(request, booster_key):
     except ShopError as exc:
         return JsonResponse({"error": str(exc)}, status=400)
 
-    return JsonResponse(_opening_payload(result))
+    return JsonResponse(result)
 
 
 @members_only
@@ -331,7 +378,7 @@ def api_open_ticket(request, ticket_id):
     except ShopError as exc:
         return JsonResponse({"error": str(exc)}, status=400)
 
-    return JsonResponse(_opening_payload(result))
+    return JsonResponse(result)
 
 
 @guest_allowed

@@ -52,9 +52,9 @@ tasks:
       - uv run python manage.py fetch_tcg_card_images --saison 1
 
   tcg:refresh:151:
-    desc: Régénérer les visuels de cartes TCG de la saison 2 (série 151, accès réseau requis)
+    desc: Régénérer le catalogue des impressions de la saison 2 (série 151, accès réseau requis)
     cmds:
-      - uv run python manage.py fetch_tcg_card_images --saison 2
+      - uv run python manage.py fetch_card_prints --saison 2
 
   run:
     desc: Lancer le serveur de développement Django

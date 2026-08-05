@@ -19,7 +19,12 @@
     const pointsValue = shop.querySelector("[data-points]");
     const packSet = opening.querySelector("[data-pack-set]");
     const collectionLink = opening.querySelector("[data-collection-link]");
+    const fx = opening.querySelector("[data-fx]");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    // Rang de la rareté « Rare » : à partir de là, la scène se teinte et les
+    // rayons tournent. En dessous, la carte se retourne et c'est tout.
+    const SPECIAL_RANK = 2;
 
     // État de l'ouverture en cours.
     let pulls = [];
@@ -28,12 +33,11 @@
     let locked = true;
     let isBusy = false;
 
-    const RARITY_CLASS = {
-        COMMUNE: "is-commune",
-        RARE: "is-rare",
-        LEGENDAIRE: "is-legendaire",
-        EX: "is-ex",
-    };
+    // La classe suit la clé de rareté : COMMUNE -> is-commune,
+    // ILLUSTRATION_SPECIALE -> is-illustration-speciale.
+    function rarityClass(card) {
+        return `is-${String(card.rarity || "commune").toLowerCase().replace(/_/g, "-")}`;
+    }
 
     const SEASON_LABEL = {
         1: '1<sup>re</sup> édition',
@@ -68,8 +72,10 @@
     // ── Construction des cartes ────────────────────────────────────────────
 
     function buildCard(card) {
+        const rank = card.rarity_rank || 0;
         const holder = document.createElement("div");
-        holder.className = `tcg-card ${RARITY_CLASS[card.rarity] || "is-commune"}`;
+        holder.className = `tcg-card ${rarityClass(card)}`;
+        holder.style.setProperty("--rarity-color", card.rarity_color || "#9fb0c4");
 
         const tilt = document.createElement("div");
         tilt.className = "tcg-card-tilt";
@@ -90,22 +96,24 @@
         image.alt = card.name;
         front.appendChild(image);
 
-        if (card.rarity !== "COMMUNE") {
+        if (rank >= SPECIAL_RANK) {
             const holo = document.createElement("span");
             holo.className = "tcg-holo";
             front.appendChild(holo);
         }
 
-        // Les cartes ex ont un feuillet supplémentaire : un prisme qui balaie
-        // l'illustration en continu, plus le liseré doré autour.
-        if (card.rarity === "EX") {
+        // À partir de la Double rare, un feuillet de plus : le prisme balaie
+        // l'illustration en continu, et le sigle de rareté reste affiché.
+        if (rank >= 4) {
             const prism = document.createElement("span");
             prism.className = "tcg-prism";
             front.appendChild(prism);
+        }
 
+        if (rank >= SPECIAL_RANK) {
             const badge = document.createElement("span");
-            badge.className = "tcg-ex-badge";
-            badge.textContent = "ex";
+            badge.className = "tcg-rarity-badge";
+            badge.textContent = card.rarity_code || "";
             front.appendChild(badge);
         }
 
@@ -160,6 +168,128 @@
         }
     }
 
+    // ── Effets plein écran ────────────────────────────────────────────────
+    // Chaque pièce se retire d'elle-même à la fin de son animation : la couche
+    // d'effets ne garde jamais de débris d'une carte sur la suivante.
+
+    function emit(className, count, decorate) {
+        if (reducedMotion.matches) return;
+        const batch = document.createDocumentFragment();
+        for (let i = 0; i < count; i += 1) {
+            const piece = document.createElement("span");
+            piece.className = className;
+            decorate(piece, i);
+            piece.addEventListener("animationend", () => piece.remove());
+            batch.appendChild(piece);
+        }
+        fx.appendChild(batch);
+    }
+
+    // Pluie d'étoiles : elles tombent en biais sur toute la largeur.
+    function starfall(count = 30) {
+        emit("fx-star", count, (star) => {
+            star.style.setProperty("--x", `${Math.random() * 100}%`);
+            star.style.setProperty("--size", `${8 + Math.random() * 14}px`);
+            star.style.setProperty("--life", `${900 + Math.random() * 900}ms`);
+            star.style.setProperty("--delay", `${Math.random() * 500}ms`);
+            star.style.setProperty("--drift", `${-60 + Math.random() * 120}px`);
+        });
+    }
+
+    // Explosion : des éclats projetés depuis le centre, plus l'onde de choc.
+    function explode(count = 40) {
+        emit("fx-shard", count, (shard) => {
+            shard.style.setProperty("--angle", `${Math.random() * 360}deg`);
+            shard.style.setProperty("--distance", `${180 + Math.random() * 380}px`);
+            shard.style.setProperty("--life", `${520 + Math.random() * 420}ms`);
+            shard.style.setProperty("--spin", `${-540 + Math.random() * 1080}deg`);
+        });
+        emit("fx-wave", 3, (wave, i) => {
+            wave.style.setProperty("--delay", `${i * 130}ms`);
+        });
+    }
+
+    function confetti(count = 70) {
+        emit("fx-confetti", count, (piece) => {
+            piece.style.setProperty("--x", `${Math.random() * 100}%`);
+            piece.style.setProperty("--life", `${1100 + Math.random() * 1100}ms`);
+            piece.style.setProperty("--delay", `${Math.random() * 600}ms`);
+            piece.style.setProperty("--drift", `${-120 + Math.random() * 240}px`);
+            piece.style.setProperty("--spin", `${-720 + Math.random() * 1440}deg`);
+            piece.style.setProperty("--tone", `${Math.random() * 360}deg`);
+        });
+    }
+
+    function shake() {
+        if (reducedMotion.matches) return;
+        scene.classList.remove("is-shaking");
+        void scene.offsetWidth;
+        scene.classList.add("is-shaking");
+    }
+
+    // Chaque rareté a sa mise en scène. Deux voisines ne doivent jamais se
+    // ressembler : c'est à ça qu'on reconnaît ce qu'on vient de tirer.
+    const REVEALS = {
+        simple: () => {},
+        sheen: (element) => {
+            sparkle(element, 6);
+        },
+        burst: (element) => {
+            element.classList.add("is-bursting");
+            sparkle(element, 14);
+            fireFlash();
+        },
+        flare: (element) => {
+            element.classList.add("is-bursting");
+            sparkle(element, 26);
+            fireFlash();
+        },
+        loop: async (element) => {
+            element.classList.add("is-looping");
+            sparkle(element, 18);
+            fireFlash();
+            await wait(300);
+            sparkle(element, 12);
+        },
+        starfall: async (element) => {
+            element.classList.add("is-bursting");
+            fireFlash();
+            starfall(34);
+            await wait(240);
+            sparkle(element, 20);
+        },
+        explosion: async (element) => {
+            shake();
+            explode(44);
+            fireFlash();
+            await wait(200);
+            element.classList.add("is-bursting");
+            sparkle(element, 26);
+        },
+        prism: async (element) => {
+            element.classList.add("is-looping");
+            fireFlash();
+            starfall(26);
+            await wait(260);
+            explode(26);
+            shake();
+            await wait(240);
+            sparkle(element, 30);
+        },
+        gold: async (element) => {
+            shake();
+            fireFlash();
+            explode(52);
+            element.classList.add("is-looping");
+            await wait(260);
+            confetti(80);
+            starfall(30);
+            await wait(320);
+            fireFlash();
+            sparkle(element, 40);
+        },
+    };
+
     // ── Révélation ────────────────────────────────────────────────────────
 
     async function revealCurrent() {
@@ -178,22 +308,12 @@
         // La scène prend la couleur de la rareté à mi-retournement : on voit
         // qu'on tient quelque chose avant même de lire l'étiquette.
         await wait(300);
+        const reveal = card.reveal || "simple";
         opening.dataset.rarity = card.rarity;
-        opening.classList.toggle("is-special", card.rarity !== "COMMUNE");
-        // Une carte ex mérite sa mise en scène : la salle vire à l'or, la carte
-        // s'avance et le prisme part avant même qu'on lise le nom.
-        opening.classList.toggle("is-ex-pull", card.rarity === "EX");
-        if (card.rarity !== "COMMUNE") {
-            element.classList.add("is-bursting");
-            sparkle(element, card.rarity === "EX" ? 30 : 14);
-            fireFlash();
-        }
-        if (card.rarity === "EX") {
-            element.classList.add("is-ex-reveal");
-            await wait(260);
-            fireFlash();
-            sparkle(element, 18);
-        }
+        opening.dataset.reveal = reveal;
+        opening.style.setProperty("--rarity-color", card.rarity_color || "#9fb0c4");
+        opening.classList.toggle("is-special", (card.rarity_rank || 0) >= SPECIAL_RANK);
+        await (REVEALS[reveal] || REVEALS.simple)(element);
 
         await wait(420);
         caption.innerHTML = "";
@@ -205,6 +325,7 @@
         const rarity = document.createElement("span");
         rarity.className = "rarity-chip";
         rarity.dataset.rarity = card.rarity;
+        rarity.style.setProperty("--rarity-color", card.rarity_color || "#9fb0c4");
         rarity.textContent = card.rarity_label;
         tags.appendChild(rarity);
         if (card.is_new) {
@@ -244,8 +365,9 @@
     }
 
     async function finish() {
-        opening.classList.remove("is-special", "is-ex-pull");
+        opening.classList.remove("is-special");
         opening.dataset.rarity = "COMMUNE";
+        opening.dataset.reveal = "simple";
         caption.classList.remove("is-visible");
         setHint("");
         dots.hidden = true;
@@ -256,9 +378,10 @@
         fan.replaceChildren(
             ...pulls.map((card, position) => {
                 const holder = document.createElement("figure");
-                holder.className = `recap-card ${RARITY_CLASS[card.rarity] || "is-commune"}`;
+                holder.className = `recap-card ${rarityClass(card)}`;
                 holder.style.setProperty("--i", String(position));
                 holder.style.setProperty("--mid", String((pulls.length - 1) / 2));
+                holder.style.setProperty("--rarity-color", card.rarity_color || "#9fb0c4");
                 holder.title = `${card.name} · ${card.rarity_label}`;
                 const image = document.createElement("img");
                 image.src = card.image_url || card.sprite_url;
@@ -268,17 +391,19 @@
             }),
         );
 
-        const best = pulls.some((card) => card.rarity === "EX")
-            ? "Une carte ex dans ce booster."
-            : pulls.some((card) => card.rarity === "LEGENDAIRE")
-              ? "Un légendaire dans ce booster."
-              : pulls.some((card) => card.rarity === "RARE")
-                ? "Une rare dans ce booster."
+        // La plus belle du lot donne le ton du récapitulatif.
+        const best = pulls.reduce(
+            (top, card) => ((card.rarity_rank || 0) > (top.rarity_rank || 0) ? card : top),
+            pulls[0] || {},
+        );
+        const headline =
+            (best.rarity_rank || 0) >= SPECIAL_RANK
+                ? `${best.rarity_label} dans ce booster : ${best.name}.`
                 : "Cinq cartes de plus pour la collection.";
         const fresh = pulls.filter((card) => card.is_new).length;
         summary.textContent = fresh
-            ? `${best} ${fresh} nouvelle${fresh > 1 ? "s" : ""} carte${fresh > 1 ? "s" : ""}.`
-            : `${best} Aucune nouveauté cette fois.`;
+            ? `${headline} ${fresh} nouvelle${fresh > 1 ? "s" : ""} carte${fresh > 1 ? "s" : ""}.`
+            : `${headline} Aucune nouveauté cette fois.`;
 
         recap.hidden = false;
     }
@@ -383,8 +508,11 @@
     // ── Achat ─────────────────────────────────────────────────────────────
 
     function resetScene() {
-        opening.classList.remove("is-torn", "is-special", "is-ex-pull");
+        opening.classList.remove("is-torn", "is-special");
+        scene.classList.remove("is-shaking");
+        fx.replaceChildren();
         opening.dataset.rarity = "COMMUNE";
+        opening.dataset.reveal = "simple";
         pack.hidden = false;
         deck.hidden = true;
         deck.replaceChildren();

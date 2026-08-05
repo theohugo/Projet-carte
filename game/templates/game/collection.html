@@ -4,7 +4,7 @@
 {% block title %}Collection — PokéTable{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'game/css/shop.css' %}?v=4">
 
 <section class="collection-page" aria-labelledby="collection-page-title">
     <header class="collection-header">
@@ -30,21 +30,23 @@
            {% if tab.is_current %}aria-current="page"{% endif %}>
             <span class="season-tab-kicker">{{ tab.kicker }}</span>
             <strong>{{ tab.label }}</strong>
-            <small>{{ tab.owned_count }} / {{ total_count }}</small>
+            <small>{{ tab.owned_count }} / {{ tab.total_count }}</small>
         </a>
         {% endfor %}
     </nav>
 
     <div class="collection-grid" role="list">
         {% for card in cards %}
-        <figure class="collection-card {% if card.owned %}is-owned is-{{ card.rarity|lower }}{% else %}is-locked{% endif %}" role="listitem">
+        <figure class="collection-card {% if card.owned %}is-owned is-{{ card.rarity|lower }}{% else %}is-locked{% endif %}"
+                style="--rarity-color: {{ card.rarity_color }}" role="listitem">
             {% if card.owned %}
                 <img class="collection-card-image" src="{{ card.image_url|default:card.sprite_url }}" alt="{{ card.name_fr }}" loading="lazy">
-                {% if card.rarity == "EX" %}<span class="collection-card-foil" aria-hidden="true"></span>{% endif %}
+                <span class="collection-card-foil" aria-hidden="true"></span>
                 {% if card.copies > 1 %}<span class="collection-copies">×{{ card.copies }}</span>{% endif %}
+                <span class="rarity-code" title="{{ card.rarity_label }}">{{ card.rarity_code }}</span>
                 <figcaption>
-                    <strong>{{ card.name_fr }}{% if card.rarity == "EX" %} <span class="ex-tag">ex</span>{% endif %}</strong>
-                    <small>#{{ card.pokedex_id }}</small>
+                    <strong>{{ card.name_fr }}</strong>
+                    <small>n° {{ card.number }}</small>
                 </figcaption>
             {% else %}
                 <div class="collection-card-back" aria-hidden="true">
@@ -52,8 +54,8 @@
                     <span class="lock-glyph"></span>
                 </div>
                 <figcaption>
-                    <strong>#{{ card.pokedex_id }}</strong>
-                    <small>{% if card.rarity == "EX" %}Carte ex{% else %}À débloquer{% endif %}</small>
+                    <strong>n° {{ card.number }}</strong>
+                    <small>{{ card.rarity_label }}</small>
                 </figcaption>
             {% endif %}
         </figure>

@@ -2341,10 +2341,11 @@ body.has-type-draw {
     width: 104px;
     height: 104px;
     object-fit: contain;
-    /* Contraste poussé et teinte violette : l'image passe pour un tracé. */
-    filter: grayscale(1) brightness(1.6) contrast(2.4) sepia(1) hue-rotate(215deg) saturate(3);
-    /* Le dessin s'efface vers la droite : la partie pas encore tracée. */
-    mask-image: linear-gradient(100deg, #000 42%, rgba(0, 0, 0, 0.25) 58%, transparent 70%);
+    filter: drop-shadow(0 6px 12px rgba(4, 10, 24, 0.5));
+    /* Le dessin s'arrête net vers la droite : c'est la part pas encore tracée.
+       On le laisse en couleur — passé au blanc, il devenait illisible sur la
+       toile violette et redoublait la silhouette du jeu voisin. */
+    mask-image: linear-gradient(100deg, #000 46%, rgba(0, 0, 0, 0.3) 62%, transparent 74%);
 }
 
 .pictionary-pen {

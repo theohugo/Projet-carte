@@ -774,16 +774,31 @@ class CollectionCard(models.Model):
         help_text="Édition dont vient cette carte : 1 pour le Set de Base, 2 pour la série 151.",
     )
 
+    variant = models.CharField(
+        max_length=8,
+        blank=True,
+        help_text=(
+            "Numéro de la carte dans le set, quand une espèce y existe en "
+            "plusieurs raretés. Vide pour une saison à une carte par espèce."
+        ),
+    )
+
+    rarity = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text="Rareté de la carte obtenue.",
+    )
+
     copies = models.PositiveIntegerField(default=1)
 
     obtained_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["season", "pokemon_card__pokedex_id"]
+        ordering = ["season", "pokemon_card__pokedex_id", "variant"]
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "pokemon_card", "season"],
-                name="unique_collection_card_per_user_and_season",
+                fields=["user", "pokemon_card", "season", "variant"],
+                name="unique_collection_card_per_user_season_and_variant",
             ),
         ]
 

@@ -1,13 +1,17 @@
 """Boutique : acheter des boosters avec ses points et les ouvrir.
 
 Le tirage vit côté serveur — un client ne voit ses cartes qu'une fois l'achat
-enregistré et la collection mise à jour. Les raretés reprennent l'esprit du Set
-de Base : beaucoup de communes, quelques rares, et les légendaires en éclat.
-La saison 2 ajoute une rareté au-dessus, la carte *ex*.
+enregistré et la collection mise à jour.
 
-Deux façons d'ouvrir un booster : le payer en points (``open_booster``) ou
-consommer un ticket gagné en quête (``open_ticket``). Le tirage et la mise à
-jour de la collection sont les mêmes dans les deux cas.
+Deux façons de tirer, selon la saison. Le Set de Base tire une **espèce** et en
+déduit la rareté (les évolutions finales sont rares, les légendaires le sont
+plus encore). La série 151 tire une **impression** : la rareté est celle de la
+carte réelle, de la commune à la Rare Or, et deux impressions d'un même Pokémon
+sont deux cartes à collectionner.
+
+Deux façons d'ouvrir, aussi : payer en points (``open_booster``) ou consommer
+un ticket gagné en quête (``open_ticket``). Le tirage et la mise à jour de la
+collection sont les mêmes dans les deux cas.
 """
 
 import random
@@ -17,21 +21,24 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
+from game.card_prints import get_print, prints_of
 from game.models import BoosterOpening, BoosterTicket, CollectionCard, PokemonCard, Profile
 from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID
-from game.seasons import DEFAULT_SEASON, EX_POKEDEX_IDS, SEASON_151, SEASON_BASE, get_season
-
-COMMUNE = "COMMUNE"
-RARE = "RARE"
-LEGENDAIRE = "LEGENDAIRE"
-EX = "EX"
-
-RARITY_LABELS = {
-    COMMUNE: "Commune",
-    RARE: "Rare",
-    LEGENDAIRE: "Légendaire",
-    EX: "Carte ex",
-}
+from game.rarities import (
+    COMMUNE,
+    DOUBLE_RARE,
+    HYPER_RARE,
+    ILLUSTRATION_RARE,
+    ILLUSTRATION_SPECIALE,
+    LEGENDAIRE,
+    PEU_COMMUNE,
+    RARE,
+    ULTRA_RARE,
+    get_rarity,
+)
+from game.rarities import as_dict as rarity_payload
+from game.seasons import SEASON_151, SEASON_BASE, has_prints
+from game.tcg_card_images import get_tcg_image_url
 
 # Évolutions finales et vedettes du Set de Base : ce sont les cartes qu'on
 # espère en ouvrant un booster.
@@ -80,19 +87,37 @@ BOOSTERS = (
     Booster(
         key="s151",
         label="Booster 151",
-        description="Cinq cartes de la série 151, et la chance d'y trouver une carte ex.",
+        description="Cinq cartes du set 151, avec ses huit raretés — jusqu'à la Rare Or.",
         price=220,
         card_count=5,
-        odds=((COMMUNE, 0.74), (RARE, 0.20), (LEGENDAIRE, 0.04), (EX, 0.02)),
+        odds=(
+            (COMMUNE, 0.50),
+            (PEU_COMMUNE, 0.31),
+            (RARE, 0.12),
+            (DOUBLE_RARE, 0.035),
+            (ILLUSTRATION_RARE, 0.02),
+            (ULTRA_RARE, 0.011),
+            (ILLUSTRATION_SPECIALE, 0.003),
+            (HYPER_RARE, 0.001),
+        ),
         season=SEASON_151,
     ),
     Booster(
         key="s151_ultra",
         label="Booster 151 Ultra",
-        description="Cinq cartes de la série 151, une rare garantie et une carte ex sur cinq ouvertures.",
+        description="Cinq cartes du set 151, une rare garantie et les meilleures chances d'illustration.",
         price=520,
         card_count=5,
-        odds=((COMMUNE, 0.52), (RARE, 0.32), (LEGENDAIRE, 0.10), (EX, 0.06)),
+        odds=(
+            (COMMUNE, 0.30),
+            (PEU_COMMUNE, 0.32),
+            (RARE, 0.22),
+            (DOUBLE_RARE, 0.08),
+            (ILLUSTRATION_RARE, 0.05),
+            (ULTRA_RARE, 0.02),
+            (ILLUSTRATION_SPECIALE, 0.008),
+            (HYPER_RARE, 0.002),
+        ),
         season=SEASON_151,
         guaranteed=RARE,
     ),
@@ -105,15 +130,12 @@ class ShopError(Exception):
     """Achat impossible."""
 
 
-def rarity_of(pokemon_card: PokemonCard, season: int = DEFAULT_SEASON) -> str:
-    """La rareté de cette espèce dans cette édition.
+# ── Saison à une carte par espèce ────────────────────────────────────────
 
-    Un même Pokémon peut changer de rang d'une saison à l'autre : Dracaufeu est
-    une rare du Set de Base et une carte ex de la série 151.
-    """
 
-    if get_season(season).has_ex and pokemon_card.pokedex_id in EX_POKEDEX_IDS:
-        return EX
+def rarity_of(pokemon_card: PokemonCard, season: int = SEASON_BASE) -> str:
+    """La rareté d'une espèce dans une saison sans impressions."""
+
     if pokemon_card.is_legendary:
         return LEGENDAIRE
     if pokemon_card.pokedex_id in RARE_POKEDEX_IDS:
@@ -121,11 +143,20 @@ def rarity_of(pokemon_card: PokemonCard, season: int = DEFAULT_SEASON) -> str:
     return COMMUNE
 
 
-def _pool_by_rarity(season: int) -> dict[str, list[PokemonCard]]:
-    cards = PokemonCard.objects.filter(pokedex_id__lte=GEN_ONE_MAX_POKEDEX_ID)
-    pools: dict[str, list[PokemonCard]] = {COMMUNE: [], RARE: [], LEGENDAIRE: [], EX: []}
-    for card in cards:
-        pools[rarity_of(card, season)].append(card)
+def _species_pools() -> dict[str, list[PokemonCard]]:
+    pools: dict[str, list[PokemonCard]] = {COMMUNE: [], RARE: [], LEGENDAIRE: []}
+    for card in PokemonCard.objects.filter(pokedex_id__lte=GEN_ONE_MAX_POKEDEX_ID):
+        pools[rarity_of(card)].append(card)
+    return pools
+
+
+# ── Saison à impressions ─────────────────────────────────────────────────
+
+
+def _print_pools(season: int) -> dict[str, list]:
+    pools: dict[str, list] = {}
+    for card in prints_of(season):
+        pools.setdefault(card.rarity, []).append(card)
     return pools
 
 
@@ -139,24 +170,73 @@ def _draw_rarity(booster: Booster, rng) -> str:
     return COMMUNE
 
 
-def draw_cards(booster: Booster, rng=None) -> list[PokemonCard]:
-    """Tire le contenu d'un booster, rareté garantie comprise."""
+def _fallback(pools: dict[str, list], wanted: str):
+    """Le meilleur repli quand une rareté n'a rien à offrir dans ce catalogue.
+
+    On redescend l'échelle plutôt que de vider le booster : un catalogue
+    incomplet (tests, seed partiel) ne doit jamais casser une ouverture.
+    """
+
+    if pools.get(wanted):
+        return pools[wanted]
+    ordered = sorted(pools.items(), key=lambda item: get_rarity(item[0]).rank)
+    for _, pool in ordered:
+        if pool:
+            return pool
+    return []
+
+
+def draw_cards(booster: Booster, rng=None) -> list:
+    """Tire le contenu d'un booster, rareté garantie comprise.
+
+    Renvoie des espèces (``PokemonCard``) ou des impressions (``CardPrint``)
+    selon la saison du booster.
+    """
 
     rng = rng or random
-    pools = _pool_by_rarity(booster.season)
+    pools = _print_pools(booster.season) if has_prints(booster.season) else _species_pools()
     if not any(pools.values()):
-        raise ShopError("Le catalogue ne contient aucune carte de la première génération.")
+        raise ShopError("Le catalogue ne contient aucune carte pour cette saison.")
 
     rarities = [_draw_rarity(booster, rng) for _ in range(booster.card_count)]
-    if booster.guaranteed and booster.guaranteed not in rarities and pools[booster.guaranteed]:
-        # La carte garantie remplace la dernière tirée : le booster garde sa taille.
-        rarities[-1] = booster.guaranteed
+    if booster.guaranteed and pools.get(booster.guaranteed):
+        best = max(get_rarity(rarity).rank for rarity in rarities)
+        if best < get_rarity(booster.guaranteed).rank:
+            # La carte garantie remplace la dernière tirée : le booster garde sa taille.
+            rarities[-1] = booster.guaranteed
 
-    cards = []
-    for rarity in rarities:
-        pool = pools[rarity] or pools[COMMUNE] or pools[RARE] or pools[LEGENDAIRE] or pools[EX]
-        cards.append(rng.choice(pool))
-    return cards
+    return [rng.choice(_fallback(pools, rarity)) for rarity in rarities]
+
+
+# ── Ouverture ────────────────────────────────────────────────────────────
+
+
+def _describe(drawn, season: int) -> dict:
+    """Ce que le navigateur reçoit pour une carte tirée."""
+
+    if has_prints(season):
+        return {
+            "variant": drawn.variant,
+            "pokedex_id": drawn.dex_id,
+            "name": drawn.name_fr,
+            "image_url": drawn.image,
+        } | rarity_payload(drawn.rarity)
+
+    return {
+        "variant": "",
+        "pokedex_id": drawn.pokedex_id,
+        "name": drawn.name_fr,
+        "image_url": get_tcg_image_url(drawn.pokedex_id, season),
+        "sprite_url": drawn.sprite_url,
+    } | rarity_payload(rarity_of(drawn, season))
+
+
+def _species_of(drawn, season: int) -> PokemonCard | None:
+    """L'espèce du catalogue derrière une carte tirée."""
+
+    if not has_prints(season):
+        return drawn
+    return PokemonCard.objects.filter(pokedex_id=drawn.dex_id).first()
 
 
 def _grant(user, booster: Booster, price: int, rng=None) -> dict:
@@ -166,42 +246,42 @@ def _grant(user, booster: Booster, price: int, rng=None) -> dict:
     choisit comment le booster a été payé.
     """
 
-    cards = draw_cards(booster, rng)
+    drawn = draw_cards(booster, rng)
+    season = booster.season
 
     opening = BoosterOpening.objects.create(
         user=user,
         booster_key=booster.key,
-        season=booster.season,
+        season=season,
         price=price,
     )
-    opening.cards.set(cards)
 
     payload = []
-    for card in cards:
-        rarity = rarity_of(card, booster.season)
+    species_ids = []
+    for card in drawn:
+        entry = _describe(card, season)
+        species = _species_of(card, season)
+        if species is None:
+            # Une impression sans espèce au catalogue reste montrée au joueur,
+            # mais ne peut pas entrer en collection.
+            payload.append(entry | {"is_new": False})
+            continue
+
+        species_ids.append(species.pk)
         collected, created = CollectionCard.objects.get_or_create(
             user=user,
-            pokemon_card=card,
-            season=booster.season,
+            pokemon_card=species,
+            season=season,
+            variant=entry["variant"],
+            defaults={"rarity": entry["rarity"]},
         )
         if not created:
             CollectionCard.objects.filter(pk=collected.pk).update(copies=F("copies") + 1)
-        payload.append(
-            {
-                "pokedex_id": card.pokedex_id,
-                "name": card.name_fr,
-                "rarity": rarity,
-                "rarity_label": RARITY_LABELS[rarity],
-                "is_new": created,
-                "sprite_url": card.sprite_url,
-            }
-        )
+        payload.append(entry | {"is_new": created, "sprite_url": entry.get("sprite_url", species.sprite_url)})
 
-    return {
-        "booster": booster.label,
-        "season": booster.season,
-        "cards": payload,
-    }
+    opening.cards.set(species_ids)
+
+    return {"booster": booster.label, "season": season, "cards": payload}
 
 
 @transaction.atomic
@@ -261,3 +341,14 @@ def grant_ticket(user, booster_key: str, source: str = "") -> BoosterTicket | No
     if booster_key not in BOOSTERS_BY_KEY:
         return None
     return BoosterTicket.objects.create(user=user, booster_key=booster_key, source=source)
+
+
+def collection_rarity(collected: CollectionCard) -> str:
+    """La rareté d'une carte possédée, recalculée si elle n'a pas été stockée."""
+
+    if collected.rarity:
+        return collected.rarity
+    if has_prints(collected.season):
+        card = get_print(collected.season, collected.variant)
+        return card.rarity if card else COMMUNE
+    return rarity_of(collected.pokemon_card, collected.season)

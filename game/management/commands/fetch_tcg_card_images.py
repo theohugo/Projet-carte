@@ -6,7 +6,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 
 from game.pokemon_names import GEN_ONE_MAX_POKEDEX_ID
-from game.seasons import SEASON_151, SEASON_BASE, SEASONS_BY_NUMBER, get_season
+from game.seasons import SEASON_BASE, get_season, has_prints
 
 FIXTURES_DIR = Path(__file__).resolve().parent.parent.parent / "fixtures"
 TCGDEX_API_BASE = "https://api.tcgdex.net/v2/fr"
@@ -16,12 +16,6 @@ TCG_RETRY_BACKOFF_SECONDS = 1.5
 # Préférence pour les impressions du Set de Base originel : un visuel cohérent
 # et reconnaissable d'une espèce à l'autre plutôt qu'une réimpression au hasard.
 PREFERRED_SET_PREFIXES = ("base1-", "base2-", "base3-", "base4-", "base5-", "basep-")
-
-# La série 151 tient dans un seul set : ses 151 premières cartes suivent le
-# Pokédex, et les cartes ex ont en plus une illustration pleine page numérotée
-# au-delà de 165. C'est celle-là qu'on garde, c'est la récompense du booster.
-SET_151_ID = "sv03.5"
-SET_151_FULL_ART_RANGE = range(182, 194)
 
 
 class Command(BaseCommand):
@@ -36,8 +30,7 @@ class Command(BaseCommand):
             "--saison",
             type=int,
             default=SEASON_BASE,
-            choices=sorted(SEASONS_BY_NUMBER),
-            help="Saison à régénérer : 1 pour le Set de Base, 2 pour la série 151.",
+            help="Saison à régénérer. Une saison à impressions passe par fetch_card_prints.",
         )
         parser.add_argument(
             "--fixture",
@@ -48,15 +41,17 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         season = get_season(options["saison"])
+        if has_prints(season.number):
+            raise CommandError(
+                f"La saison {season.number} se décrit par ses impressions : "
+                "utilise plutôt `manage.py fetch_card_prints`."
+            )
         fixture_path = options["fixture"] or FIXTURES_DIR / season.fixture
 
         self.stdout.write(
             f"Saison {season.number} — {season.label} : récupération depuis {TCGDEX_API_BASE}..."
         )
-        if season.number == SEASON_151:
-            images, missing = self._fetch_set_151()
-        else:
-            images, missing = self._fetch_base_set()
+        images, missing = self._fetch_base_set()
 
         fixture_path.parent.mkdir(parents=True, exist_ok=True)
         fixture_path.write_text(
@@ -117,44 +112,3 @@ class Command(BaseCommand):
             return f"{card['image']}/high.png"
 
         return None
-
-    # ── Saison 2 : un seul appel, le set entier ───────────────────────────
-
-    def _fetch_set_151(self):
-        """Les 151 premières cartes du set, avec l'illustration pleine page des ex."""
-
-        import requests
-
-        try:
-            resp = requests.get(f"{TCGDEX_API_BASE}/sets/{SET_151_ID}", timeout=30)
-            resp.raise_for_status()
-        except requests.RequestException as exc:
-            raise CommandError(f"Set {SET_151_ID} inaccessible : {exc}") from exc
-
-        cards = resp.json().get("cards", [])
-        # Les pleines pages portent le même nom que la carte ordinaire ; c'est
-        # ce qui permet de les rattacher sans coder en dur douze numéros.
-        full_arts = {
-            card["name"]: card["image"]
-            for card in cards
-            if card.get("image") and self._local_id(card) in SET_151_FULL_ART_RANGE
-        }
-
-        images = {}
-        for card in cards:
-            local_id = self._local_id(card)
-            if local_id is None or not (1 <= local_id <= GEN_ONE_MAX_POKEDEX_ID):
-                continue
-            image = full_arts.get(card["name"], card.get("image"))
-            if image:
-                images[str(local_id)] = f"{image}/high.png"
-
-        missing = [i for i in range(1, GEN_ONE_MAX_POKEDEX_ID + 1) if str(i) not in images]
-        return images, missing
-
-    @staticmethod
-    def _local_id(card):
-        try:
-            return int(card.get("localId"))
-        except (TypeError, ValueError):
-            return None

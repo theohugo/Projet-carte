@@ -1,0 +1,1297 @@
+[
+ {
+  "local_id": 1,
+  "dex_id": 1,
+  "name_fr": "Bulbizarre",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/001/high.png"
+ },
+ {
+  "local_id": 2,
+  "dex_id": 2,
+  "name_fr": "Herbizarre",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/002/high.png"
+ },
+ {
+  "local_id": 3,
+  "dex_id": 3,
+  "name_fr": "Florizarre-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/003/high.png"
+ },
+ {
+  "local_id": 4,
+  "dex_id": 4,
+  "name_fr": "Salamèche",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/004/high.png"
+ },
+ {
+  "local_id": 5,
+  "dex_id": 5,
+  "name_fr": "Reptincel",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/005/high.png"
+ },
+ {
+  "local_id": 6,
+  "dex_id": 6,
+  "name_fr": "Dracaufeu-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/006/high.png"
+ },
+ {
+  "local_id": 7,
+  "dex_id": 7,
+  "name_fr": "Carapuce",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/007/high.png"
+ },
+ {
+  "local_id": 8,
+  "dex_id": 8,
+  "name_fr": "Carabaffe",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/008/high.png"
+ },
+ {
+  "local_id": 9,
+  "dex_id": 9,
+  "name_fr": "Tortank-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/009/high.png"
+ },
+ {
+  "local_id": 10,
+  "dex_id": 10,
+  "name_fr": "Chenipan",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/010/high.png"
+ },
+ {
+  "local_id": 11,
+  "dex_id": 11,
+  "name_fr": "Chrysacier",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/011/high.png"
+ },
+ {
+  "local_id": 12,
+  "dex_id": 12,
+  "name_fr": "Papilusion",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/012/high.png"
+ },
+ {
+  "local_id": 13,
+  "dex_id": 13,
+  "name_fr": "Aspicot",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/013/high.png"
+ },
+ {
+  "local_id": 14,
+  "dex_id": 14,
+  "name_fr": "Coconfort",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/014/high.png"
+ },
+ {
+  "local_id": 15,
+  "dex_id": 15,
+  "name_fr": "Dardargnan",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/015/high.png"
+ },
+ {
+  "local_id": 16,
+  "dex_id": 16,
+  "name_fr": "Roucool",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/016/high.png"
+ },
+ {
+  "local_id": 17,
+  "dex_id": 17,
+  "name_fr": "Roucoups",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/017/high.png"
+ },
+ {
+  "local_id": 18,
+  "dex_id": 18,
+  "name_fr": "Roucarnage",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/018/high.png"
+ },
+ {
+  "local_id": 19,
+  "dex_id": 19,
+  "name_fr": "Rattata",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/019/high.png"
+ },
+ {
+  "local_id": 20,
+  "dex_id": 20,
+  "name_fr": "Rattatac",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/020/high.png"
+ },
+ {
+  "local_id": 21,
+  "dex_id": 21,
+  "name_fr": "Piafabec",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/021/high.png"
+ },
+ {
+  "local_id": 22,
+  "dex_id": 22,
+  "name_fr": "Rapasdepic",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/022/high.png"
+ },
+ {
+  "local_id": 23,
+  "dex_id": 23,
+  "name_fr": "Abo",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/023/high.png"
+ },
+ {
+  "local_id": 24,
+  "dex_id": 24,
+  "name_fr": "Arbok-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/024/high.png"
+ },
+ {
+  "local_id": 25,
+  "dex_id": 25,
+  "name_fr": "Pikachu",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/025/high.png"
+ },
+ {
+  "local_id": 26,
+  "dex_id": 26,
+  "name_fr": "Raichu",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/026/high.png"
+ },
+ {
+  "local_id": 27,
+  "dex_id": 27,
+  "name_fr": "Sabelette",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/027/high.png"
+ },
+ {
+  "local_id": 28,
+  "dex_id": 28,
+  "name_fr": "Sablaireau",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/028/high.png"
+ },
+ {
+  "local_id": 29,
+  "dex_id": 29,
+  "name_fr": "Nidoran♀",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/029/high.png"
+ },
+ {
+  "local_id": 30,
+  "dex_id": 30,
+  "name_fr": "Nidorina",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/030/high.png"
+ },
+ {
+  "local_id": 31,
+  "dex_id": 31,
+  "name_fr": "Nidoqueen",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/031/high.png"
+ },
+ {
+  "local_id": 32,
+  "dex_id": 32,
+  "name_fr": "Nidoran♂",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/032/high.png"
+ },
+ {
+  "local_id": 33,
+  "dex_id": 33,
+  "name_fr": "Nidorino",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/033/high.png"
+ },
+ {
+  "local_id": 34,
+  "dex_id": 34,
+  "name_fr": "Nidoking",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/034/high.png"
+ },
+ {
+  "local_id": 35,
+  "dex_id": 35,
+  "name_fr": "Mélofée",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/035/high.png"
+ },
+ {
+  "local_id": 36,
+  "dex_id": 36,
+  "name_fr": "Mélodelfe",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/036/high.png"
+ },
+ {
+  "local_id": 37,
+  "dex_id": 37,
+  "name_fr": "Goupix",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/037/high.png"
+ },
+ {
+  "local_id": 38,
+  "dex_id": 38,
+  "name_fr": "Feunard-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/038/high.png"
+ },
+ {
+  "local_id": 39,
+  "dex_id": 39,
+  "name_fr": "Rondoudou",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/039/high.png"
+ },
+ {
+  "local_id": 40,
+  "dex_id": 40,
+  "name_fr": "Grodoudou-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/040/high.png"
+ },
+ {
+  "local_id": 41,
+  "dex_id": 41,
+  "name_fr": "Nosferapti",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/041/high.png"
+ },
+ {
+  "local_id": 42,
+  "dex_id": 42,
+  "name_fr": "Nosferalto",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/042/high.png"
+ },
+ {
+  "local_id": 43,
+  "dex_id": 43,
+  "name_fr": "Mystherbe",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/043/high.png"
+ },
+ {
+  "local_id": 44,
+  "dex_id": 44,
+  "name_fr": "Ortide",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/044/high.png"
+ },
+ {
+  "local_id": 45,
+  "dex_id": 45,
+  "name_fr": "Rafflesia",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/045/high.png"
+ },
+ {
+  "local_id": 46,
+  "dex_id": 46,
+  "name_fr": "Paras",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/046/high.png"
+ },
+ {
+  "local_id": 47,
+  "dex_id": 47,
+  "name_fr": "Parasect",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/047/high.png"
+ },
+ {
+  "local_id": 48,
+  "dex_id": 48,
+  "name_fr": "Mimitoss",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/048/high.png"
+ },
+ {
+  "local_id": 49,
+  "dex_id": 49,
+  "name_fr": "Aéromite",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/049/high.png"
+ },
+ {
+  "local_id": 50,
+  "dex_id": 50,
+  "name_fr": "Taupiqueur",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/050/high.png"
+ },
+ {
+  "local_id": 51,
+  "dex_id": 51,
+  "name_fr": "Triopikeur",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/051/high.png"
+ },
+ {
+  "local_id": 52,
+  "dex_id": 52,
+  "name_fr": "Miaouss",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/052/high.png"
+ },
+ {
+  "local_id": 53,
+  "dex_id": 53,
+  "name_fr": "Persian",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/053/high.png"
+ },
+ {
+  "local_id": 54,
+  "dex_id": 54,
+  "name_fr": "Psykokwak",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/054/high.png"
+ },
+ {
+  "local_id": 55,
+  "dex_id": 55,
+  "name_fr": "Akwakwak",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/055/high.png"
+ },
+ {
+  "local_id": 56,
+  "dex_id": 56,
+  "name_fr": "Férosinge",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/056/high.png"
+ },
+ {
+  "local_id": 57,
+  "dex_id": 57,
+  "name_fr": "Colossinge",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/057/high.png"
+ },
+ {
+  "local_id": 58,
+  "dex_id": 58,
+  "name_fr": "Caninos",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/058/high.png"
+ },
+ {
+  "local_id": 59,
+  "dex_id": 59,
+  "name_fr": "Arcanin",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/059/high.png"
+ },
+ {
+  "local_id": 60,
+  "dex_id": 60,
+  "name_fr": "Ptitard",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/060/high.png"
+ },
+ {
+  "local_id": 61,
+  "dex_id": 61,
+  "name_fr": "Têtarte",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/061/high.png"
+ },
+ {
+  "local_id": 62,
+  "dex_id": 62,
+  "name_fr": "Tartard",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/062/high.png"
+ },
+ {
+  "local_id": 63,
+  "dex_id": 63,
+  "name_fr": "Abra",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/063/high.png"
+ },
+ {
+  "local_id": 64,
+  "dex_id": 64,
+  "name_fr": "Kadabra",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/064/high.png"
+ },
+ {
+  "local_id": 65,
+  "dex_id": 65,
+  "name_fr": "Alakazam-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/065/high.png"
+ },
+ {
+  "local_id": 66,
+  "dex_id": 66,
+  "name_fr": "Machoc",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/066/high.png"
+ },
+ {
+  "local_id": 67,
+  "dex_id": 67,
+  "name_fr": "Machopeur",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/067/high.png"
+ },
+ {
+  "local_id": 68,
+  "dex_id": 68,
+  "name_fr": "Mackogneur",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/068/high.png"
+ },
+ {
+  "local_id": 69,
+  "dex_id": 69,
+  "name_fr": "Chétiflor",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/069/high.png"
+ },
+ {
+  "local_id": 70,
+  "dex_id": 70,
+  "name_fr": "Boustiflor",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/070/high.png"
+ },
+ {
+  "local_id": 71,
+  "dex_id": 71,
+  "name_fr": "Empiflor",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/071/high.png"
+ },
+ {
+  "local_id": 72,
+  "dex_id": 72,
+  "name_fr": "Tentacool",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/072/high.png"
+ },
+ {
+  "local_id": 73,
+  "dex_id": 73,
+  "name_fr": "Tentacruel",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/073/high.png"
+ },
+ {
+  "local_id": 74,
+  "dex_id": 74,
+  "name_fr": "Racaillou",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/074/high.png"
+ },
+ {
+  "local_id": 75,
+  "dex_id": 75,
+  "name_fr": "Gravalanch",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/075/high.png"
+ },
+ {
+  "local_id": 76,
+  "dex_id": 76,
+  "name_fr": "Grolem-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/076/high.png"
+ },
+ {
+  "local_id": 77,
+  "dex_id": 77,
+  "name_fr": "Ponyta",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/077/high.png"
+ },
+ {
+  "local_id": 78,
+  "dex_id": 78,
+  "name_fr": "Galopa",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/078/high.png"
+ },
+ {
+  "local_id": 79,
+  "dex_id": 79,
+  "name_fr": "Ramoloss",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/079/high.png"
+ },
+ {
+  "local_id": 80,
+  "dex_id": 80,
+  "name_fr": "Flagadoss",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/080/high.png"
+ },
+ {
+  "local_id": 81,
+  "dex_id": 81,
+  "name_fr": "Magnéti",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/081/high.png"
+ },
+ {
+  "local_id": 82,
+  "dex_id": 82,
+  "name_fr": "Magnéton",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/082/high.png"
+ },
+ {
+  "local_id": 83,
+  "dex_id": 83,
+  "name_fr": "Canarticho",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/083/high.png"
+ },
+ {
+  "local_id": 84,
+  "dex_id": 84,
+  "name_fr": "Doduo",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/084/high.png"
+ },
+ {
+  "local_id": 85,
+  "dex_id": 85,
+  "name_fr": "Dodrio",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/085/high.png"
+ },
+ {
+  "local_id": 86,
+  "dex_id": 86,
+  "name_fr": "Otaria",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/086/high.png"
+ },
+ {
+  "local_id": 87,
+  "dex_id": 87,
+  "name_fr": "Lamantine",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/087/high.png"
+ },
+ {
+  "local_id": 88,
+  "dex_id": 88,
+  "name_fr": "Tadmorv",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/088/high.png"
+ },
+ {
+  "local_id": 89,
+  "dex_id": 89,
+  "name_fr": "Grotadmorv",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/089/high.png"
+ },
+ {
+  "local_id": 90,
+  "dex_id": 90,
+  "name_fr": "Kokiyas",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/090/high.png"
+ },
+ {
+  "local_id": 91,
+  "dex_id": 91,
+  "name_fr": "Crustabri",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/091/high.png"
+ },
+ {
+  "local_id": 92,
+  "dex_id": 92,
+  "name_fr": "Fantominus",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/092/high.png"
+ },
+ {
+  "local_id": 93,
+  "dex_id": 93,
+  "name_fr": "Spectrum",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/093/high.png"
+ },
+ {
+  "local_id": 94,
+  "dex_id": 94,
+  "name_fr": "Ectoplasma",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/094/high.png"
+ },
+ {
+  "local_id": 95,
+  "dex_id": 95,
+  "name_fr": "Onix",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/095/high.png"
+ },
+ {
+  "local_id": 96,
+  "dex_id": 96,
+  "name_fr": "Soporifik",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/096/high.png"
+ },
+ {
+  "local_id": 97,
+  "dex_id": 97,
+  "name_fr": "Hypnomade",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/097/high.png"
+ },
+ {
+  "local_id": 98,
+  "dex_id": 98,
+  "name_fr": "Krabby",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/098/high.png"
+ },
+ {
+  "local_id": 99,
+  "dex_id": 99,
+  "name_fr": "Krabboss",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/099/high.png"
+ },
+ {
+  "local_id": 100,
+  "dex_id": 100,
+  "name_fr": "Voltorbe",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/100/high.png"
+ },
+ {
+  "local_id": 101,
+  "dex_id": 101,
+  "name_fr": "Électrode",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/101/high.png"
+ },
+ {
+  "local_id": 102,
+  "dex_id": 102,
+  "name_fr": "Noeunoeuf",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/102/high.png"
+ },
+ {
+  "local_id": 103,
+  "dex_id": 103,
+  "name_fr": "Noadkoko",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/103/high.png"
+ },
+ {
+  "local_id": 104,
+  "dex_id": 104,
+  "name_fr": "Osselait",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/104/high.png"
+ },
+ {
+  "local_id": 105,
+  "dex_id": 105,
+  "name_fr": "Ossatueur",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/105/high.png"
+ },
+ {
+  "local_id": 106,
+  "dex_id": 106,
+  "name_fr": "Kicklee",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/106/high.png"
+ },
+ {
+  "local_id": 107,
+  "dex_id": 107,
+  "name_fr": "Tygnon",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/107/high.png"
+ },
+ {
+  "local_id": 108,
+  "dex_id": 108,
+  "name_fr": "Excelangue",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/108/high.png"
+ },
+ {
+  "local_id": 109,
+  "dex_id": 109,
+  "name_fr": "Smogo",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/109/high.png"
+ },
+ {
+  "local_id": 110,
+  "dex_id": 110,
+  "name_fr": "Smogogo",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/110/high.png"
+ },
+ {
+  "local_id": 111,
+  "dex_id": 111,
+  "name_fr": "Rhinocorne",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/111/high.png"
+ },
+ {
+  "local_id": 112,
+  "dex_id": 112,
+  "name_fr": "Rhinoféros",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/112/high.png"
+ },
+ {
+  "local_id": 113,
+  "dex_id": 113,
+  "name_fr": "Leveinard",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/113/high.png"
+ },
+ {
+  "local_id": 114,
+  "dex_id": 114,
+  "name_fr": "Saquedeneu",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/114/high.png"
+ },
+ {
+  "local_id": 115,
+  "dex_id": 115,
+  "name_fr": "Kangourex-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/115/high.png"
+ },
+ {
+  "local_id": 116,
+  "dex_id": 116,
+  "name_fr": "Hypotrempe",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/116/high.png"
+ },
+ {
+  "local_id": 117,
+  "dex_id": 117,
+  "name_fr": "Hypocéan",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/117/high.png"
+ },
+ {
+  "local_id": 118,
+  "dex_id": 118,
+  "name_fr": "Poissirène",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/118/high.png"
+ },
+ {
+  "local_id": 119,
+  "dex_id": 119,
+  "name_fr": "Poissoroy",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/119/high.png"
+ },
+ {
+  "local_id": 120,
+  "dex_id": 120,
+  "name_fr": "Stari",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/120/high.png"
+ },
+ {
+  "local_id": 121,
+  "dex_id": 121,
+  "name_fr": "Staross",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/121/high.png"
+ },
+ {
+  "local_id": 122,
+  "dex_id": 122,
+  "name_fr": "M. Mime",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/122/high.png"
+ },
+ {
+  "local_id": 123,
+  "dex_id": 123,
+  "name_fr": "Insécateur",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/123/high.png"
+ },
+ {
+  "local_id": 124,
+  "dex_id": 124,
+  "name_fr": "Lippoutou-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/124/high.png"
+ },
+ {
+  "local_id": 125,
+  "dex_id": 125,
+  "name_fr": "Élektek",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/125/high.png"
+ },
+ {
+  "local_id": 126,
+  "dex_id": 126,
+  "name_fr": "Magmar",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/126/high.png"
+ },
+ {
+  "local_id": 127,
+  "dex_id": 127,
+  "name_fr": "Scarabrute",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/127/high.png"
+ },
+ {
+  "local_id": 128,
+  "dex_id": 128,
+  "name_fr": "Tauros",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/128/high.png"
+ },
+ {
+  "local_id": 129,
+  "dex_id": 129,
+  "name_fr": "Magicarpe",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/129/high.png"
+ },
+ {
+  "local_id": 130,
+  "dex_id": 130,
+  "name_fr": "Léviator",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/130/high.png"
+ },
+ {
+  "local_id": 131,
+  "dex_id": 131,
+  "name_fr": "Lokhlass",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/131/high.png"
+ },
+ {
+  "local_id": 132,
+  "dex_id": 132,
+  "name_fr": "Métamorph",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/132/high.png"
+ },
+ {
+  "local_id": 133,
+  "dex_id": 133,
+  "name_fr": "Évoli",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/133/high.png"
+ },
+ {
+  "local_id": 134,
+  "dex_id": 134,
+  "name_fr": "Aquali",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/134/high.png"
+ },
+ {
+  "local_id": 135,
+  "dex_id": 135,
+  "name_fr": "Voltali",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/135/high.png"
+ },
+ {
+  "local_id": 136,
+  "dex_id": 136,
+  "name_fr": "Pyroli",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/136/high.png"
+ },
+ {
+  "local_id": 137,
+  "dex_id": 137,
+  "name_fr": "Porygon",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/137/high.png"
+ },
+ {
+  "local_id": 138,
+  "dex_id": 138,
+  "name_fr": "Amonita",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/138/high.png"
+ },
+ {
+  "local_id": 139,
+  "dex_id": 139,
+  "name_fr": "Amonistar",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/139/high.png"
+ },
+ {
+  "local_id": 140,
+  "dex_id": 140,
+  "name_fr": "Kabuto",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/140/high.png"
+ },
+ {
+  "local_id": 141,
+  "dex_id": 141,
+  "name_fr": "Kabutops",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/141/high.png"
+ },
+ {
+  "local_id": 142,
+  "dex_id": 142,
+  "name_fr": "Ptéra",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/142/high.png"
+ },
+ {
+  "local_id": 143,
+  "dex_id": 143,
+  "name_fr": "Ronflex",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/143/high.png"
+ },
+ {
+  "local_id": 144,
+  "dex_id": 144,
+  "name_fr": "Artikodin",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/144/high.png"
+ },
+ {
+  "local_id": 145,
+  "dex_id": 145,
+  "name_fr": "Électhor-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/145/high.png"
+ },
+ {
+  "local_id": 146,
+  "dex_id": 146,
+  "name_fr": "Sulfura",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/146/high.png"
+ },
+ {
+  "local_id": 147,
+  "dex_id": 147,
+  "name_fr": "Minidraco",
+  "rarity": "COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/147/high.png"
+ },
+ {
+  "local_id": 148,
+  "dex_id": 148,
+  "name_fr": "Draco",
+  "rarity": "PEU_COMMUNE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/148/high.png"
+ },
+ {
+  "local_id": 149,
+  "dex_id": 149,
+  "name_fr": "Dracolosse",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/149/high.png"
+ },
+ {
+  "local_id": 150,
+  "dex_id": 150,
+  "name_fr": "Mewtwo",
+  "rarity": "RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/150/high.png"
+ },
+ {
+  "local_id": 151,
+  "dex_id": 151,
+  "name_fr": "Mew-ex",
+  "rarity": "DOUBLE_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/151/high.png"
+ },
+ {
+  "local_id": 166,
+  "dex_id": 1,
+  "name_fr": "Bulbizarre",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/166/high.png"
+ },
+ {
+  "local_id": 167,
+  "dex_id": 2,
+  "name_fr": "Herbizarre",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/167/high.png"
+ },
+ {
+  "local_id": 168,
+  "dex_id": 4,
+  "name_fr": "Salamèche",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/168/high.png"
+ },
+ {
+  "local_id": 169,
+  "dex_id": 5,
+  "name_fr": "Reptincel",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/169/high.png"
+ },
+ {
+  "local_id": 170,
+  "dex_id": 7,
+  "name_fr": "Carapuce",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/170/high.png"
+ },
+ {
+  "local_id": 171,
+  "dex_id": 8,
+  "name_fr": "Carabaffe",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/171/high.png"
+ },
+ {
+  "local_id": 172,
+  "dex_id": 10,
+  "name_fr": "Chenipan",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/172/high.png"
+ },
+ {
+  "local_id": 173,
+  "dex_id": 25,
+  "name_fr": "Pikachu",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/173/high.png"
+ },
+ {
+  "local_id": 174,
+  "dex_id": 34,
+  "name_fr": "Nidoking",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/174/high.png"
+ },
+ {
+  "local_id": 175,
+  "dex_id": 54,
+  "name_fr": "Psykokwak",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/175/high.png"
+ },
+ {
+  "local_id": 176,
+  "dex_id": 61,
+  "name_fr": "Têtarte",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/176/high.png"
+ },
+ {
+  "local_id": 177,
+  "dex_id": 67,
+  "name_fr": "Machopeur",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/177/high.png"
+ },
+ {
+  "local_id": 178,
+  "dex_id": 114,
+  "name_fr": "Saquedeneu",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/178/high.png"
+ },
+ {
+  "local_id": 179,
+  "dex_id": 122,
+  "name_fr": "M. Mime",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/179/high.png"
+ },
+ {
+  "local_id": 180,
+  "dex_id": 138,
+  "name_fr": "Amonita",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/180/high.png"
+ },
+ {
+  "local_id": 181,
+  "dex_id": 148,
+  "name_fr": "Draco",
+  "rarity": "ILLUSTRATION_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/181/high.png"
+ },
+ {
+  "local_id": 182,
+  "dex_id": 3,
+  "name_fr": "Florizarre-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/182/high.png"
+ },
+ {
+  "local_id": 183,
+  "dex_id": 6,
+  "name_fr": "Dracaufeu-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/183/high.png"
+ },
+ {
+  "local_id": 184,
+  "dex_id": 9,
+  "name_fr": "Tortank-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/184/high.png"
+ },
+ {
+  "local_id": 185,
+  "dex_id": 24,
+  "name_fr": "Arbok-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/185/high.png"
+ },
+ {
+  "local_id": 186,
+  "dex_id": 38,
+  "name_fr": "Feunard-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/186/high.png"
+ },
+ {
+  "local_id": 187,
+  "dex_id": 40,
+  "name_fr": "Grodoudou-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/187/high.png"
+ },
+ {
+  "local_id": 188,
+  "dex_id": 65,
+  "name_fr": "Alakazam-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/188/high.png"
+ },
+ {
+  "local_id": 189,
+  "dex_id": 76,
+  "name_fr": "Grolem-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/189/high.png"
+ },
+ {
+  "local_id": 190,
+  "dex_id": 115,
+  "name_fr": "Kangourex-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/190/high.png"
+ },
+ {
+  "local_id": 191,
+  "dex_id": 124,
+  "name_fr": "Lippoutou-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/191/high.png"
+ },
+ {
+  "local_id": 192,
+  "dex_id": 145,
+  "name_fr": "Électhor-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/192/high.png"
+ },
+ {
+  "local_id": 193,
+  "dex_id": 151,
+  "name_fr": "Mew-ex",
+  "rarity": "ULTRA_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/193/high.png"
+ },
+ {
+  "local_id": 198,
+  "dex_id": 3,
+  "name_fr": "Florizarre-ex",
+  "rarity": "ILLUSTRATION_SPECIALE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/198/high.png"
+ },
+ {
+  "local_id": 199,
+  "dex_id": 6,
+  "name_fr": "Dracaufeu-ex",
+  "rarity": "ILLUSTRATION_SPECIALE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/199/high.png"
+ },
+ {
+  "local_id": 200,
+  "dex_id": 9,
+  "name_fr": "Tortank-ex",
+  "rarity": "ILLUSTRATION_SPECIALE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/200/high.png"
+ },
+ {
+  "local_id": 201,
+  "dex_id": 65,
+  "name_fr": "Alakazam-ex",
+  "rarity": "ILLUSTRATION_SPECIALE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/201/high.png"
+ },
+ {
+  "local_id": 202,
+  "dex_id": 145,
+  "name_fr": "Électhor-ex",
+  "rarity": "ILLUSTRATION_SPECIALE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/202/high.png"
+ },
+ {
+  "local_id": 205,
+  "dex_id": 151,
+  "name_fr": "Mew-ex",
+  "rarity": "HYPER_RARE",
+  "image": "https://assets.tcgdex.net/fr/sv/sv03.5/205/high.png"
+ }
+]
