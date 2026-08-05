@@ -121,7 +121,10 @@ def api_lobby_state(request):
 @require_POST
 def create_game(request):
     try:
-        game = create_game_service(request.user)
+        game = create_game_service(
+            request.user,
+            request.POST.get("play_mode", GuessWhoGame.PlayMode.ONLINE),
+        )
     except GuessWhoError as exc:
         messages.error(request, str(exc))
         return redirect("guesswho:lobby")
@@ -153,9 +156,16 @@ def game_detail(request, game_id):
             "join_invitation.html",
             {
                 "mode_name": bilingual_text("Qui est-ce ? Pokémon", "Pokémon Guess Who?"),
-                "mode_kicker": bilingual_text(
-                    "Déduction · questions · duel",
-                    "Deduction · questions · duel",
+                "mode_kicker": (
+                    bilingual_text(
+                        "Déduction · questions orales · duel IRL",
+                        "Deduction · spoken questions · IRL duel",
+                    )
+                    if game.play_mode == GuessWhoGame.PlayMode.IRL
+                    else bilingual_text(
+                        "Déduction · questions · duel",
+                        "Deduction · questions · duel",
+                    )
                 ),
                 "host_name": game.created_by.get_username(),
                 "player_count": player_count,

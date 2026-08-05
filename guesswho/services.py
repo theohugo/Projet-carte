@@ -90,7 +90,10 @@ def _next_sequence(game: GuessWhoGame) -> int:
 
 
 @transaction.atomic
-def create_game(user) -> GuessWhoGame:
+def create_game(
+    user,
+    play_mode: str = GuessWhoGame.PlayMode.ONLINE,
+) -> GuessWhoGame:
     """Crée une partie et tire au sort 24 cartes parmi tout le catalogue.
 
     Qui est-ce ? est un jeu d'identification pure (silhouette, nom, sprite) :
@@ -100,6 +103,14 @@ def create_game(user) -> GuessWhoGame:
     varier les parties tout en restant strictement identique pour les deux
     joueurs (une seule ligne de ``GuessWhoRosterCard`` par partie).
     """
+
+    if play_mode not in GuessWhoGame.PlayMode.values:
+        raise GuessWhoStateError(
+            bilingual_text(
+                "Choisis un mode de jeu valide.",
+                "Choose a valid game mode.",
+            )
+        )
 
     pokemon_card_ids = list(PokemonCard.objects.values_list("pk", flat=True))
     if len(pokemon_card_ids) < ROSTER_SIZE:
@@ -114,7 +125,7 @@ def create_game(user) -> GuessWhoGame:
     cards_by_id = PokemonCard.objects.in_bulk(selected_ids)
     pokemon_cards = [cards_by_id[pk] for pk in selected_ids]
 
-    game = GuessWhoGame.objects.create(created_by=user)
+    game = GuessWhoGame.objects.create(created_by=user, play_mode=play_mode)
     GuessWhoPlayer.objects.create(game=game, user=user, turn_order=0)
     GuessWhoRosterCard.objects.bulk_create(
         [
@@ -197,7 +208,7 @@ def choose_target(game_id, user, pokemon_card_id: int, expected_revision: int) -
 
 
 @transaction.atomic
-def ask_question(game_id, user, question: str, expected_revision: int) -> GuessWhoGame:
+def ask_question(game_id, user, question: str | None, expected_revision: int) -> GuessWhoGame:
     game = _lock_game(game_id)
     player = _get_player(game, user)
     _assert_revision(game, expected_revision)
@@ -214,23 +225,26 @@ def ask_question(game_id, user, question: str, expected_revision: int) -> GuessW
                 "The previous question is still waiting for an answer.",
             )
         )
-    if not isinstance(question, str):
-        raise GuessWhoStateError(
-            bilingual_text("La question doit être un texte.", "The question must be text.")
-        )
-
-    normalized_question = " ".join(question.split())
-    if not normalized_question:
-        raise GuessWhoStateError(
-            bilingual_text("La question ne peut pas être vide.", "The question cannot be empty.")
-        )
-    if len(normalized_question) > MAX_QUESTION_LENGTH:
-        raise GuessWhoStateError(
-            bilingual_text(
-                f"La question ne peut pas dépasser {MAX_QUESTION_LENGTH} caractères.",
-                f"The question cannot exceed {MAX_QUESTION_LENGTH} characters.",
+    # En IRL, la question reste strictement orale : même un client modifié
+    # ne peut pas enregistrer le texte envoyé dans la requête.
+    normalized_question = ""
+    if game.play_mode == GuessWhoGame.PlayMode.ONLINE:
+        if not isinstance(question, str):
+            raise GuessWhoStateError(
+                bilingual_text("La question doit être un texte.", "The question must be text.")
             )
-        )
+        normalized_question = " ".join(question.split())
+        if not normalized_question:
+            raise GuessWhoStateError(
+                bilingual_text("La question ne peut pas être vide.", "The question cannot be empty.")
+            )
+        if len(normalized_question) > MAX_QUESTION_LENGTH:
+            raise GuessWhoStateError(
+                bilingual_text(
+                    f"La question ne peut pas dépasser {MAX_QUESTION_LENGTH} caractères.",
+                    f"The question cannot exceed {MAX_QUESTION_LENGTH} characters.",
+                )
+            )
 
     GuessWhoTurn.objects.create(
         game=game,
@@ -489,6 +503,7 @@ def serialize_game_state(game: GuessWhoGame, user) -> dict:
     return {
         "game_id": str(game.id),
         "language": active_language(),
+        "play_mode": game.play_mode,
         "status": game.status,
         "turn_revision": game.turn_revision,
         "is_creator": game.created_by_id == user.id,
@@ -545,6 +560,7 @@ def get_lobby_state(user) -> dict:
                 "player_count": len(game.players.all()),
                 "max_players": 2,
                 "status": game.status,
+                "play_mode": game.play_mode,
             }
             for game in open_games
         ],
@@ -554,6 +570,7 @@ def get_lobby_state(user) -> dict:
                 "status": game.status,
                 "player_count": game.player_count,
                 "winner_id": game.winner_id,
+                "play_mode": game.play_mode,
             }
             for game in my_games
         ],

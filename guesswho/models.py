@@ -7,6 +7,10 @@ from django.db import models
 class GuessWhoGame(models.Model):
     """Partie de Qui est-ce ? limitée à deux joueurs humains."""
 
+    class PlayMode(models.TextChoices):
+        ONLINE = "ONLINE", "En ligne"
+        IRL = "IRL", "IRL"
+
     class Status(models.TextChoices):
         EN_ATTENTE = "EN_ATTENTE", "En attente"
         CHOIX = "CHOIX", "Choix secret"
@@ -14,6 +18,11 @@ class GuessWhoGame(models.Model):
         TERMINEE = "TERMINEE", "Terminée"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    play_mode = models.CharField(
+        max_length=8,
+        choices=PlayMode.choices,
+        default=PlayMode.ONLINE,
+    )
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.EN_ATTENTE)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -201,7 +210,6 @@ class GuessWhoTurn(models.Model):
                         guessed_card__isnull=True,
                         is_correct__isnull=True,
                     )
-                    & ~models.Q(question="")
                 )
                 | models.Q(
                     kind="GUESS",

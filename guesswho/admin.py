@@ -17,8 +17,8 @@ class GuessWhoPlayerInline(admin.TabularInline):
 
 @admin.register(GuessWhoGame)
 class GuessWhoGameAdmin(admin.ModelAdmin):
-    list_display = ("id", "status", "created_by", "turn_revision", "created_at")
-    list_filter = ("status",)
+    list_display = ("id", "play_mode", "status", "created_by", "turn_revision", "created_at")
+    list_filter = ("play_mode", "status")
     search_fields = ("id", "created_by__username")
     readonly_fields = ("created_at", "started_at", "finished_at")
     inlines = (GuessWhoPlayerInline,)

@@ -53,6 +53,9 @@
         questionInput: game.querySelector('[name="question"]'),
         questionSubmit: game.querySelector("[data-question-form] button[type='submit']"),
         actionHint: game.querySelector("[data-action-hint]"),
+        irlQuestion: game.querySelector("[data-irl-question]"),
+        irlAskButton: game.querySelector("[data-ask-irl]"),
+        irlActionHint: game.querySelector("[data-irl-action-hint]"),
         pendingQuestion: game.querySelector("[data-pending-question]"),
         pendingQuestionText: game.querySelector("[data-pending-question-text]"),
         resultTitle: game.querySelector("[data-result-title]"),
@@ -160,6 +163,7 @@
     function stateFingerprint(candidate) {
         return JSON.stringify({
             status: candidate.status,
+            playMode: candidate.play_mode,
             turnRevision: candidate.turn_revision,
             winner: candidate.winner?.id || null,
             currentTurn: candidate.current_turn?.id || null,
@@ -226,6 +230,7 @@
     function syncViewportMode() {
         const isActive = state.status === "CHOIX" || state.status === "EN_COURS";
         game.dataset.gamePhase = state.status || "";
+        game.dataset.playMode = state.play_mode || "ONLINE";
         document.documentElement.classList.toggle("guesswho-document--active", isActive);
         document.body.classList.toggle("guesswho-game-shell--active", isActive);
     }
@@ -601,7 +606,9 @@
                     ? state.language === "en"
                         ? `I think it’s ${pokemonName(entry.guessed_card) || "this Pokémon"}.`
                         : `Je pense que c’est ${pokemonName(entry.guessed_card) || "ce Pokémon"}.`
-                    : entry.question || entry.message || entry.text || "Question",
+                    : state.play_mode === "IRL"
+                        ? t("Question posée à l’oral", "Question asked aloud")
+                        : entry.question || entry.message || entry.text || "Question",
                 isGuess
                     ? Boolean(entry.is_correct)
                     : entry.answer === true
@@ -655,7 +662,9 @@
                 result.textContent = entry.is_correct ? t("Bonne réponse", "Correct") : t("Mauvaise réponse", "Wrong");
                 bubble.append(meta, content, result);
             } else {
-                content.textContent = entry.question || entry.message || entry.text || "Question";
+                content.textContent = state.play_mode === "IRL"
+                    ? t("Question posée à l’oral", "Question asked aloud")
+                    : entry.question || entry.message || entry.text || "Question";
                 const answer = document.createElement("span");
                 answer.className = "gw-answer-token";
                 if (entry.answer === true) {
@@ -687,11 +696,15 @@
     function renderActions({ choosing, hasChosen }) {
         const pending = state.pending_question;
         const canAnswer = Boolean(state.can_answer || state.must_answer);
+        const isIrl = state.play_mode === "IRL";
         elements.pendingQuestion.hidden = !pending || !canAnswer;
-        elements.questionForm.hidden = Boolean(pending && canAnswer);
+        elements.questionForm.hidden = isIrl || Boolean(pending && canAnswer);
+        elements.irlQuestion.hidden = !isIrl || Boolean(pending && canAnswer);
 
         if (pending && canAnswer) {
-            elements.pendingQuestionText.textContent = pending.question;
+            elements.pendingQuestionText.textContent = isIrl
+                ? t("La question vient d’être posée à l’oral. Réponds simplement Oui ou Non.", "The question was just asked aloud. Simply answer Yes or No.")
+                : pending.question;
             return;
         }
 
@@ -710,9 +723,17 @@
                 : `Attends la question de ${state.current_turn?.username || "ton adversaire"}.`;
         }
 
-        elements.questionInput.disabled = disabled;
-        elements.questionSubmit.disabled = disabled;
-        elements.actionHint.textContent = hint;
+        if (isIrl) {
+            if (state.is_my_turn && !pending && !choosing) {
+                hint = t("Aucune phrase n’est envoyée ni conservée.", "No sentence is sent or stored.");
+            }
+            elements.irlAskButton.disabled = disabled;
+            elements.irlActionHint.textContent = hint;
+        } else {
+            elements.questionInput.disabled = disabled;
+            elements.questionSubmit.disabled = disabled;
+            elements.actionHint.textContent = hint;
+        }
     }
 
     function renderResult() {
@@ -1007,6 +1028,12 @@
         const answerButton = event.target.closest("[data-answer]");
         if (answerButton && !answerButton.disabled) {
             runAction(game.dataset.answerUrl, { answer: answerButton.dataset.answer === "true" });
+            return;
+        }
+
+        const irlAskButton = event.target.closest("[data-ask-irl]");
+        if (irlAskButton && !irlAskButton.disabled && phase === "idle") {
+            runAction(game.dataset.askUrl, {});
             return;
         }
 

@@ -45,12 +45,21 @@ class GuessWhoServiceTests(TestCase):
         game = create_game(self.host)
 
         self.assertEqual(game.status, GuessWhoGame.Status.EN_ATTENTE)
+        self.assertEqual(game.play_mode, GuessWhoGame.PlayMode.ONLINE)
         self.assertEqual(game.turn_revision, 0)
         self.assertEqual(game.players.get().user, self.host)
         self.assertEqual(game.players.get().turn_order, 0)
         self.assertEqual(game.roster_cards.count(), 24)
         roster_ids = set(game.roster_cards.values_list("pokemon_card_id", flat=True))
         self.assertTrue(roster_ids.issubset({card.id for card in self.cards}))
+
+    def test_creation_accepts_irl_mode_and_rejects_unknown_modes(self):
+        game = create_game(self.host, GuessWhoGame.PlayMode.IRL)
+
+        self.assertEqual(game.play_mode, GuessWhoGame.PlayMode.IRL)
+        with self.assertRaisesMessage(GuessWhoStateError, "mode de jeu valide"):
+            create_game(self.guest, "HOLOGRAMME")
+        self.assertFalse(GuessWhoGame.objects.filter(created_by=self.guest).exists())
 
     def test_creation_does_not_always_draw_the_same_roster(self):
         # Un vivier plus large que ROSTER_SIZE : sinon le tirage renvoie
@@ -144,6 +153,36 @@ class GuessWhoServiceTests(TestCase):
             ask_question(game.id, self.host, "  \n ", game.turn_revision)
         with self.assertRaisesMessage(GuessWhoStateError, "500 caractères"):
             ask_question(game.id, self.host, "x" * 501, game.turn_revision)
+
+    def test_irl_question_stores_no_text_and_keeps_yes_no_turn_flow(self):
+        game = create_game(self.host, GuessWhoGame.PlayMode.IRL)
+        game, _ = join_game(game.id, self.guest)
+        game = choose_target(game.id, self.host, self.cards[0].id, game.turn_revision)
+        game = choose_target(game.id, self.guest, self.cards[1].id, game.turn_revision)
+
+        # Un client modifié peut envoyer une phrase, mais le serveur doit la
+        # jeter : en mode IRL, aucune question orale n'est enregistrée.
+        game = ask_question(
+            game.id,
+            self.host,
+            "Texte qui ne doit jamais être conservé",
+            game.turn_revision,
+        )
+        turn = GuessWhoTurn.objects.get(kind=GuessWhoTurn.Kind.QUESTION)
+        host_state = serialize_game_state(game, self.host)
+        guest_state = serialize_game_state(game, self.guest)
+
+        self.assertEqual(turn.question, "")
+        self.assertEqual(host_state["play_mode"], GuessWhoGame.PlayMode.IRL)
+        self.assertEqual(host_state["history"][0]["question"], "")
+        self.assertEqual(guest_state["pending_question"]["question"], "")
+        self.assertTrue(guest_state["can_answer"])
+
+        game = answer_question(game.id, self.guest, True, game.turn_revision)
+        turn.refresh_from_db()
+        self.assertIs(turn.answer, True)
+        self.assertEqual(game.current_turn.user, self.guest)
+        self.assertTrue(serialize_game_state(game, self.guest)["is_my_turn"])
 
     def test_pending_question_blocks_another_action(self):
         game = self.make_started_game()
@@ -276,6 +315,7 @@ class GuessWhoServiceTests(TestCase):
             {
                 "game_id",
                 "language",
+                "play_mode",
                 "status",
                 "turn_revision",
                 "is_creator",

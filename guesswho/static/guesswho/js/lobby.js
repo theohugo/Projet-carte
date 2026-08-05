@@ -97,8 +97,8 @@
     });
 
     lobby.querySelectorAll("form").forEach((form) => {
-        form.addEventListener("submit", () => {
-            const submitButton = form.querySelector('button[type="submit"]');
+        form.addEventListener("submit", (event) => {
+            const submitButton = event.submitter || form.querySelector('button[type="submit"]');
             if (!submitButton || submitButton.disabled) return;
             submitButton.disabled = true;
             submitButton.setAttribute("aria-busy", "true");

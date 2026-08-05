@@ -51,9 +51,9 @@
             <div class="game-mode-art game-mode-art--guess">{% include "partials/art/guesswho.html" %}</div>
             <div class="game-mode-copy">
                 <span class="game-mode-status"><i></i> {% bilingual "Nouveau" "New" %}</span>
-                <p class="section-kicker">{% bilingual "2 joueurs · Déduction & chat" "2 players · Deduction & chat" %}</p>
+                <p class="section-kicker">{% bilingual "2 joueurs · En ligne ou IRL" "2 players · Online or IRL" %}</p>
                 <h2>{% bilingual "Qui est-ce ? Pokémon" "Guess Who? Pokémon" %}</h2>
-                <p>{% bilingual "Choisis une cible secrète, pose tes questions et rabats les cartes jusqu’à trouver le Pokémon adverse." "Choose a secret target, ask questions and fold down cards until you identify your opponent’s Pokémon." %}</p>
+                <p>{% bilingual "Choisis une cible secrète, puis pose tes questions par écrit ou à l’oral en mode IRL jusqu’à trouver le Pokémon adverse." "Choose a secret target, then ask typed questions or play aloud in IRL mode until you identify your opponent’s Pokémon." %}</p>
                 {% if user.is_authenticated %}<a class="btn btn-primary" href="{% url 'guesswho:lobby' %}">{% bilingual "Lancer une enquête" "Start investigating" %}</a>{% else %}<form method="post" action="{% url 'play_as_guest' %}"><input type="hidden" name="next" value="{% url 'guesswho:lobby' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">{% bilingual "Lancer une enquête" "Start investigating" %}</button></form>{% endif %}
             </div>
         </article>

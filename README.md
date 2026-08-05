@@ -9,7 +9,7 @@ PokéTable est une plateforme Django de jeux de société Pokémon multijoueurs.
 | Jeu | Joueurs | Format | URL du lobby |
 | --- | ---: | --- | --- |
 | Poké‑Uno | 2–6, IA possibles | Défausse et pouvoirs | `/uno/` |
-| Qui est-ce ? Pokémon | 2 | Déduction en duel | `/qui-est-ce/` |
+| Qui est-ce ? Pokémon | 2 | Déduction en duel, en ligne ou IRL | `/qui-est-ce/` |
 | Qui est ce Pokémon ? | sans limite fixe, IA possibles | Silhouettes chronométrées | `/qui-est-ce-pokemon/` |
 | Pictionary Pokémon | 2+ | Dessin et devinettes | `/pictionary/` |
 | Métamorph Mystère | 2–6, IA possibles | Paires et carte perdante | `/metamorph-mystere/` |
@@ -48,6 +48,7 @@ Références officielles : [règles françaises du JCC Pokémon](https://www.pok
 - L’hôte ouvre une table et un second joueur la rejoint.
 - Le plateau commun de 24 Pokémon est figé à la création de la partie.
 - Chaque joueur choisit secrètement la cible que l’autre doit découvrir. Le serveur ne transmet jamais ce choix à l’adversaire avant la fin.
+- Le salon propose un mode en ligne avec questions écrites et un mode IRL : la question est posée à voix haute, aucun texte n’est stocké et l’adversaire répond seulement **Oui** ou **Non**.
 - À son tour, un joueur pose une question. L’adversaire répond **Oui** ou **Non**, puis récupère le tour.
 - Chaque plateau est privé : cliquer une carte la rabat ou la relève sans modifier celui de l’adversaire.
 - À la place d’une question, le joueur peut proposer un Pokémon. Une bonne proposition gagne immédiatement ; une mauvaise donne la victoire à l’adversaire.

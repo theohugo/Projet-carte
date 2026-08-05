@@ -1,10 +1,11 @@
 import json
 
-from django.test import TestCase, override_settings
+from django.conf import settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from game.tests.i18n import LanguageIsolationMixin
-from guesswho.models import GuessWhoTurn
+from guesswho.models import GuessWhoGame, GuessWhoTurn
 from guesswho.services import choose_target, create_game, join_game
 
 from .factories import make_catalog, make_users
@@ -104,6 +105,40 @@ class GuessWhoApiTests(LanguageIsolationMixin, TestCase):
         self.assertIsNone(answered_state["pending_question"])
         self.assertTrue(answered_state["is_my_turn"])
         self.assertEqual(answered_state["history"][0]["answer"], True)
+
+    def test_irl_question_endpoint_needs_no_text_and_never_stores_sent_text(self):
+        irl_game = create_game(self.host, GuessWhoGame.PlayMode.IRL)
+        irl_game, _ = join_game(irl_game.id, self.guest)
+        irl_game = choose_target(
+            irl_game.id,
+            self.host,
+            self.cards[0].id,
+            irl_game.turn_revision,
+        )
+        irl_game = choose_target(
+            irl_game.id,
+            self.guest,
+            self.cards[1].id,
+            irl_game.turn_revision,
+        )
+        self.client.force_login(self.host)
+
+        response = self.client.post(
+            reverse("guesswho:api_ask_question", kwargs={"game_id": irl_game.id}),
+            data=json.dumps(
+                {
+                    "question": "This must be discarded",
+                    "expected_turn_revision": irl_game.turn_revision,
+                }
+            ),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        state = response.json()
+        self.assertEqual(state["play_mode"], "IRL")
+        self.assertEqual(state["history"][0]["question"], "")
+        self.assertEqual(GuessWhoTurn.objects.get(game=irl_game).question, "")
 
     def test_duplicate_request_returns_stale_state_without_duplicate_turn(self):
         payload = {
@@ -281,6 +316,34 @@ class GuessWhoIntegratedPageTests(LanguageIsolationMixin, TestCase):
         self.assertContains(response, "PokéTable")
         self.assertContains(response, reverse("guesswho:api_lobby_state"))
         self.assertContains(response, reverse("home"))
+        self.assertContains(response, 'name="play_mode" value="ONLINE"', html=False)
+        self.assertContains(response, 'name="play_mode" value="IRL"', html=False)
+
+    def test_creation_endpoint_selects_irl_mode(self):
+        self.client.force_login(self.host)
+
+        response = self.client.post(
+            reverse("guesswho:create_game"),
+            {"play_mode": "IRL"},
+        )
+
+        game = GuessWhoGame.objects.get(created_by=self.host)
+        self.assertRedirects(
+            response,
+            reverse("guesswho:game_detail", kwargs={"game_id": game.id}),
+        )
+        self.assertEqual(game.play_mode, GuessWhoGame.PlayMode.IRL)
+
+    def test_creation_endpoint_rejects_unknown_mode(self):
+        self.client.force_login(self.host)
+
+        response = self.client.post(
+            reverse("guesswho:create_game"),
+            {"play_mode": "INVALID"},
+        )
+
+        self.assertRedirects(response, reverse("guesswho:lobby"))
+        self.assertFalse(GuessWhoGame.objects.exists())
 
     def test_anonymous_visitors_can_read_the_lobby_and_public_state(self):
         game = create_game(self.host)
@@ -313,6 +376,8 @@ class GuessWhoIntegratedPageTests(LanguageIsolationMixin, TestCase):
 
         self.assertContains(response, "Create a table")
         self.assertContains(response, "How to play")
+        self.assertContains(response, "Online or IRL")
+        self.assertContains(response, "ask typed or spoken questions")
         self.assertNotContains(response, "Créer une table")
 
     def test_joined_player_can_render_the_complete_board_contract(self):
@@ -331,6 +396,18 @@ class GuessWhoIntegratedPageTests(LanguageIsolationMixin, TestCase):
             reverse("guesswho:api_reset_candidates", kwargs={"game_id": game.id}),
         )
         self.assertContains(response, 'maxlength="500"')
+
+    def test_irl_detail_exposes_spoken_mode_without_removing_online_controls(self):
+        game = create_game(self.host, GuessWhoGame.PlayMode.IRL)
+        join_game(game.id, self.guest)
+        self.client.force_login(self.host)
+
+        response = self.client.get(reverse("guesswho:game_detail", kwargs={"game_id": game.id}))
+
+        self.assertContains(response, 'data-play-mode="IRL"', html=False)
+        self.assertContains(response, "Mode IRL · aucun chat")
+        self.assertContains(response, "J’ai posé ma question")
+        self.assertContains(response, 'data-question-form autocomplete="off" hidden', html=False)
 
     def test_non_participant_can_accept_an_open_table_invitation(self):
         game = create_game(self.host)
@@ -362,3 +439,14 @@ class GuessWhoIntegratedPageTests(LanguageIsolationMixin, TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertTemplateUsed(response, "join_invitation.html")
         self.assertContains(response, "Invitation expirée", status_code=403)
+
+
+class GuessWhoJavascriptRegressionTests(SimpleTestCase):
+    def test_irl_branch_posts_an_empty_payload_and_renders_no_question_text(self):
+        source = (settings.BASE_DIR / "guesswho" / "static" / "guesswho" / "js" / "game.js").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn('state.play_mode === "IRL"', source)
+        self.assertIn("runAction(game.dataset.askUrl, {});", source)
+        self.assertIn('t("Question posée à l’oral", "Question asked aloud")', source)

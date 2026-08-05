@@ -6,7 +6,7 @@
 {% block body_class %}guesswho-game-shell{% if game.status == "CHOIX" or game.status == "EN_COURS" %} guesswho-game-shell--active{% endif %}{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'guesswho/css/guesswho.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'guesswho/css/guesswho.css' %}?v=5">
 
 <div class="gw-game-page">
     <header class="gw-game-header">
@@ -19,6 +19,7 @@
             </div>
         </div>
         <div class="gw-game-meta">
+            <span class="gw-mode-tag gw-mode-tag--header" data-mode="{{ game.play_mode|lower }}">{% if game.play_mode == "IRL" %}IRL · {% bilingual "à l’oral" "spoken" %}{% else %}{% bilingual "En ligne" "Online" %}{% endif %}</span>
             <span class="gw-sync-state" data-sync-state><i aria-hidden="true"></i><span>{% bilingual "Synchronisé" "Synced" %}</span></span>
             <span class="gw-status-pill" data-game-status>{% bilingual "Connexion…" "Connecting…" %}</span>
         </div>
@@ -35,6 +36,7 @@
         data-reset-url="{% url 'guesswho:api_reset_candidates' game_id=game.id %}"
         data-toggle-url-template="{% url 'guesswho:api_toggle_candidate' game_id=game.id pokemon_card_id=0 %}"
         data-game-phase="{{ game_state.status }}"
+        data-play-mode="{{ game.play_mode }}"
         aria-busy="false"
     >
         <form class="gw-csrf-source" aria-hidden="true">{% csrf_token %}</form>
@@ -116,7 +118,7 @@
 
                 <section class="gw-conversation" aria-labelledby="conversation-title">
                     <header class="gw-side-heading gw-conversation-heading">
-                        <div><p class="gw-eyebrow">{% bilingual "Carnet d’enquête" "Case notes" %}</p><h2 id="conversation-title">Questions</h2></div>
+                        <div><p class="gw-eyebrow">{% if game.play_mode == "IRL" %}{% bilingual "Suivi des tours" "Turn tracker" %}{% else %}{% bilingual "Carnet d’enquête" "Case notes" %}{% endif %}</p><h2 id="conversation-title">{% if game.play_mode == "IRL" %}{% bilingual "Questions orales" "Spoken questions" %}{% else %}Questions{% endif %}</h2></div>
                         <span class="gw-history-count" data-history-count>0</span>
                     </header>
                     <ol
@@ -129,7 +131,7 @@
                     ></ol>
                     <div class="gw-history-empty" data-history-empty>
                         <span aria-hidden="true">?</span>
-                        <p><strong>{% bilingual "Aucun indice pour le moment." "No clues yet." %}</strong> {% bilingual "La première question apparaîtra ici." "The first question will appear here." %}</p>
+                        <p><strong>{% bilingual "Aucun indice pour le moment." "No clues yet." %}</strong> {% if game.play_mode == "IRL" %}{% bilingual "Les réponses Oui/Non apparaîtront ici." "Yes/No answers will appear here." %}{% else %}{% bilingual "La première question apparaîtra ici." "The first question will appear here." %}{% endif %}</p>
                     </div>
                 </section>
 
@@ -144,7 +146,7 @@
                         </div>
                     </div>
 
-                    <form class="gw-question-form" data-question-form autocomplete="off">
+                    <form class="gw-question-form" data-question-form autocomplete="off"{% if game.play_mode == "IRL" %} hidden{% endif %}>
                         <label for="guesswho-question">{% bilingual "Ta question" "Your question" %}</label>
                         <div class="gw-question-control">
                             <input
@@ -162,6 +164,15 @@
                         </div>
                         <p class="gw-action-hint" data-action-hint>{% bilingual "Pose une question qui appelle « oui » ou « non »." "Ask a question that can be answered yes or no." %}</p>
                     </form>
+
+                    <div class="gw-irl-question" data-irl-question{% if game.play_mode != "IRL" %} hidden{% endif %}>
+                        <p class="gw-eyebrow">{% bilingual "Mode IRL · aucun chat" "IRL mode · no chat" %}</p>
+                        <p class="gw-irl-prompt">{% bilingual "Pose ta question à voix haute, puis passe la main à ton adversaire." "Ask your question aloud, then hand over to your opponent." %}</p>
+                        <button type="button" class="btn btn-primary gw-irl-asked-button" data-ask-irl>
+                            <span aria-hidden="true">◉</span> {% bilingual "J’ai posé ma question" "I asked my question" %}
+                        </button>
+                        <p class="gw-action-hint" data-irl-action-hint>{% bilingual "Aucun texte ne sera enregistré." "No text will be stored." %}</p>
+                    </div>
                 </section>
             </aside>
         </div>
@@ -176,6 +187,7 @@
             <div class="gw-result-actions">
                 <form method="post" action="{% url 'guesswho:create_game' %}">
                     {% csrf_token %}
+                    <input type="hidden" name="play_mode" value="{{ game.play_mode }}">
                     <button type="submit" class="btn btn-primary">{% icon "play" %}{% bilingual "Nouvelle partie" "New game" %}</button>
                 </form>
                 <a class="btn btn-ghost" href="{% url 'guesswho:lobby' %}">{% icon "back" %}{% bilingual "Retour au salon" "Back to lobby" %}</a>
@@ -199,5 +211,5 @@
 </dialog>
 
 {{ game_state|json_script:"guesswho-initial-state" }}
-<script src="{% static 'guesswho/js/game.js' %}?v=5"></script>
+<script src="{% static 'guesswho/js/game.js' %}?v=6"></script>
 {% endblock %}

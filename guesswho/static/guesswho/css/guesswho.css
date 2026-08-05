@@ -181,6 +181,77 @@
     margin: 0;
 }
 
+.gw-create-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.gw-mode-picker {
+    display: flex;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.gw-mode-picker legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.gw-mode-picker label {
+    position: relative;
+    cursor: pointer;
+}
+
+.gw-mode-picker input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.gw-mode-picker label > span {
+    display: flex;
+    min-width: 98px;
+    min-height: 50px;
+    flex-direction: column;
+    justify-content: center;
+    padding: 6px 11px;
+    border: 1px solid var(--gw-line);
+    border-radius: 12px;
+    color: var(--gw-muted);
+    background: rgba(255, 255, 255, 0.025);
+    transition: border-color 150ms ease-out, color 150ms ease-out, background-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.gw-mode-picker label > span strong {
+    color: var(--gw-ink);
+    font-size: 0.76rem;
+}
+
+.gw-mode-picker label > span small {
+    font-size: 0.61rem;
+}
+
+.gw-mode-picker input:checked + span {
+    color: #d7f7ff;
+    border-color: rgba(103, 218, 245, 0.56);
+    background: rgba(103, 218, 245, 0.11);
+    box-shadow: inset 0 0 0 1px rgba(103, 218, 245, 0.08);
+}
+
+.gw-mode-picker input:focus-visible + span {
+    outline: 3px solid rgba(103, 218, 245, 0.34);
+    outline-offset: 2px;
+}
+
 .gw-primary-action {
     min-height: 50px;
     padding-inline: 22px;
@@ -282,6 +353,22 @@
     color: var(--gw-muted);
     font-size: 0.74rem;
     line-height: 1.4;
+}
+
+.gw-rules-mode-note {
+    grid-column: 2;
+    margin: -12px 0 0;
+    padding: 10px 12px;
+    border-left: 2px solid var(--gw-violet);
+    border-radius: 0 10px 10px 0;
+    color: var(--gw-muted);
+    background: rgba(154, 124, 255, 0.055);
+    font-size: 0.72rem;
+    line-height: 1.45;
+}
+
+.gw-rules-mode-note strong {
+    color: #ded7ff;
 }
 
 .gw-lobby-columns {
@@ -422,6 +509,36 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.gw-mode-tag {
+    display: inline-flex;
+    min-height: 20px;
+    align-items: center;
+    margin-left: 5px;
+    padding: 2px 7px;
+    border: 1px solid rgba(103, 218, 245, 0.25);
+    border-radius: 999px;
+    color: var(--gw-cyan);
+    background: rgba(103, 218, 245, 0.065);
+    font-size: 0.56rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.gw-mode-tag[data-mode="irl"] {
+    color: #ddd5ff;
+    border-color: rgba(154, 124, 255, 0.36);
+    background: rgba(154, 124, 255, 0.11);
+}
+
+.gw-mode-tag--header {
+    min-height: 28px;
+    margin-left: 0;
+    padding-inline: 10px;
 }
 
 .gw-table-copy strong {
@@ -1540,6 +1657,39 @@
     background: rgba(4, 14, 26, 0.5);
 }
 
+.gw-irl-question {
+    display: grid;
+    gap: 6px;
+}
+
+.gw-irl-question[hidden] {
+    display: none;
+}
+
+.gw-irl-question .gw-eyebrow {
+    margin-bottom: 0;
+    color: #b9aaff;
+}
+
+.gw-irl-prompt {
+    margin: 0;
+    color: #edf5fc;
+    font-size: 0.76rem;
+    line-height: 1.35;
+}
+
+.gw-irl-asked-button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    font-size: 0.72rem;
+}
+
+.gw-irl-asked-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 .gw-question-form label {
     display: block;
     margin-bottom: 6px;
@@ -1887,7 +2037,9 @@
     }
 
     .gw-player-chip-copy small,
-    .gw-action-hint {
+    .gw-action-hint,
+    .gw-irl-prompt,
+    .gw-irl-question .gw-eyebrow {
         display: none;
     }
 
@@ -1918,6 +2070,11 @@
     .gw-rules,
     .gw-lobby-columns {
         grid-template-columns: 1fr;
+    }
+
+    .gw-rules-mode-note {
+        grid-column: auto;
+        margin-top: 0;
     }
 
     .guesswho-document--active {
@@ -2030,6 +2187,23 @@
         grid-template-columns: 1fr;
     }
 
+    .gw-create-form {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .gw-mode-picker {
+        flex: 1 1 100%;
+    }
+
+    .gw-mode-picker label {
+        flex: 1;
+    }
+
+    .gw-mode-picker label > span {
+        min-width: 0;
+    }
+
     .gw-game-header {
         gap: 6px;
     }
@@ -2038,7 +2212,8 @@
     .gw-game-title p,
     .gw-sync-state span,
     .gw-game-title h1,
-    .gw-candidate-count {
+    .gw-candidate-count,
+    .gw-mode-tag--header {
         display: none;
     }
 

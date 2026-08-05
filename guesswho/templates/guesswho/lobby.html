@@ -2,11 +2,11 @@
 {% load static icons poketable_i18n %}
 
 {% block title %}{% bilingual "Qui est-ce ? Pokémon" "Pokémon Guess Who?" %} — PokéTable{% endblock %}
-{% block meta_description %}{% bilingual "Joue à Qui est-ce ? Pokémon en ligne : pose tes questions, élimine les candidats et découvre le Pokémon secret de ton adversaire." "Play Pokémon Guess Who online: ask questions, eliminate candidates and uncover your opponent’s secret Pokémon." %}{% endblock %}
+{% block meta_description %}{% bilingual "Joue à Qui est-ce ? Pokémon en ligne ou en mode IRL : pose tes questions par écrit ou à l’oral et découvre le Pokémon secret adverse." "Play Pokémon Guess Who online or in IRL mode: ask typed or spoken questions and uncover your opponent’s secret Pokémon." %}{% endblock %}
 {% block body_class %}guesswho-lobby-shell{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'guesswho/css/guesswho.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'guesswho/css/guesswho.css' %}?v=5">
 
 <div id="guesswho-lobby" class="gw-lobby" data-state-url="{% url 'guesswho:api_lobby_state' %}">
     <section class="gw-lobby-hero" aria-labelledby="guesswho-title">
@@ -16,8 +16,19 @@
             <h1 id="guesswho-title">{% bilingual "Qui est-ce ?" "Guess Who?" %}<br><span>{% bilingual "Version Pokémon." "Pokémon edition." %}</span></h1>
             <p class="gw-lobby-lead">{% bilingual "Pose les bonnes questions, rabats les mauvais candidats et démasque le Pokémon secret de ton adversaire." "Ask the right questions, fold down unlikely candidates and reveal your opponent’s secret Pokémon." %}</p>
             <div class="gw-lobby-actions">
-                <form method="post" action="{% url 'guesswho:create_game' %}">
+                <form method="post" action="{% url 'guesswho:create_game' %}" class="gw-create-form">
                     {% csrf_token %}
+                    <fieldset class="gw-mode-picker">
+                        <legend>{% bilingual "Mode de partie" "Game mode" %}</legend>
+                        <label>
+                            <input type="radio" name="play_mode" value="ONLINE" checked>
+                            <span><strong>{% bilingual "En ligne" "Online" %}</strong><small>{% bilingual "Question écrite" "Typed question" %}</small></span>
+                        </label>
+                        <label>
+                            <input type="radio" name="play_mode" value="IRL">
+                            <span><strong>IRL</strong><small>{% bilingual "Question à l’oral" "Spoken question" %}</small></span>
+                        </label>
+                    </fieldset>
                     <button type="submit" class="btn btn-primary gw-primary-action" data-reload-focus-key="create-game">
                         <span class="gw-button-icon" aria-hidden="true">+</span>
                         {% bilingual "Créer une table" "Create a table" %}
@@ -28,7 +39,7 @@
             <ul class="gw-feature-list" aria-label="{% bilingual 'Caractéristiques du jeu' 'Game features' %}">
                 <li><span aria-hidden="true">◇</span> 2 {% bilingual "joueurs" "players" %}</li>
                 <li><span aria-hidden="true">◇</span> 24 {% bilingual "candidats" "candidates" %}</li>
-                <li><span aria-hidden="true">◇</span> {% bilingual "Questions en direct" "Live questions" %}</li>
+                <li><span aria-hidden="true">◇</span> {% bilingual "En ligne ou IRL" "Online or IRL" %}</li>
             </ul>
         </div>
 
@@ -46,6 +57,7 @@
             <li><strong>{% bilingual "Élimine" "Eliminate" %}</strong><span>{% bilingual "Rabats les candidats qui ne correspondent plus aux indices." "Fold down candidates that no longer match the clues." %}</span></li>
             <li><strong>{% bilingual "Accuse" "Guess" %}</strong><span>{% bilingual "Tente ta chance quand tu penses avoir trouvé la bonne réponse." "Take your chance when you think you know the answer." %}</span></li>
         </ol>
+        <p class="gw-rules-mode-note"><strong>{% bilingual "Mode IRL :" "IRL mode:" %}</strong> {% bilingual "pose la question à voix haute ; aucune phrase n’est saisie ni enregistrée, seule la réponse Oui ou Non passe dans le jeu." "ask the question aloud; no sentence is typed or stored, only the Yes or No answer is sent through the game." %}</p>
     </section>
 
     <div class="gw-lobby-columns">
@@ -64,7 +76,7 @@
                 <li class="gw-table-row">
                     <span class="gw-table-avatar" aria-hidden="true">{{ table.created_by.username|default:"?"|first|upper }}</span>
                     <span class="gw-table-copy">
-                        <strong>{% bilingual "Table de" "Table hosted by" %} {{ table.created_by.username|default:"Dresseur" }}</strong>
+                        <strong>{% bilingual "Table de" "Table hosted by" %} {{ table.created_by.username|default:"Dresseur" }} <span class="gw-mode-tag" data-mode="{{ table.play_mode|lower }}">{% if table.play_mode == "IRL" %}IRL{% else %}{% bilingual "En ligne" "Online" %}{% endif %}</span></strong>
                         <small><span class="gw-open-dot" aria-hidden="true"></span> {% bilingual "En attente d’un adversaire" "Waiting for an opponent" %}</small>
                     </span>
                     <form method="post" action="{% url 'guesswho:join_game' game_id=table.id %}">
@@ -97,7 +109,7 @@
                 <li class="gw-table-row">
                     <span class="gw-table-status" data-status="{{ table.status|lower }}" aria-hidden="true"></span>
                     <span class="gw-table-copy">
-                        <strong>{% bilingual "Partie" "Game" %} {{ forloop.counter }}</strong>
+                        <strong>{% bilingual "Partie" "Game" %} {{ forloop.counter }} <span class="gw-mode-tag" data-mode="{{ table.play_mode|lower }}">{% if table.play_mode == "IRL" %}IRL{% else %}{% bilingual "En ligne" "Online" %}{% endif %}</span></strong>
                         <small>{% if table.status == "EN_ATTENTE" %}{% bilingual "En attente" "Waiting" %}{% elif table.status == "EN_COURS" %}{% bilingual "En cours" "In progress" %}{% else %}{% bilingual "Terminée" "Finished" %}{% endif %}</small>
                     </span>
                     <a class="btn btn-ghost" href="{% url 'guesswho:game_detail' game_id=table.id %}" data-reload-focus-key="open-{{ table.id }}">{% bilingual "Ouvrir" "Open" %}</a>
@@ -115,5 +127,5 @@
 </div>
 
 {% if lobby_state %}{{ lobby_state|json_script:"guesswho-lobby-state" }}{% endif %}
-<script src="{% static 'guesswho/js/lobby.js' %}?v=4"></script>
+<script src="{% static 'guesswho/js/lobby.js' %}?v=5"></script>
 {% endblock %}
